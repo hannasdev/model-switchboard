@@ -1,0 +1,12 @@
+{
+  "name": "model-switchboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "poc:route": "node src/poc/cli.js route",
+    "poc:fixtures": "node src/poc/cli.js fixtures",
+    "poc:vendor-matrix": "node src/poc/cli.js vendor-matrix"
+  }
+}

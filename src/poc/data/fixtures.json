@@ -1,0 +1,69 @@
+[
+  {
+    "name": "low_value_acknowledgement",
+    "input": "Thanks, that makes sense.",
+    "session": { "mode": "plan", "cost_posture": "balanced", "currentTargetId": "openai-coder" },
+    "expected": { "mode": "summarize", "label": "quick", "shouldSwitch": true }
+  },
+  {
+    "name": "planning_turn",
+    "input": "Plan the rollout in phases with tradeoffs.",
+    "session": { "mode": "plan", "cost_posture": "balanced" },
+    "expected": { "mode": "plan", "label": "balanced" }
+  },
+  {
+    "name": "expensive_target_trivial_turn_switch",
+    "input": "Thanks, ship it.",
+    "session": { "mode": "implement", "cost_posture": "balanced", "currentTargetId": "openai-coder" },
+    "expected": { "mode": "summarize", "label": "quick", "shouldSwitch": true }
+  },
+  {
+    "name": "simple_explanation",
+    "input": "What does this config option mean?",
+    "session": { "mode": "plan", "cost_posture": "balanced" },
+    "expected": { "mode": "plan", "label": "balanced" }
+  },
+  {
+    "name": "architecture_tradeoff",
+    "input": "Compare the tradeoffs between a proxy integration and a CLI wrapper.",
+    "session": { "mode": "plan", "cost_posture": "prefer_quality" },
+    "expected": { "mode": "plan", "label": "balanced" }
+  },
+  {
+    "name": "explicit_implementation",
+    "input": "Implement the plan.",
+    "session": { "mode": "plan", "cost_posture": "balanced" },
+    "expected": { "mode": "implement", "label": "best coder" }
+  },
+  {
+    "name": "debug_failing_tests",
+    "input": "The test suite is failing after the refactor. Fix it.",
+    "session": { "mode": "implement", "cost_posture": "balanced" },
+    "expected": { "mode": "debug", "label": "best coder" }
+  },
+  {
+    "name": "review_high_risk_area",
+    "input": "Review this auth change for risks.",
+    "session": { "mode": "review", "cost_posture": "prefer_quality" },
+    "expected": { "mode": "review", "label": "best coder" }
+  },
+  {
+    "name": "user_correction",
+    "input": "That is a wrong assumption. Compare alternatives again.",
+    "session": { "mode": "plan", "cost_posture": "balanced" },
+    "expected": { "mode": "plan", "label": "balanced" }
+  },
+  {
+    "name": "capability_miss_refusal",
+    "input": "Implement the plan.",
+    "session": { "mode": "plan", "cost_posture": "balanced" },
+    "targetOverride": "quick_only",
+    "expected": { "status": "refused", "mode": "implement" }
+  },
+  {
+    "name": "ambiguous_implementation_approval",
+    "input": "Sounds good, go ahead.",
+    "session": { "mode": "plan", "cost_posture": "balanced" },
+    "expected": { "mode": "plan", "label": "balanced" }
+  }
+]

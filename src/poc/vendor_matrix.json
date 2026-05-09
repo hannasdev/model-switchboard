@@ -1,0 +1,22 @@
+[
+  {
+    "vendor": "openai-codex",
+    "prompt_before_execution": "yes_documented",
+    "target_selection_before_execution": "likely_via_sdk_or_wrapper",
+    "session_resume_support": "yes_documented",
+    "brittle_ui_automation_required": "no_if_sdk_path",
+    "route_explanation_surface": "wrapper_or_cli_output",
+    "outcome_logging_feasible": "yes",
+    "critical_limits": "needs concrete adapter decision and stable pre-execution hook path"
+  },
+  {
+    "vendor": "anthropic-claude",
+    "prompt_before_execution": "yes_documented",
+    "target_selection_before_execution": "likely_via_agent_sdk_or_wrapper",
+    "session_resume_support": "yes_documented",
+    "brittle_ui_automation_required": "no_if_sdk_path",
+    "route_explanation_surface": "wrapper_or_cli_output",
+    "outcome_logging_feasible": "yes",
+    "critical_limits": "needs concrete adapter decision and reliable target/profile switching contract"
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "vendor": "openai-codex",
+  "targets": [
+    {
+      "id": "openai-quick",
+      "label": "quick",
+      "target_class": "cheap_fast",
+      "capabilities": [
+        "chat",
+        "structured_output"
+      ],
+      "privacy_tier": "external",
+      "cost_tier": "low",
+      "latency_tier": "low",
+      "availability": "available"
+    },
+    {
+      "id": "openai-balanced",
+      "label": "balanced",
+      "target_class": "medium_reasoning",
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "structured_output"
+      ],
+      "privacy_tier": "external",
+      "cost_tier": "medium",
+      "latency_tier": "medium",
+      "availability": "available"
+    },
+    {
+      "id": "openai-coder",
+      "label": "best coder",
+      "target_class": "strong_coding",
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "structured_output",
+        "repo_context",
+        "file_read",
+        "file_edit",
+        "shell_execution",
+        "test_execution"
+      ],
+      "privacy_tier": "external",
+      "cost_tier": "high",
+      "latency_tier": "medium",
+      "availability": "available"
+    }
+  ]
+}
