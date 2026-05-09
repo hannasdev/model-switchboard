@@ -19,7 +19,8 @@
     "poc:anthropic-connection-check": "node src/poc/cli.js anthropic-connection-check",
     "poc:gemini-adapter-spike": "node src/poc/cli.js gemini-adapter-spike",
     "poc:gemini-adapter-live": "node src/poc/cli.js gemini-adapter-spike --live true",
-    "poc:gemini-connection-check": "node src/poc/cli.js gemini-connection-check"
+    "poc:gemini-connection-check": "node src/poc/cli.js gemini-connection-check",
+    "poc:production-hook": "node src/poc/cli.js production-hook --vendor openai --tool-action read_file"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",

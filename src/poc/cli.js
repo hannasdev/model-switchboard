@@ -11,6 +11,7 @@ import {
 import { createAnthropicSDKClient } from "./adapters/anthropic_sdk_client.js";
 import { createMockGeminiClient, createGeminiAdapter } from "./adapters/gemini_adapter.js";
 import { createGeminiSDKClient } from "./adapters/gemini_sdk_client.js";
+import { executeProductionHookTurn } from "./production_hook.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -412,6 +413,39 @@ async function runGeminiConnectionCheck() {
   if (result.status !== "ok") process.exitCode = 1;
 }
 
+function runProductionHook() {
+  const vendor = getArg("--vendor") || "openai";
+  const targets = loadTargets(vendor);
+  const input = getArg("--input") || "Implement the plan.";
+  const toolAction = getArg("--tool-action") || "read_file";
+  const turnCount = Number(getArg("--turn-count") || "0");
+  const session = {
+    mode: getArg("--mode") || "plan",
+    cost_posture: getArg("--cost-posture") || "balanced",
+    currentTargetId: getArg("--current-target-id") || targets[1]?.id || null,
+    turnCount: Number.isNaN(turnCount) ? 0 : turnCount
+  };
+
+  const result = executeProductionHookTurn({
+    input,
+    session,
+    targets,
+    repoRoot: REPO_ROOT,
+    toolAction
+  });
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "production_hook",
+    vendor,
+    input,
+    session,
+    result
+  });
+  printResult(result);
+  if (result.status === "failed") process.exitCode = 1;
+}
+
 const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
@@ -496,6 +530,7 @@ else if (cmd === "gemini-connection-check") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "production-hook") runProductionHook();
 else {
   console.log("Usage:");
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
@@ -512,5 +547,6 @@ else {
   console.log("  node src/poc/cli.js gemini-adapter-spike --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-connection-check");
+  console.log("  node src/poc/cli.js production-hook --vendor openai --input \"Implement the plan.\" --tool-action read_file");
   process.exitCode = 1;
 }

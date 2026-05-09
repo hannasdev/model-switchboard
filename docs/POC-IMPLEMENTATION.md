@@ -20,18 +20,21 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Node test suite for route behavior assertions.
 * Fixture assertions now validate required capabilities and explanation reason snippets per fixture.
 * User-correction fixture now validates correction classification precedence (`user_correction_signal`) so dissatisfaction is not masked by generic planning keywords.
+* Production-surface hook simulator that intercepts a turn pre-execution, routes it, executes a safe repo action for `best coder`, and advances session state.
+* Production-hook tests covering routed tool execution, non-tool quick path, and test-action invocation via injected runner.
 
 ## What Is Not Yet Proven
 
-* The final production pre-execution hook surface has not been validated.
+* A simulated production pre-execution hook surface is validated locally; a real product-integrated hook is still not validated.
 * SDK live execution proves prompt submission to selected model/profile mappings; it does not prove routed execution inside the intended product surface.
 * The `best coder` target capability claims for repo context, file reads, file edits, shell execution, and test execution are registry metadata, not end-to-end proof from the live SDK checks.
-* Session continuity is represented as local session passthrough, not production-grade thread or agent orchestration.
+* Session continuity is represented as local session passthrough with turn-count/current-target advancement, not production-grade thread or agent orchestration.
 
 ## Paths
 
 * Router core: `src/poc/router.js`
 * CLI harness: `src/poc/cli.js`
+* Production hook simulator: `src/poc/production_hook.js`
 * OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`
 * OpenAI SDK client: `src/poc/adapters/openai_sdk_client.js`
 * Anthropic/Claude adapter: `src/poc/adapters/anthropic_claude_adapter.js`
@@ -46,6 +49,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Vendor matrix scaffold: `src/poc/vendor_matrix.json`
 * Tests: `test/poc-router.test.js`
 * Adapter tests: `test/poc-adapter.test.js`
+* Production hook tests: `test/poc-production-hook.test.js`
 
 ## Commands
 
@@ -63,12 +67,11 @@ npm run poc:anthropic-connection-check
 npm run poc:gemini-adapter-spike -- --input "Implement the plan."
 npm run poc:gemini-adapter-live -- --input "Implement the plan."
 npm run poc:gemini-connection-check
+npm run poc:production-hook -- --input "Implement the plan." --tool-action read_file
 ```
 
 ## Current Gaps
 
-* Validate a real pre-execution hook for at least one production surface.
-* Prove that routing can change the final execution target in that surface before execution begins.
-* Run an end-to-end tool-capable routed turn that uses repo context and performs at least one safe file or test action.
+* Validate a real pre-execution hook for at least one production surface (beyond the local simulator).
 * Decide whether a `deep reasoning` target is required for any evaluated vendor.
 * Refresh and confirm model/profile mappings before relying on them outside the PoC.
