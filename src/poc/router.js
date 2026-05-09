@@ -52,12 +52,12 @@ export function classifyPrompt(input) {
     return { mode: "review", confidence: 0.8, reason: "review_signal" };
   }
 
-  if (hasAny(text, ["tradeoff", "compare", "architecture", "plan"])) {
-    return { mode: "plan", confidence: 0.86, reason: "planning_signal" };
-  }
-
   if (hasAny(text, ["wrong assumption", "you are wrong", "that's wrong"])) {
     return { mode: "plan", confidence: 0.75, reason: "user_correction_signal", escalate: "strong_reasoning" };
+  }
+
+  if (hasAny(text, ["tradeoff", "compare", "architecture", "plan"])) {
+    return { mode: "plan", confidence: 0.86, reason: "planning_signal" };
   }
 
   return { mode: "plan", confidence: 0.6, reason: "fallback_plan" };

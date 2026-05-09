@@ -3,67 +3,124 @@
     "name": "low_value_acknowledgement",
     "input": "Thanks, that makes sense.",
     "session": { "mode": "plan", "cost_posture": "balanced", "currentTargetId": "openai-coder" },
-    "expected": { "mode": "summarize", "label": "quick", "shouldSwitch": true }
+    "expected": {
+      "mode": "summarize",
+      "label": "quick",
+      "shouldSwitch": true,
+      "requiredCapabilities": ["chat", "structured_output"],
+      "explanationIncludes": ["low-risk summary"]
+    }
   },
   {
     "name": "planning_turn",
     "input": "Plan the rollout in phases with tradeoffs.",
     "session": { "mode": "plan", "cost_posture": "balanced" },
-    "expected": { "mode": "plan", "label": "balanced" }
+    "expected": {
+      "mode": "plan",
+      "label": "balanced",
+      "requiredCapabilities": ["chat", "reasoning", "structured_output"],
+      "explanationIncludes": ["planning/tradeoff analysis"]
+    }
   },
   {
     "name": "expensive_target_trivial_turn_switch",
     "input": "Thanks, ship it.",
     "session": { "mode": "implement", "cost_posture": "balanced", "currentTargetId": "openai-coder" },
-    "expected": { "mode": "summarize", "label": "quick", "shouldSwitch": true }
+    "expected": {
+      "mode": "summarize",
+      "label": "quick",
+      "shouldSwitch": true,
+      "requiredCapabilities": ["chat", "structured_output"],
+      "explanationIncludes": ["low-risk summary"]
+    }
   },
   {
     "name": "simple_explanation",
     "input": "What does this config option mean?",
     "session": { "mode": "plan", "cost_posture": "balanced" },
-    "expected": { "mode": "plan", "label": "balanced" }
+    "expected": {
+      "mode": "plan",
+      "label": "balanced",
+      "requiredCapabilities": ["chat", "reasoning", "structured_output"],
+      "explanationIncludes": ["planning/tradeoff analysis"]
+    }
   },
   {
     "name": "architecture_tradeoff",
     "input": "Compare the tradeoffs between a proxy integration and a CLI wrapper.",
     "session": { "mode": "plan", "cost_posture": "prefer_quality" },
-    "expected": { "mode": "plan", "label": "balanced" }
+    "expected": {
+      "mode": "plan",
+      "label": "balanced",
+      "requiredCapabilities": ["chat", "reasoning", "structured_output"],
+      "explanationIncludes": ["planning/tradeoff analysis"]
+    }
   },
   {
     "name": "explicit_implementation",
     "input": "Implement the plan.",
     "session": { "mode": "plan", "cost_posture": "balanced" },
-    "expected": { "mode": "implement", "label": "best coder" }
+    "expected": {
+      "mode": "implement",
+      "label": "best coder",
+      "requiredCapabilities": ["repo_context", "file_read", "file_edit"],
+      "explanationIncludes": ["implementation", "repo edits"]
+    }
   },
   {
     "name": "debug_failing_tests",
     "input": "The test suite is failing after the refactor. Fix it.",
     "session": { "mode": "implement", "cost_posture": "balanced" },
-    "expected": { "mode": "debug", "label": "best coder" }
+    "expected": {
+      "mode": "debug",
+      "label": "best coder",
+      "requiredCapabilities": ["repo_context", "file_read", "shell_execution", "test_execution"],
+      "explanationIncludes": ["debugging and tests", "test execution"]
+    }
   },
   {
     "name": "review_high_risk_area",
     "input": "Review this auth change for risks.",
     "session": { "mode": "review", "cost_posture": "prefer_quality" },
-    "expected": { "mode": "review", "label": "best coder" }
+    "expected": {
+      "mode": "review",
+      "label": "best coder",
+      "requiredCapabilities": ["repo_context", "file_read", "reasoning", "structured_output"],
+      "explanationIncludes": ["review reasoning"]
+    }
   },
   {
     "name": "user_correction",
     "input": "That is a wrong assumption. Compare alternatives again.",
     "session": { "mode": "plan", "cost_posture": "balanced" },
-    "expected": { "mode": "plan", "label": "balanced" }
+    "expected": {
+      "mode": "plan",
+      "label": "balanced",
+      "requiredCapabilities": ["chat", "reasoning", "structured_output"],
+      "explanationIncludes": ["planning/tradeoff analysis"],
+      "classificationReason": "user_correction_signal"
+    }
   },
   {
     "name": "capability_miss_refusal",
     "input": "Implement the plan.",
     "session": { "mode": "plan", "cost_posture": "balanced" },
     "targetOverride": "quick_only",
-    "expected": { "status": "refused", "mode": "implement" }
+    "expected": {
+      "status": "refused",
+      "mode": "implement",
+      "requiredCapabilities": ["repo_context", "file_read", "file_edit"]
+    }
   },
   {
     "name": "ambiguous_implementation_approval",
     "input": "Sounds good, go ahead.",
     "session": { "mode": "plan", "cost_posture": "balanced" },
-    "expected": { "mode": "plan", "label": "balanced" }
+    "expected": {
+      "mode": "plan",
+      "label": "balanced",
+      "requiredCapabilities": ["chat", "reasoning", "structured_output"],
+      "explanationIncludes": ["planning/tradeoff analysis"]
+    }
   }
 ]

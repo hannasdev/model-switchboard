@@ -30,6 +30,13 @@ test("fixtures map to expected route decisions", () => {
     });
 
     assert.equal(result.mode, fx.expected.mode, `${fx.name} mode mismatch`);
+    if (fx.expected.requiredCapabilities) {
+      assert.deepEqual(
+        result.requiredCapabilities,
+        fx.expected.requiredCapabilities,
+        `${fx.name} required capabilities mismatch`
+      );
+    }
     if (fx.expected.status) {
       assert.equal(result.status, fx.expected.status, `${fx.name} status mismatch`);
     }
@@ -42,6 +49,22 @@ test("fixtures map to expected route decisions", () => {
     }
     if (typeof fx.expected.shouldSwitch === "boolean") {
       assert.equal(result.shouldSwitch, fx.expected.shouldSwitch, `${fx.name} switch mismatch`);
+    }
+    if (fx.expected.explanationIncludes) {
+      for (const snippet of fx.expected.explanationIncludes) {
+        assert.match(
+          result.explanation,
+          new RegExp(snippet.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+          `${fx.name} explanation missing '${snippet}'`
+        );
+      }
+    }
+    if (fx.expected.classificationReason) {
+      assert.equal(
+        result.classification?.reason,
+        fx.expected.classificationReason,
+        `${fx.name} classification reason mismatch`
+      );
     }
   }
 });

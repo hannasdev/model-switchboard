@@ -18,6 +18,15 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Local NDJSON route-decision logging.
 * Vendor feasibility matrix with OpenAI, Anthropic, and Gemini live verification evidence.
 * Node test suite for route behavior assertions.
+* Fixture assertions now validate required capabilities and explanation reason snippets per fixture.
+* User-correction fixture now validates correction classification precedence (`user_correction_signal`) so dissatisfaction is not masked by generic planning keywords.
+
+## What Is Not Yet Proven
+
+* The final production pre-execution hook surface has not been validated.
+* SDK live execution proves prompt submission to selected model/profile mappings; it does not prove routed execution inside the intended product surface.
+* The `best coder` target capability claims for repo context, file reads, file edits, shell execution, and test execution are registry metadata, not end-to-end proof from the live SDK checks.
+* Session continuity is represented as local session passthrough, not production-grade thread or agent orchestration.
 
 ## Paths
 
@@ -58,4 +67,8 @@ npm run poc:gemini-connection-check
 
 ## Current Gaps
 
-* Real pre-execution hook for production surfaces remains to be validated in concrete integration tests.
+* Validate a real pre-execution hook for at least one production surface.
+* Prove that routing can change the final execution target in that surface before execution begins.
+* Run an end-to-end tool-capable routed turn that uses repo context and performs at least one safe file or test action.
+* Decide whether a `deep reasoning` target is required for any evaluated vendor.
+* Refresh and confirm model/profile mappings before relying on them outside the PoC.
