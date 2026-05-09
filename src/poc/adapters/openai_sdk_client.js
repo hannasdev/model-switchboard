@@ -1,10 +1,7 @@
 import OpenAI from "openai";
+import { getProfileModelMap } from "../model_mappings.js";
 
-const PROFILE_TO_MODEL = {
-  "codex-fast": "gpt-5.4-mini",
-  "codex-balanced": "gpt-5.4",
-  "codex-best-coder": "gpt-5.5"
-};
+const PROFILE_TO_MODEL = getProfileModelMap("openai-codex");
 
 export function createOpenAISDKClient() {
   const apiKey = process.env.OPENAI_API_KEY;

@@ -1,8 +1,6 @@
-export const OPENAI_CODEX_TARGET_TO_PROFILE = {
-  "openai-quick": "codex-fast",
-  "openai-balanced": "codex-balanced",
-  "openai-coder": "codex-best-coder"
-};
+import { getTargetProfileMap } from "../model_mappings.js";
+
+export const OPENAI_CODEX_TARGET_TO_PROFILE = getTargetProfileMap("openai-codex");
 
 export function createOpenAICodexAdapter(client) {
   if (!client || typeof client.execute !== "function") {

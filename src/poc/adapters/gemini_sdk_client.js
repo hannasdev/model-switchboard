@@ -1,10 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
+import { getProfileModelMap } from "../model_mappings.js";
 
-const PROFILE_TO_MODEL = {
-  "gemini-fast": "gemini-2.5-flash",
-  "gemini-balanced": "gemini-2.5-flash",
-  "gemini-best-coder": "gemini-2.5-pro"
-};
+const PROFILE_TO_MODEL = getProfileModelMap("google-gemini");
 
 export function createGeminiSDKClient() {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;

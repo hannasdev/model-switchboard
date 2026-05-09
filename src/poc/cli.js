@@ -12,6 +12,7 @@ import { createAnthropicSDKClient } from "./adapters/anthropic_sdk_client.js";
 import { createMockGeminiClient, createGeminiAdapter } from "./adapters/gemini_adapter.js";
 import { createGeminiSDKClient } from "./adapters/gemini_sdk_client.js";
 import { executeProductionHookTurn } from "./production_hook.js";
+import { validateMappings } from "./model_mappings.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -150,6 +151,28 @@ function runFixtures() {
 
 function runVendorMatrix() {
   printResult(readJson("./vendor_matrix.json"));
+}
+
+function runMappingCheck() {
+  const checks = [
+    { vendor: "openai-codex", targets: loadTargets("openai") },
+    { vendor: "anthropic-claude", targets: loadTargets("anthropic") },
+    { vendor: "google-gemini", targets: loadTargets("gemini") }
+  ].map((entry) => validateMappings(entry));
+
+  const result = {
+    status: checks.every((c) => c.ok) ? "ok" : "failed",
+    checkedAt: new Date().toISOString(),
+    checks
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "mapping_check",
+    result
+  });
+  printResult(result);
+  if (result.status !== "ok") process.exitCode = 1;
 }
 
 async function runOpenAIAdapterSpike() {
@@ -450,6 +473,7 @@ const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
 else if (cmd === "vendor-matrix") runVendorMatrix();
+else if (cmd === "mapping-check") runMappingCheck();
 else if (cmd === "adapter-spike") {
   runOpenAIAdapterSpike().catch((error) => {
     printResult({
@@ -536,6 +560,7 @@ else {
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js fixtures");
   console.log("  node src/poc/cli.js vendor-matrix");
+  console.log("  node src/poc/cli.js mapping-check");
   console.log("  node src/poc/cli.js openai-adapter-spike --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js openai-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js openai-connection-check");

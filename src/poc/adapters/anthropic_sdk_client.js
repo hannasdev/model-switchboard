@@ -1,10 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getProfileModelMap } from "../model_mappings.js";
 
-const PROFILE_TO_MODEL = {
-  "claude-fast": "claude-haiku-4-5-20251001",
-  "claude-balanced": "claude-sonnet-4-6",
-  "claude-best-coder": "claude-sonnet-4-6"
-};
+const PROFILE_TO_MODEL = getProfileModelMap("anthropic-claude");
 
 export function createAnthropicSDKClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;

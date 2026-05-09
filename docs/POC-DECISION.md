@@ -28,13 +28,16 @@ It does not yet validate the final production hook surface. In particular, the l
    * Routed `best coder` turns can execute safe repo-context actions (file read, test command path).
    * Session continuity fields (`currentTargetId`, `turnCount`) advance across simulated turns.
 7. Target registries and fixture outcomes currently validate useful routing with `quick`, `balanced`, and `best coder` only; no evaluated registry includes a distinct `deep reasoning` route target today.
+8. Mapping and live verification refresh completed on May 9, 2026:
+   * `poc:mapping-check` passed for OpenAI/Codex, Anthropic/Claude, and Google/Gemini (`status: ok`).
+   * Vendor connection checks succeeded with live SDK responses using mapped fast profiles and expected models.
 
 ## Missing PoC Confirmation
 
 1. Validate at least one real production pre-execution hook surface that can see the user prompt before model or agent execution (beyond local simulator evidence).
 2. Confirm full "best coder" capability claims in a real product-integrated path, including safe file-edit and shell/test execution behavior under real controls.
 3. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
-4. Refresh or externally confirm model/profile mappings before treating the target registry as current.
+4. Re-run `poc:mapping-check` and vendor connection checks as a release-gate step whenever mappings or SDK versions change.
 
 ## Remaining Risks
 

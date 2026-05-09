@@ -23,6 +23,8 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Production-surface hook simulator that intercepts a turn pre-execution, routes it, executes a safe repo action for `best coder`, and advances session state.
 * Production-hook tests covering routed tool execution, non-tool quick path, and test-action invocation via injected runner.
 * `deep reasoning` is intentionally not represented as a standalone active target in current PoC registries; correction/planning escalation falls back to `balanced` when no `deep reasoning` target exists.
+* Centralized target/profile/model mapping registry with automated cross-vendor consistency checks (`poc:mapping-check`).
+* Live connection-check refresh completed on May 9, 2026 (OpenAI, Anthropic, Gemini) with successful profile-to-model execution.
 
 ## What Is Not Yet Proven
 
@@ -59,6 +61,7 @@ npm test
 npm run poc:fixtures
 npm run poc:route -- --vendor openai --input "Implement the plan."
 npm run poc:vendor-matrix
+npm run poc:mapping-check
 npm run poc:openai-adapter-spike -- --input "Implement the plan."
 npm run poc:openai-adapter-live -- --input "Implement the plan."
 npm run poc:openai-connection-check

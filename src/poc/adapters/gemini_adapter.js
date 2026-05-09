@@ -1,8 +1,6 @@
-export const GEMINI_TARGET_TO_PROFILE = {
-  "gemini-quick": "gemini-fast",
-  "gemini-balanced": "gemini-balanced",
-  "gemini-coder": "gemini-best-coder"
-};
+import { getTargetProfileMap } from "../model_mappings.js";
+
+export const GEMINI_TARGET_TO_PROFILE = getTargetProfileMap("google-gemini");
 
 export function createGeminiAdapter(client) {
   if (!client || typeof client.execute !== "function") {
