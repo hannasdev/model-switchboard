@@ -9,8 +9,10 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Fixture-driven route validation set.
 * CLI harness for route checks and fixture execution.
 * OpenAI/Codex adapter spike with executable route-to-profile mapping.
+* OpenAI SDK live execution path verified with API response IDs logged.
+* Cheap OpenAI connection-check command for low-cost API reachability validation.
 * Local NDJSON route-decision logging.
-* Initial vendor feasibility matrix scaffold.
+* Vendor feasibility matrix with OpenAI live verification evidence.
 * Node test suite for route behavior assertions.
 
 ## Paths
@@ -36,10 +38,10 @@ npm run poc:route -- --vendor openai --input "Implement the plan."
 npm run poc:vendor-matrix
 npm run poc:adapter-spike -- --input "Implement the plan."
 npm run poc:adapter-live -- --input "Implement the plan."
+npm run poc:connection-check
 ```
 
 ## Current Gaps
 
-* OpenAI live execution requires `OPENAI_API_KEY`; without it, the SDK path reports `not_executed`.
 * Anthropic adapter is not yet implemented.
 * Real pre-execution hook for production surfaces remains to be validated in concrete integration tests.
