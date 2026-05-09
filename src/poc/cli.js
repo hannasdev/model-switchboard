@@ -338,11 +338,31 @@ else if (cmd === "adapter-spike") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "openai-adapter-spike") {
+  runOpenAIAdapterSpike().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "openai_adapter_spike_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else if (cmd === "connection-check") {
   runConnectionCheck().catch((error) => {
     printResult({
       status: "failed",
       reason: "connection_check_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
+else if (cmd === "openai-connection-check") {
+  runConnectionCheck().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "openai_connection_check_runtime_error",
       message: error?.message || String(error)
     });
     process.exitCode = 1;
@@ -373,9 +393,11 @@ else {
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js fixtures");
   console.log("  node src/poc/cli.js vendor-matrix");
-  console.log("  node src/poc/cli.js adapter-spike --vendor openai --input \"Implement the plan.\"");
-  console.log("  node src/poc/cli.js adapter-spike --vendor openai --live true --input \"Implement the plan.\"");
-  console.log("  node src/poc/cli.js connection-check");
+  console.log("  node src/poc/cli.js openai-adapter-spike --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js openai-adapter-spike --live true --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js openai-connection-check");
+  console.log("  node src/poc/cli.js adapter-spike --vendor openai --input \"Implement the plan.\" # alias");
+  console.log("  node src/poc/cli.js connection-check # alias");
   console.log("  node src/poc/cli.js anthropic-adapter-spike --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js anthropic-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js anthropic-connection-check");
