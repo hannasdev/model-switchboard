@@ -276,3 +276,19 @@ The PoC is the first milestone before the MVP.
 The MVP should only begin after the PoC validates that the critical external dependency is viable: at least one vendor ecosystem can support useful pre-execution routing without brittle integration.
 
 If the PoC fails, update the MVP scope before building product features around an integration path that cannot support the core workflow.
+
+## 11. Current PoC Status
+
+The current implementation validates the local routing loop, target registry shape, fixture harness, adapter profile mapping, SDK reachability checks, compact explanations, and local decision logging.
+
+It should be treated as partially complete. The current live checks demonstrate that a CLI/SDK harness can choose a model/profile before sending a prompt, but they do not yet demonstrate that the intended product surface can intercept a user turn before execution and redirect it to a tool-capable target with repo context, file edits, shell execution, tests, and production-grade session continuity.
+
+Before using this PoC as final approval for the MVP, confirm:
+
+1. A real production pre-execution hook exists for at least one vendor or product surface.
+2. The hook can change the target before execution, not only advise the user after classification.
+3. The selected target can perform the advertised tool-capable coding workflow when routed.
+4. Session continuity works for repeated routed turns in the intended surface.
+5. Fixture tests assert required capabilities and explanation reasons for every required scenario.
+6. User correction or dissatisfaction is distinguished from ordinary planning.
+7. Model/profile mappings are current enough to rely on for the next milestone.
