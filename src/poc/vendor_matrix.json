@@ -11,12 +11,12 @@
   },
   {
     "vendor": "anthropic-claude",
-    "prompt_before_execution": "yes_documented",
-    "target_selection_before_execution": "likely_via_agent_sdk_or_wrapper",
-    "session_resume_support": "yes_documented",
-    "brittle_ui_automation_required": "no_if_sdk_path",
-    "route_explanation_surface": "wrapper_or_cli_output",
-    "outcome_logging_feasible": "yes",
-    "critical_limits": "needs concrete adapter decision and reliable target/profile switching contract"
+    "prompt_before_execution": "verified_live_via_cli_wrapper_contract",
+    "target_selection_before_execution": "verified_live_via_target_to_profile_mapping",
+    "session_resume_support": "partial_verified_local_session_passthrough",
+    "brittle_ui_automation_required": "no",
+    "route_explanation_surface": "verified_cli_output",
+    "outcome_logging_feasible": "yes_verified",
+    "critical_limits": "validated via CLI harness and SDK client; production pre-execution hook surface still pending"
   }
 ]
