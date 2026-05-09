@@ -16,10 +16,14 @@
     "poc:connection-check": "node src/poc/cli.js openai-connection-check",
     "poc:anthropic-adapter-spike": "node src/poc/cli.js anthropic-adapter-spike",
     "poc:anthropic-adapter-live": "node src/poc/cli.js anthropic-adapter-spike --live true",
-    "poc:anthropic-connection-check": "node src/poc/cli.js anthropic-connection-check"
+    "poc:anthropic-connection-check": "node src/poc/cli.js anthropic-connection-check",
+    "poc:gemini-adapter-spike": "node src/poc/cli.js gemini-adapter-spike",
+    "poc:gemini-adapter-live": "node src/poc/cli.js gemini-adapter-spike --live true",
+    "poc:gemini-connection-check": "node src/poc/cli.js gemini-connection-check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
+    "@google/genai": "^2.0.1",
     "openai": "^6.37.0"
   }
 }

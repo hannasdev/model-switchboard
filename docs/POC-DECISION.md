@@ -4,7 +4,7 @@
 
 Go for a vendor-scoped router MVP.
 
-The PoC validated the critical external dependency: at least one, and now two, vendor ecosystems support useful pre-execution routing with target selection and route explanations, without brittle terminal UI automation.
+The PoC validated the critical external dependency: three vendor ecosystems support useful pre-execution routing with target selection and route explanations, without brittle terminal UI automation.
 
 ## Evidence
 
@@ -16,6 +16,9 @@ The PoC validated the critical external dependency: at least one, and now two, v
    * Cheap connection check (`poc:anthropic-connection-check`) succeeded.
    * Routed live execution (`poc:anthropic-adapter-live`) succeeded with logged response ID.
 4. Route and execution evidence is captured in local NDJSON logs at `src/poc/logs/route-decisions.ndjson`.
+5. Google/Gemini live checks succeeded:
+   * Cheap connection check (`poc:gemini-connection-check`) succeeded.
+   * Routed live execution (`poc:gemini-adapter-live`) succeeded with logged response ID.
 
 ## Remaining Risks
 

@@ -14,6 +14,8 @@ import {
   createAnthropicClaudeAdapter
 } from "../src/poc/adapters/anthropic_claude_adapter.js";
 import { createAnthropicSDKClient } from "../src/poc/adapters/anthropic_sdk_client.js";
+import { createMockGeminiClient, createGeminiAdapter } from "../src/poc/adapters/gemini_adapter.js";
+import { createGeminiSDKClient } from "../src/poc/adapters/gemini_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +26,7 @@ function readJson(relPath) {
 
 const openaiTargets = readJson("../src/poc/data/targets.openai.json").targets;
 const anthropicTargets = readJson("../src/poc/data/targets.anthropic.json").targets;
+const geminiTargets = readJson("../src/poc/data/targets.gemini.json").targets;
 
 test("openai adapter maps routed target to codex profile and executes", async () => {
   const routeResult = routePrompt({
@@ -163,4 +166,78 @@ test("anthropic sdk client path is safe when api key is missing", async () => {
   assert.equal(execution.status, "not_executed");
   assert.equal(execution.reason, "client_execution_not_ok");
   assert.equal(execution.response.reason, "missing_anthropic_api_key");
+});
+
+test("gemini adapter maps routed target to gemini profile and executes", async () => {
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced", currentTargetId: "gemini-balanced" },
+    targets: geminiTargets,
+    executionSupported: true
+  });
+
+  assert.equal(routeResult.status, "ok");
+  assert.equal(routeResult.selectedTarget?.id, "gemini-coder");
+
+  const adapter = createGeminiAdapter(createMockGeminiClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult,
+    session: { threadId: "poc-thread-3" }
+  });
+
+  assert.equal(execution.status, "executed");
+  assert.equal(execution.profile, "gemini-best-coder");
+  assert.equal(execution.response.provider, "google-gemini");
+  assert.equal(execution.response.trace, "simulated_adapter_spike");
+});
+
+test("gemini adapter returns not_executed when route is refused", async () => {
+  const quickOnly = geminiTargets.filter((t) => t.label === "quick");
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced" },
+    targets: quickOnly,
+    executionSupported: true
+  });
+
+  assert.equal(routeResult.status, "refused");
+
+  const adapter = createGeminiAdapter(createMockGeminiClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult
+  });
+
+  assert.equal(execution.status, "not_executed");
+  assert.equal(execution.reason, "route_not_ok");
+});
+
+test("gemini sdk client path is safe when api key is missing", async () => {
+  const previousGeminiKey = process.env.GEMINI_API_KEY;
+  const previousGoogleKey = process.env.GOOGLE_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GOOGLE_API_KEY;
+
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced" },
+    targets: geminiTargets,
+    executionSupported: true
+  });
+
+  const adapter = createGeminiAdapter(createGeminiSDKClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult
+  });
+
+  if (previousGeminiKey) process.env.GEMINI_API_KEY = previousGeminiKey;
+  else delete process.env.GEMINI_API_KEY;
+  if (previousGoogleKey) process.env.GOOGLE_API_KEY = previousGoogleKey;
+  else delete process.env.GOOGLE_API_KEY;
+
+  assert.equal(execution.status, "not_executed");
+  assert.equal(execution.reason, "client_execution_not_ok");
+  assert.equal(execution.response.reason, "missing_gemini_api_key");
 });

@@ -9,6 +9,8 @@ import {
   createAnthropicClaudeAdapter
 } from "./adapters/anthropic_claude_adapter.js";
 import { createAnthropicSDKClient } from "./adapters/anthropic_sdk_client.js";
+import { createMockGeminiClient, createGeminiAdapter } from "./adapters/gemini_adapter.js";
+import { createGeminiSDKClient } from "./adapters/gemini_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +45,7 @@ function loadEnvFile(configPath) {
 }
 
 function loadTargets(vendorKey) {
+  if (vendorKey === "gemini") return readJson("./data/targets.gemini.json").targets;
   if (vendorKey === "anthropic") return readJson("./data/targets.anthropic.json").targets;
   return readJson("./data/targets.openai.json").targets;
 }
@@ -324,6 +327,91 @@ async function runAnthropicConnectionCheck() {
   if (result.status !== "ok") process.exitCode = 1;
 }
 
+async function runGeminiAdapterSpike() {
+  const input = getArg("--input") || "Implement the plan.";
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+  const targets = loadTargets("gemini");
+  const session = {
+    mode: "plan",
+    cost_posture: "balanced",
+    currentTargetId: targets[1]?.id || null
+  };
+
+  const routeResult = routePrompt({
+    input,
+    targets,
+    session,
+    executionSupported: true
+  });
+
+  const live = getArg("--live") === "true";
+  const client = live ? createGeminiSDKClient() : createMockGeminiClient();
+  const adapter = createGeminiAdapter(client);
+  const execution = await adapter.executeRoutedTurn({ input, routeResult, session });
+
+  const spikeResult = {
+    status: execution.status === "executed" ? "ok" : "failed",
+    vendor: "google-gemini",
+    clientKind: client.kind || "mock",
+    route: routeResult,
+    execution
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "adapter_spike",
+    vendor: "google-gemini",
+    input,
+    session,
+    routeResult,
+    execution
+  });
+
+  printResult(spikeResult);
+}
+
+async function runGeminiConnectionCheck() {
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+
+  const client = createGeminiSDKClient();
+  const response = await client.execute({
+    profile: "gemini-fast",
+    input: getArg("--input") || "Connection check. Reply with OK."
+  });
+
+  const result = {
+    status: response.result === "ok" ? "ok" : "failed",
+    vendor: "google-gemini",
+    clientKind: client.kind || "sdk_unknown",
+    check: {
+      profile: "gemini-fast",
+      model: response.model || null,
+      result: response.result,
+      reason: response.reason || null,
+      responseId: response.responseId || null,
+      outputText: response.outputText || ""
+    }
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "connection_check",
+    vendor: "google-gemini",
+    result
+  });
+
+  printResult(result);
+  if (result.status !== "ok") process.exitCode = 1;
+}
+
 const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
@@ -388,6 +476,26 @@ else if (cmd === "anthropic-connection-check") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "gemini-adapter-spike") {
+  runGeminiAdapterSpike().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "gemini_adapter_spike_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
+else if (cmd === "gemini-connection-check") {
+  runGeminiConnectionCheck().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "gemini_connection_check_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else {
   console.log("Usage:");
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
@@ -401,5 +509,8 @@ else {
   console.log("  node src/poc/cli.js anthropic-adapter-spike --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js anthropic-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js anthropic-connection-check");
+  console.log("  node src/poc/cli.js gemini-adapter-spike --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js gemini-adapter-spike --live true --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js gemini-connection-check");
   process.exitCode = 1;
 }

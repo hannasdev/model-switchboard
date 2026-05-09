@@ -5,7 +5,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 ## What Is Implemented
 
 * Deterministic prompt classification and routing core.
-* Vendor-scoped target registries for OpenAI/Codex and Anthropic/Claude.
+* Vendor-scoped target registries for OpenAI/Codex, Anthropic/Claude, and Google/Gemini.
 * Fixture-driven route validation set.
 * CLI harness for route checks and fixture execution.
 * OpenAI/Codex adapter spike with executable route-to-profile mapping.
@@ -13,8 +13,10 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Cheap OpenAI connection-check command for low-cost API reachability validation.
 * Anthropic/Claude adapter parity with live execution path verification.
 * Cheap Anthropic connection-check command for low-cost API reachability validation.
+* Google/Gemini adapter parity with live execution path verification.
+* Cheap Gemini connection-check command for low-cost API reachability validation.
 * Local NDJSON route-decision logging.
-* Vendor feasibility matrix with OpenAI and Anthropic live verification evidence.
+* Vendor feasibility matrix with OpenAI, Anthropic, and Gemini live verification evidence.
 * Node test suite for route behavior assertions.
 
 ## Paths
@@ -25,8 +27,11 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * OpenAI SDK client: `src/poc/adapters/openai_sdk_client.js`
 * Anthropic/Claude adapter: `src/poc/adapters/anthropic_claude_adapter.js`
 * Anthropic SDK client: `src/poc/adapters/anthropic_sdk_client.js`
+* Google/Gemini adapter: `src/poc/adapters/gemini_adapter.js`
+* Gemini SDK client: `src/poc/adapters/gemini_sdk_client.js`
 * OpenAI target registry: `src/poc/data/targets.openai.json`
 * Anthropic target registry: `src/poc/data/targets.anthropic.json`
+* Gemini target registry: `src/poc/data/targets.gemini.json`
 * Fixtures: `src/poc/data/fixtures.json`
 * Route logs: `src/poc/logs/route-decisions.ndjson`
 * Vendor matrix scaffold: `src/poc/vendor_matrix.json`
@@ -46,6 +51,9 @@ npm run poc:openai-connection-check
 npm run poc:anthropic-adapter-spike -- --input "Implement the plan."
 npm run poc:anthropic-adapter-live -- --input "Implement the plan."
 npm run poc:anthropic-connection-check
+npm run poc:gemini-adapter-spike -- --input "Implement the plan."
+npm run poc:gemini-adapter-live -- --input "Implement the plan."
+npm run poc:gemini-connection-check
 ```
 
 ## Current Gaps
