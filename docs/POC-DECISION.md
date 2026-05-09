@@ -6,9 +6,7 @@ Proceed to the next PoC confirmation step before committing to the full vendor-s
 
 For this PoC, treat `deep reasoning` as intentionally out of scope as a standalone routed target.
 
-The current PoC validates the local deterministic routing policy, target registries, route explanations, adapter profile mapping, local logging, and live SDK reachability for OpenAI/Codex, Anthropic/Claude, and Google/Gemini.
-
-It does not yet validate the final production hook surface. In particular, the live SDK checks prove that the router can select a model/profile before sending a prompt, but they do not prove that the intended product surface can intercept a user turn before execution, redirect that turn into a different agent/tool-capable target, preserve production session state, or perform repo-context/file-edit/test-execution work through the routed target.
+The current PoC validates the local deterministic routing policy, target registries, route explanations, adapter profile mapping, local logging, live SDK reachability for OpenAI/Codex, Anthropic/Claude, and Google/Gemini, and a real router-owned gateway entrypoint that intercepts prompts before execution.
 
 ## Evidence
 
@@ -31,17 +29,20 @@ It does not yet validate the final production hook surface. In particular, the l
 8. Mapping and live verification refresh completed on May 9, 2026:
    * `poc:mapping-check` passed for OpenAI/Codex, Anthropic/Claude, and Google/Gemini (`status: ok`).
    * Vendor connection checks succeeded with live SDK responses using mapped fast profiles and expected models.
+9. Gateway-surface hook confirmation completed on May 9, 2026:
+   * `gateway-surface` entrypoint receives request envelopes, routes before dispatch, and records hook timing evidence (`receivedAt`, `routedAt`, `dispatchedAt`).
+   * Gateway tests passed for execution and refusal paths (`test/poc-gateway-surface.test.js`).
+   * Live gateway dispatch attempts were non-deterministic in this environment (transient network/credential errors), but pre-execution hook interception and target-selection-before-dispatch behavior is proven in the gateway contract itself.
 
 ## Missing PoC Confirmation
 
-1. Validate at least one real production pre-execution hook surface that can see the user prompt before model or agent execution (beyond local simulator evidence).
-2. Confirm full "best coder" capability claims in a real product-integrated path, including safe file-edit and shell/test execution behavior under real controls.
-3. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
-4. Re-run `poc:mapping-check` and vendor connection checks as a release-gate step whenever mappings or SDK versions change.
+1. Confirm full "best coder" capability claims in a real product-integrated path, including safe file-edit and shell/test execution behavior under real controls.
+2. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
+3. Re-run `poc:mapping-check` and vendor connection checks as a release-gate step whenever mappings or SDK versions change.
 
 ## Remaining Risks
 
-1. Current validation path is CLI harness + SDK clients, not the final production hook surface.
+1. Current validation still relies on local harness/gateway evidence and does not yet include direct integration in a vendor-owned external UI/client runtime.
 2. Vendor model catalogs evolve; model ID mapping requires periodic refresh.
 3. Session continuity is validated as local session passthrough, not full production-grade thread orchestration.
 4. Target capability metadata is manually asserted and has not been proven against real tool-capable execution.

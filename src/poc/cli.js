@@ -13,6 +13,7 @@ import { createMockGeminiClient, createGeminiAdapter } from "./adapters/gemini_a
 import { createGeminiSDKClient } from "./adapters/gemini_sdk_client.js";
 import { executeProductionHookTurn } from "./production_hook.js";
 import { validateMappings } from "./model_mappings.js";
+import { executeGatewayTurn } from "./gateway_surface.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -436,6 +437,58 @@ async function runGeminiConnectionCheck() {
   if (result.status !== "ok") process.exitCode = 1;
 }
 
+async function runGatewaySurface() {
+  const vendor = getArg("--vendor") || "openai";
+  const input = getArg("--input") || "Implement the plan.";
+  const live = getArg("--live") === "true";
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+  const targets = loadTargets(vendor);
+  const session = {
+    mode: getArg("--mode") || "plan",
+    cost_posture: getArg("--cost-posture") || "balanced",
+    currentTargetId: getArg("--current-target-id") || targets[1]?.id || null,
+    turnCount: Number(getArg("--turn-count") || "0") || 0
+  };
+
+  let adapter;
+  if (vendor === "openai") {
+    const client = live ? createOpenAISDKClient() : createMockOpenAIClient();
+    adapter = createOpenAICodexAdapter(client);
+  } else if (vendor === "anthropic") {
+    const client = live ? createAnthropicSDKClient() : createMockAnthropicClient();
+    adapter = createAnthropicClaudeAdapter(client);
+  } else if (vendor === "gemini") {
+    const client = live ? createGeminiSDKClient() : createMockGeminiClient();
+    adapter = createGeminiAdapter(client);
+  } else {
+    printResult({ status: "failed", reason: "unsupported_vendor", vendor });
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = await executeGatewayTurn({
+    request: { input, session },
+    targets,
+    adapter,
+    executionSupported: true
+  });
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "gateway_surface",
+    vendor,
+    input,
+    session,
+    result
+  });
+  printResult(result);
+  if (result.status !== "executed") process.exitCode = 1;
+}
+
 function runProductionHook() {
   const vendor = getArg("--vendor") || "openai";
   const targets = loadTargets(vendor);
@@ -554,6 +607,16 @@ else if (cmd === "gemini-connection-check") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "gateway-surface") {
+  runGatewaySurface().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "gateway_surface_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else if (cmd === "production-hook") runProductionHook();
 else {
   console.log("Usage:");
@@ -572,6 +635,7 @@ else {
   console.log("  node src/poc/cli.js gemini-adapter-spike --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-connection-check");
+  console.log("  node src/poc/cli.js gateway-surface --vendor openai --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js production-hook --vendor openai --input \"Implement the plan.\" --tool-action read_file");
   process.exitCode = 1;
 }
