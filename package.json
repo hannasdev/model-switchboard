@@ -7,6 +7,7 @@
     "test": "node --test",
     "poc:route": "node src/poc/cli.js route",
     "poc:fixtures": "node src/poc/cli.js fixtures",
-    "poc:vendor-matrix": "node src/poc/cli.js vendor-matrix"
+    "poc:vendor-matrix": "node src/poc/cli.js vendor-matrix",
+    "poc:adapter-spike": "node src/poc/cli.js adapter-spike --vendor openai"
   }
 }
