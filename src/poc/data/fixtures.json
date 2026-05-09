@@ -8,7 +8,8 @@
       "label": "quick",
       "shouldSwitch": true,
       "requiredCapabilities": ["chat", "structured_output"],
-      "explanationIncludes": ["low-risk summary"]
+      "explanationIncludes": ["low-risk summary"],
+      "classificationReason": "acknowledgement"
     }
   },
   {
@@ -19,7 +20,8 @@
       "mode": "plan",
       "label": "balanced",
       "requiredCapabilities": ["chat", "reasoning", "structured_output"],
-      "explanationIncludes": ["planning/tradeoff analysis"]
+      "explanationIncludes": ["planning/tradeoff analysis"],
+      "classificationReason": "planning_signal"
     }
   },
   {
@@ -31,7 +33,8 @@
       "label": "quick",
       "shouldSwitch": true,
       "requiredCapabilities": ["chat", "structured_output"],
-      "explanationIncludes": ["low-risk summary"]
+      "explanationIncludes": ["low-risk summary"],
+      "classificationReason": "acknowledgement"
     }
   },
   {
@@ -42,7 +45,8 @@
       "mode": "plan",
       "label": "balanced",
       "requiredCapabilities": ["chat", "reasoning", "structured_output"],
-      "explanationIncludes": ["planning/tradeoff analysis"]
+      "explanationIncludes": ["planning/tradeoff analysis"],
+      "classificationReason": "fallback_plan"
     }
   },
   {
@@ -53,7 +57,8 @@
       "mode": "plan",
       "label": "balanced",
       "requiredCapabilities": ["chat", "reasoning", "structured_output"],
-      "explanationIncludes": ["planning/tradeoff analysis"]
+      "explanationIncludes": ["planning/tradeoff analysis"],
+      "classificationReason": "planning_signal"
     }
   },
   {
@@ -64,7 +69,8 @@
       "mode": "implement",
       "label": "best coder",
       "requiredCapabilities": ["repo_context", "file_read", "file_edit"],
-      "explanationIncludes": ["implementation", "repo edits"]
+      "explanationIncludes": ["implementation", "repo edits"],
+      "classificationReason": "implementation_signal"
     }
   },
   {
@@ -75,7 +81,8 @@
       "mode": "debug",
       "label": "best coder",
       "requiredCapabilities": ["repo_context", "file_read", "shell_execution", "test_execution"],
-      "explanationIncludes": ["debugging and tests", "test execution"]
+      "explanationIncludes": ["debugging and tests", "test execution"],
+      "classificationReason": "debug_signal"
     }
   },
   {
@@ -86,7 +93,8 @@
       "mode": "review",
       "label": "best coder",
       "requiredCapabilities": ["repo_context", "file_read", "reasoning", "structured_output"],
-      "explanationIncludes": ["review reasoning"]
+      "explanationIncludes": ["review reasoning"],
+      "classificationReason": "review_signal"
     }
   },
   {
@@ -109,7 +117,9 @@
     "expected": {
       "status": "refused",
       "mode": "implement",
-      "requiredCapabilities": ["repo_context", "file_read", "file_edit"]
+      "requiredCapabilities": ["repo_context", "file_read", "file_edit"],
+      "explanationIncludes": ["No eligible target"],
+      "classificationReason": "implementation_signal"
     }
   },
   {
@@ -120,7 +130,8 @@
       "mode": "plan",
       "label": "balanced",
       "requiredCapabilities": ["chat", "reasoning", "structured_output"],
-      "explanationIncludes": ["planning/tradeoff analysis"]
+      "explanationIncludes": ["planning/tradeoff analysis"],
+      "classificationReason": "fallback_plan"
     }
   }
 ]

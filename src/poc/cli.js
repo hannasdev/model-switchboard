@@ -64,6 +64,14 @@ function appendRouteLog(entry) {
   fs.appendFileSync(ROUTE_LOG_PATH, `${JSON.stringify(entry)}\n`, "utf8");
 }
 
+function sameJson(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function includesSnippet(text, snippet) {
+  return String(text || "").includes(snippet);
+}
+
 function runRoute() {
   const input = getArg("--input") || "Compare tradeoffs and propose a plan.";
   const vendor = getArg("--vendor") || "openai";
@@ -123,8 +131,25 @@ function runFixtures() {
       typeof fx.expected.shouldSwitch === "boolean"
         ? result.shouldSwitch === fx.expected.shouldSwitch
         : true;
+    const requiredCapabilitiesOk = fx.expected.requiredCapabilities
+      ? sameJson(result.requiredCapabilities, fx.expected.requiredCapabilities)
+      : true;
+    const explanationOk = fx.expected.explanationIncludes
+      ? fx.expected.explanationIncludes.every((snippet) => includesSnippet(result.explanation, snippet))
+      : true;
+    const classificationReasonOk = fx.expected.classificationReason
+      ? result.classification?.reason === fx.expected.classificationReason
+      : true;
 
-    if (modeOk && statusOk && labelOk && shouldSwitchOk) {
+    if (
+      modeOk &&
+      statusOk &&
+      labelOk &&
+      shouldSwitchOk &&
+      requiredCapabilitiesOk &&
+      explanationOk &&
+      classificationReasonOk
+    ) {
       passed += 1;
       console.log(`PASS ${fx.name}`);
     } else {
@@ -138,7 +163,10 @@ function runFixtures() {
               status: result.status,
               mode: result.mode,
               label: result.selectedTarget ? result.selectedTarget.label : null,
-              shouldSwitch: result.shouldSwitch
+              shouldSwitch: result.shouldSwitch,
+              requiredCapabilities: result.requiredCapabilities,
+              explanation: result.explanation,
+              classificationReason: result.classification?.reason || null
             }
           },
           null,

@@ -107,6 +107,7 @@ export function routePrompt({
       mode,
       requiredCapabilities,
       blocked,
+      classification,
       explanation: "No eligible target satisfies required capabilities for this turn."
     };
   }

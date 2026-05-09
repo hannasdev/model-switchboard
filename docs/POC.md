@@ -279,16 +279,18 @@ If the PoC fails, update the MVP scope before building product features around a
 
 ## 11. Current PoC Status
 
-The current implementation validates the local routing loop, target registry shape, fixture harness, adapter profile mapping, SDK reachability checks, compact explanations, and local decision logging.
+The current implementation validates the local routing loop, target registry shape, fixture harness, adapter profile mapping, SDK reachability checks, compact explanations, local decision logging, and a router-owned gateway entrypoint.
 
-It should be treated as partially complete. The current live checks demonstrate that a CLI/SDK harness can choose a model/profile before sending a prompt, but they do not yet demonstrate that the intended product surface can intercept a user turn before execution and redirect it to a tool-capable target with repo context, file edits, shell execution, tests, and production-grade session continuity.
+For a router-owned gateway-scoped MVP path, no blocking PoC confirmations remain. The gateway entrypoint receives request envelopes, routes before adapter dispatch, records hook timing evidence, and can execute scoped safe capability actions for routed `best coder` turns. Repeated-turn continuity is proven with local file-backed thread state.
 
-Before using this PoC as final approval for the MVP, confirm:
+The remaining uncertainty is about external vendor-owned UI/client runtimes. The PoC does not yet prove that an external vendor-owned surface can host the same pre-execution interception, target redirection, tool-capable execution controls, or thread continuity model.
 
-1. A real production pre-execution hook exists for at least one vendor or product surface.
-2. The hook can change the target before execution, not only advise the user after classification.
-3. The selected target can perform the advertised tool-capable coding workflow when routed.
-4. Session continuity works for repeated routed turns in the intended surface.
-5. Fixture tests assert required capabilities and explanation reasons for every required scenario.
-6. User correction or dissatisfaction is distinguished from ordinary planning.
-7. Model/profile mappings are current enough to rely on for the next milestone.
+Confirmed for the local gateway-scoped path:
+
+1. Pre-execution routing happens before adapter dispatch.
+2. Target selection affects the dispatched adapter profile.
+3. Routed `best coder` turns can perform scoped safe file-read, file-edit, and test-command actions.
+4. Session continuity works across repeated gateway turns using local file-backed thread state.
+5. Fixture tests assert mode, required capabilities, selected label or refusal, route explanation snippets, switching behavior, and correction classification.
+6. `deep reasoning` is intentionally out of scope as a standalone routed target for this PoC.
+7. Model/profile mappings have automated consistency checks and live connection checks should be run in the target release environment.

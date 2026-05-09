@@ -59,7 +59,8 @@ The current PoC validates the local deterministic routing policy, target registr
 
 ## MVP Guidance
 
-1. Treat the remaining PoC confirmation list as the first implementation risk-reduction milestone.
-2. If at least one production surface passes those checks, proceed with a vendor-scoped MVP that keeps deterministic routing and explicit explanations.
+1. Proceed with a vendor-scoped MVP only if the MVP uses the router-owned gateway path validated by this PoC.
+2. Keep deterministic routing, explicit explanations, scoped capability controls, and persisted thread continuity in the MVP baseline.
 3. Keep connection checks and adapter smoke runs in the development workflow to catch vendor mapping drift early.
-4. If production execution-target routing is not available, pivot to a narrower model/profile router or route-advisor workflow before building broader MVP features.
+4. If the MVP must run inside a vendor-owned external UI/client runtime, treat that runtime integration as a new risk-reduction milestone before broader product work.
+5. If production execution-target routing is not available in the chosen runtime, pivot to a narrower model/profile router or route-advisor workflow before building broader MVP features.
