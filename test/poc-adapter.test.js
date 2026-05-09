@@ -8,6 +8,7 @@ import {
   createMockOpenAIClient,
   createOpenAICodexAdapter
 } from "../src/poc/adapters/openai_codex_adapter.js";
+import { createOpenAISDKClient } from "../src/poc/adapters/openai_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +19,7 @@ function readJson(relPath) {
 
 const openaiTargets = readJson("../src/poc/data/targets.openai.json").targets;
 
-test("openai adapter maps routed target to codex profile and executes", () => {
+test("openai adapter maps routed target to codex profile and executes", async () => {
   const routeResult = routePrompt({
     input: "Implement the plan.",
     session: { mode: "plan", cost_posture: "balanced", currentTargetId: "openai-balanced" },
@@ -30,7 +31,7 @@ test("openai adapter maps routed target to codex profile and executes", () => {
   assert.equal(routeResult.selectedTarget?.id, "openai-coder");
 
   const adapter = createOpenAICodexAdapter(createMockOpenAIClient());
-  const execution = adapter.executeRoutedTurn({
+  const execution = await adapter.executeRoutedTurn({
     input: "Implement the plan.",
     routeResult,
     session: { threadId: "poc-thread-1" }
@@ -42,7 +43,7 @@ test("openai adapter maps routed target to codex profile and executes", () => {
   assert.equal(execution.response.trace, "simulated_adapter_spike");
 });
 
-test("openai adapter returns not_executed when route is refused", () => {
+test("openai adapter returns not_executed when route is refused", async () => {
   const quickOnly = openaiTargets.filter((t) => t.label === "quick");
   const routeResult = routePrompt({
     input: "Implement the plan.",
@@ -54,11 +55,36 @@ test("openai adapter returns not_executed when route is refused", () => {
   assert.equal(routeResult.status, "refused");
 
   const adapter = createOpenAICodexAdapter(createMockOpenAIClient());
-  const execution = adapter.executeRoutedTurn({
+  const execution = await adapter.executeRoutedTurn({
     input: "Implement the plan.",
     routeResult
   });
 
   assert.equal(execution.status, "not_executed");
   assert.equal(execution.reason, "route_not_ok");
+});
+
+test("openai sdk client path is safe when api key is missing", async () => {
+  const previousKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced" },
+    targets: openaiTargets,
+    executionSupported: true
+  });
+
+  const adapter = createOpenAICodexAdapter(createOpenAISDKClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult
+  });
+
+  if (previousKey) process.env.OPENAI_API_KEY = previousKey;
+  else delete process.env.OPENAI_API_KEY;
+
+  assert.equal(execution.status, "not_executed");
+  assert.equal(execution.reason, "client_execution_not_ok");
+  assert.equal(execution.response.reason, "missing_openai_api_key");
 });

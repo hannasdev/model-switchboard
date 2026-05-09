@@ -12,7 +12,7 @@ export function createOpenAICodexAdapter(client) {
   return {
     vendor: "openai-codex",
 
-    executeRoutedTurn({ input, routeResult, session = {} }) {
+    async executeRoutedTurn({ input, routeResult, session = {} }) {
       if (!routeResult || routeResult.status !== "ok") {
         return {
           status: "not_executed",
@@ -41,7 +41,16 @@ export function createOpenAICodexAdapter(client) {
         session
       };
 
-      const response = client.execute(request);
+      const response = await client.execute(request);
+      if (response?.result && response.result !== "ok") {
+        return {
+          status: "not_executed",
+          reason: "client_execution_not_ok",
+          targetId,
+          profile,
+          response
+        };
+      }
 
       return {
         status: "executed",

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { routePrompt } from "./router.js";
 import { createMockOpenAIClient, createOpenAICodexAdapter } from "./adapters/openai_codex_adapter.js";
+import { createOpenAISDKClient } from "./adapters/openai_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,7 +126,7 @@ function runVendorMatrix() {
   printResult(readJson("./vendor_matrix.json"));
 }
 
-function runOpenAIAdapterSpike() {
+async function runOpenAIAdapterSpike() {
   const vendor = getArg("--vendor") || "openai";
   if (vendor !== "openai") {
     printResult({
@@ -147,12 +148,15 @@ function runOpenAIAdapterSpike() {
     executionSupported: true
   });
 
-  const adapter = createOpenAICodexAdapter(createMockOpenAIClient());
-  const execution = adapter.executeRoutedTurn({ input, routeResult, session });
+  const live = getArg("--live") === "true";
+  const client = live ? createOpenAISDKClient() : createMockOpenAIClient();
+  const adapter = createOpenAICodexAdapter(client);
+  const execution = await adapter.executeRoutedTurn({ input, routeResult, session });
 
   const spikeResult = {
     status: execution.status === "executed" ? "ok" : "failed",
     vendor: "openai-codex",
+    clientKind: client.kind || "mock",
     route: routeResult,
     execution
   };
@@ -174,12 +178,22 @@ const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
 else if (cmd === "vendor-matrix") runVendorMatrix();
-else if (cmd === "adapter-spike") runOpenAIAdapterSpike();
+else if (cmd === "adapter-spike") {
+  runOpenAIAdapterSpike().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "adapter_spike_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else {
   console.log("Usage:");
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js fixtures");
   console.log("  node src/poc/cli.js vendor-matrix");
   console.log("  node src/poc/cli.js adapter-spike --vendor openai --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js adapter-spike --vendor openai --live true --input \"Implement the plan.\"");
   process.exitCode = 1;
 }
