@@ -474,7 +474,9 @@ async function runGatewaySurface() {
     request: { input, session },
     targets,
     adapter,
-    executionSupported: true
+    executionSupported: true,
+    repoRoot: REPO_ROOT,
+    toolAction: getArg("--tool-action") || "none"
   });
 
   appendRouteLog({
@@ -635,7 +637,7 @@ else {
   console.log("  node src/poc/cli.js gemini-adapter-spike --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-connection-check");
-  console.log("  node src/poc/cli.js gateway-surface --vendor openai --live true --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js gateway-surface --vendor openai --input \"Implement the plan.\" --tool-action safe_file_edit");
   console.log("  node src/poc/cli.js production-hook --vendor openai --input \"Implement the plan.\" --tool-action read_file");
   process.exitCode = 1;
 }

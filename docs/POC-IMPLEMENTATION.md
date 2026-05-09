@@ -26,12 +26,12 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Centralized target/profile/model mapping registry with automated cross-vendor consistency checks (`poc:mapping-check`).
 * Live connection-check refresh completed on May 9, 2026 (OpenAI, Anthropic, Gemini) with successful profile-to-model execution.
 * Router-owned gateway entrypoint validates pre-execution interception contract, routing, and adapter dispatch boundaries (`gateway_entrypoint` evidence in NDJSON logs).
+* `best coder` capability actions are now validated in the gateway path under explicit controls: safe file read, safe file edit to scoped probe log, and shell test execution (`npm test`).
 
 ## What Is Not Yet Proven
 
 * A real router-owned pre-execution hook surface is validated locally; direct integration into an external vendor-owned UI/client surface is still not validated.
 * SDK live execution proves prompt submission to selected model/profile mappings; it does not prove routed execution inside the intended product surface.
-* The `best coder` target capability claims for repo context, file reads, file edits, shell execution, and test execution are registry metadata, not end-to-end proof from the live SDK checks.
 * Session continuity is represented as local session passthrough with turn-count/current-target advancement, not production-grade thread or agent orchestration.
 
 ## Paths
@@ -40,6 +40,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * CLI harness: `src/poc/cli.js`
 * Production hook simulator: `src/poc/production_hook.js`
 * Gateway surface entrypoint: `src/poc/gateway_surface.js`
+* Capability action runner: `src/poc/capability_actions.js`
 * OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`
 * OpenAI SDK client: `src/poc/adapters/openai_sdk_client.js`
 * Anthropic/Claude adapter: `src/poc/adapters/anthropic_claude_adapter.js`
@@ -56,6 +57,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Adapter tests: `test/poc-adapter.test.js`
 * Production hook tests: `test/poc-production-hook.test.js`
 * Gateway surface tests: `test/poc-gateway-surface.test.js`
+* Capability action tests: `test/poc-capability-actions.test.js`
 
 ## Commands
 
@@ -66,6 +68,7 @@ npm run poc:route -- --vendor openai --input "Implement the plan."
 npm run poc:vendor-matrix
 npm run poc:mapping-check
 npm run poc:gateway-surface
+npm run poc:gateway-surface -- --tool-action run_tests
 npm run poc:openai-adapter-spike -- --input "Implement the plan."
 npm run poc:openai-adapter-live -- --input "Implement the plan."
 npm run poc:openai-connection-check

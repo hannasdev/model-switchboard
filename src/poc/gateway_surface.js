@@ -1,10 +1,14 @@
 import { routePrompt } from "./router.js";
+import { runCapabilityAction } from "./capability_actions.js";
 
 export async function executeGatewayTurn({
   request,
   targets,
   adapter,
-  executionSupported = true
+  executionSupported = true,
+  repoRoot = null,
+  toolAction = "none",
+  runCommand
 }) {
   const receivedAt = new Date().toISOString();
   const input = request?.input || "";
@@ -43,6 +47,11 @@ export async function executeGatewayTurn({
     session
   });
   const dispatchedAt = new Date().toISOString();
+  const selectedLabel = routeResult.selectedTarget?.label || "";
+  const capabilityExecution =
+    repoRoot && toolAction !== "none" && selectedLabel === "best coder"
+      ? runCapabilityAction({ toolAction, repoRoot, runCommand })
+      : null;
 
   return {
     status: execution.status === "executed" ? "executed" : "failed",
@@ -54,6 +63,7 @@ export async function executeGatewayTurn({
     },
     route: routeResult,
     execution,
+    capabilityExecution,
     nextSession: {
       ...session,
       currentTargetId: routeResult.selectedTarget?.id || session.currentTargetId || null,

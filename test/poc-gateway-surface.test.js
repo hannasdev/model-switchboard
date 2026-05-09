@@ -7,6 +7,7 @@ import { executeGatewayTurn } from "../src/poc/gateway_surface.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.join(__dirname, "..");
 
 function readJson(relPath) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, relPath), "utf8"));
@@ -46,6 +47,68 @@ test("gateway surface routes before execution and dispatches selected target", a
   assert.ok(result.hookEvidence.routedAt <= result.hookEvidence.dispatchedAt);
   assert.equal(result.nextSession.turnCount, 3);
   assert.equal(result.nextSession.currentTargetId, "openai-coder");
+});
+
+test("gateway surface executes safe file-edit capability for best coder turns", async () => {
+  const adapter = {
+    async executeRoutedTurn({ routeResult }) {
+      return {
+        status: "executed",
+        adapter: "mock",
+        targetId: routeResult.selectedTarget?.id,
+        profile: "codex-best-coder",
+        response: { result: "ok" }
+      };
+    }
+  };
+
+  const result = await executeGatewayTurn({
+    request: {
+      input: "Implement the plan.",
+      session: { mode: "plan", cost_posture: "balanced", turnCount: 1 }
+    },
+    targets: openaiTargets,
+    adapter,
+    executionSupported: true,
+    repoRoot,
+    toolAction: "safe_file_edit"
+  });
+
+  assert.equal(result.status, "executed");
+  assert.equal(result.capabilityExecution?.status, "ok");
+  assert.equal(result.capabilityExecution?.action, "safe_file_edit");
+});
+
+test("gateway surface executes test capability through injected command runner", async () => {
+  const adapter = {
+    async executeRoutedTurn({ routeResult }) {
+      return {
+        status: "executed",
+        adapter: "mock",
+        targetId: routeResult.selectedTarget?.id,
+        profile: "codex-best-coder",
+        response: { result: "ok" }
+      };
+    }
+  };
+
+  const result = await executeGatewayTurn({
+    request: {
+      input: "Implement the plan.",
+      session: { mode: "plan", cost_posture: "balanced" }
+    },
+    targets: openaiTargets,
+    adapter,
+    executionSupported: true,
+    repoRoot,
+    toolAction: "run_tests",
+    runCommand: (command) => ({ ok: true, command, stdout: "ok", stderr: "", exitCode: 0 })
+  });
+
+  assert.equal(result.status, "executed");
+  assert.equal(result.capabilityExecution?.status, "ok");
+  assert.equal(result.capabilityExecution?.action, "run_tests");
+  assert.equal(result.capabilityExecution?.command, "npm test");
 });
 
 test("gateway surface refuses execution when no eligible target exists", async () => {

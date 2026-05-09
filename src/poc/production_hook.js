@@ -1,50 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
-import { execSync } from "node:child_process";
 import { routePrompt } from "./router.js";
-
-function defaultRunCommand(command, cwd) {
-  try {
-    const stdout = execSync(command, {
-      cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-      encoding: "utf8"
-    });
-    return { ok: true, command, stdout: stdout.trim(), stderr: "", exitCode: 0 };
-  } catch (error) {
-    return {
-      ok: false,
-      command,
-      stdout: String(error?.stdout || "").trim(),
-      stderr: String(error?.stderr || "").trim(),
-      exitCode: Number.isInteger(error?.status) ? error.status : 1
-    };
-  }
-}
-
-function runToolAction({ toolAction, repoRoot, runCommand = defaultRunCommand }) {
-  if (toolAction === "run_tests") {
-    const cmdResult = runCommand("npm test", repoRoot);
-    return {
-      action: "run_tests",
-      status: cmdResult.ok ? "ok" : "failed",
-      command: cmdResult.command,
-      exitCode: cmdResult.exitCode,
-      stdoutPreview: (cmdResult.stdout || "").slice(0, 400),
-      stderrPreview: (cmdResult.stderr || "").slice(0, 400)
-    };
-  }
-
-  const targetPath = path.join(repoRoot, "package.json");
-  const body = fs.readFileSync(targetPath, "utf8");
-  return {
-    action: "read_file",
-    status: "ok",
-    file: "package.json",
-    bytes: Buffer.byteLength(body, "utf8"),
-    preview: body.split(/\r?\n/).slice(0, 8).join("\n")
-  };
-}
+import { runCapabilityAction } from "./capability_actions.js";
 
 export function executeProductionHookTurn({
   input,
@@ -91,7 +46,7 @@ export function executeProductionHookTurn({
     };
   }
 
-  const execution = runToolAction({ toolAction, repoRoot, runCommand });
+  const execution = runCapabilityAction({ toolAction, repoRoot, runCommand });
   return {
     status: execution.status === "ok" ? "executed" : "failed",
     route: routeResult,

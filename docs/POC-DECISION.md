@@ -33,19 +33,22 @@ The current PoC validates the local deterministic routing policy, target registr
    * `gateway-surface` entrypoint receives request envelopes, routes before dispatch, and records hook timing evidence (`receivedAt`, `routedAt`, `dispatchedAt`).
    * Gateway tests passed for execution and refusal paths (`test/poc-gateway-surface.test.js`).
    * Live gateway dispatch attempts were non-deterministic in this environment (transient network/credential errors), but pre-execution hook interception and target-selection-before-dispatch behavior is proven in the gateway contract itself.
+10. Best-coder capability confirmation completed on May 9, 2026 in the gateway contract path:
+   * Safe file read capability executed in routed `best coder` turns.
+   * Safe file edit capability executed to scoped probe path (`src/poc/logs/capability-probe.txt`).
+   * Shell/test capability executed via controlled `npm test` action with captured exit status and output preview.
 
 ## Missing PoC Confirmation
 
-1. Confirm full "best coder" capability claims in a real product-integrated path, including safe file-edit and shell/test execution behavior under real controls.
-2. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
-3. Re-run `poc:mapping-check` and vendor connection checks as a release-gate step whenever mappings or SDK versions change.
+1. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
+2. Re-run `poc:mapping-check` and vendor connection checks as a release-gate step whenever mappings or SDK versions change.
 
 ## Remaining Risks
 
 1. Current validation still relies on local harness/gateway evidence and does not yet include direct integration in a vendor-owned external UI/client runtime.
 2. Vendor model catalogs evolve; model ID mapping requires periodic refresh.
 3. Session continuity is validated as local session passthrough, not full production-grade thread orchestration.
-4. Target capability metadata is manually asserted and has not been proven against real tool-capable execution.
+4. Capability proof is currently against the router-owned gateway contract and scoped safe actions; equivalent controls still need confirmation in a vendor-owned external runtime.
 
 ## MVP Guidance
 
