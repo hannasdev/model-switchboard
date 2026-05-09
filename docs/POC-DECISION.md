@@ -4,6 +4,8 @@
 
 Proceed to the next PoC confirmation step before committing to the full vendor-scoped router MVP.
 
+For this PoC, treat `deep reasoning` as intentionally out of scope as a standalone routed target.
+
 The current PoC validates the local deterministic routing policy, target registries, route explanations, adapter profile mapping, local logging, and live SDK reachability for OpenAI/Codex, Anthropic/Claude, and Google/Gemini.
 
 It does not yet validate the final production hook surface. In particular, the live SDK checks prove that the router can select a model/profile before sending a prompt, but they do not prove that the intended product surface can intercept a user turn before execution, redirect that turn into a different agent/tool-capable target, preserve production session state, or perform repo-context/file-edit/test-execution work through the routed target.
@@ -25,14 +27,14 @@ It does not yet validate the final production hook surface. In particular, the l
    * `poc:production-hook` intercepts the turn pre-execution and routes before action dispatch.
    * Routed `best coder` turns can execute safe repo-context actions (file read, test command path).
    * Session continuity fields (`currentTargetId`, `turnCount`) advance across simulated turns.
+7. Target registries and fixture outcomes currently validate useful routing with `quick`, `balanced`, and `best coder` only; no evaluated registry includes a distinct `deep reasoning` route target today.
 
 ## Missing PoC Confirmation
 
 1. Validate at least one real production pre-execution hook surface that can see the user prompt before model or agent execution (beyond local simulator evidence).
 2. Confirm full "best coder" capability claims in a real product-integrated path, including safe file-edit and shell/test execution behavior under real controls.
 3. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
-4. Decide whether `deep reasoning` is intentionally out of scope for this PoC or should be represented as a target when a vendor exposes a meaningful distinction.
-5. Refresh or externally confirm model/profile mappings before treating the target registry as current.
+4. Refresh or externally confirm model/profile mappings before treating the target registry as current.
 
 ## Remaining Risks
 

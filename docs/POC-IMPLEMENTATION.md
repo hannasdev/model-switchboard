@@ -22,6 +22,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * User-correction fixture now validates correction classification precedence (`user_correction_signal`) so dissatisfaction is not masked by generic planning keywords.
 * Production-surface hook simulator that intercepts a turn pre-execution, routes it, executes a safe repo action for `best coder`, and advances session state.
 * Production-hook tests covering routed tool execution, non-tool quick path, and test-action invocation via injected runner.
+* `deep reasoning` is intentionally not represented as a standalone active target in current PoC registries; correction/planning escalation falls back to `balanced` when no `deep reasoning` target exists.
 
 ## What Is Not Yet Proven
 
@@ -73,5 +74,4 @@ npm run poc:production-hook -- --input "Implement the plan." --tool-action read_
 ## Current Gaps
 
 * Validate a real pre-execution hook for at least one production surface (beyond the local simulator).
-* Decide whether a `deep reasoning` target is required for any evaluated vendor.
 * Refresh and confirm model/profile mappings before relying on them outside the PoC.
