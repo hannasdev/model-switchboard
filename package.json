@@ -10,9 +10,13 @@
     "poc:vendor-matrix": "node src/poc/cli.js vendor-matrix",
     "poc:adapter-spike": "node src/poc/cli.js adapter-spike --vendor openai",
     "poc:adapter-live": "node src/poc/cli.js adapter-spike --vendor openai --live true",
-    "poc:connection-check": "node src/poc/cli.js connection-check"
+    "poc:connection-check": "node src/poc/cli.js connection-check",
+    "poc:anthropic-adapter-spike": "node src/poc/cli.js anthropic-adapter-spike",
+    "poc:anthropic-adapter-live": "node src/poc/cli.js anthropic-adapter-spike --live true",
+    "poc:anthropic-connection-check": "node src/poc/cli.js anthropic-connection-check"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
     "openai": "^6.37.0"
   }
 }

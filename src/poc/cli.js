@@ -4,6 +4,11 @@ import { fileURLToPath } from "node:url";
 import { routePrompt } from "./router.js";
 import { createMockOpenAIClient, createOpenAICodexAdapter } from "./adapters/openai_codex_adapter.js";
 import { createOpenAISDKClient } from "./adapters/openai_sdk_client.js";
+import {
+  createMockAnthropicClient,
+  createAnthropicClaudeAdapter
+} from "./adapters/anthropic_claude_adapter.js";
+import { createAnthropicSDKClient } from "./adapters/anthropic_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -234,6 +239,91 @@ async function runConnectionCheck() {
   if (result.status !== "ok") process.exitCode = 1;
 }
 
+async function runAnthropicAdapterSpike() {
+  const input = getArg("--input") || "Implement the plan.";
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+  const targets = loadTargets("anthropic");
+  const session = {
+    mode: "plan",
+    cost_posture: "balanced",
+    currentTargetId: targets[1]?.id || null
+  };
+
+  const routeResult = routePrompt({
+    input,
+    targets,
+    session,
+    executionSupported: true
+  });
+
+  const live = getArg("--live") === "true";
+  const client = live ? createAnthropicSDKClient() : createMockAnthropicClient();
+  const adapter = createAnthropicClaudeAdapter(client);
+  const execution = await adapter.executeRoutedTurn({ input, routeResult, session });
+
+  const spikeResult = {
+    status: execution.status === "executed" ? "ok" : "failed",
+    vendor: "anthropic-claude",
+    clientKind: client.kind || "mock",
+    route: routeResult,
+    execution
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "adapter_spike",
+    vendor: "anthropic-claude",
+    input,
+    session,
+    routeResult,
+    execution
+  });
+
+  printResult(spikeResult);
+}
+
+async function runAnthropicConnectionCheck() {
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+
+  const client = createAnthropicSDKClient();
+  const response = await client.execute({
+    profile: "claude-fast",
+    input: getArg("--input") || "Connection check. Reply with OK."
+  });
+
+  const result = {
+    status: response.result === "ok" ? "ok" : "failed",
+    vendor: "anthropic-claude",
+    clientKind: client.kind || "sdk_unknown",
+    check: {
+      profile: "claude-fast",
+      model: response.model || null,
+      result: response.result,
+      reason: response.reason || null,
+      responseId: response.responseId || null,
+      outputText: response.outputText || ""
+    }
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "connection_check",
+    vendor: "anthropic-claude",
+    result
+  });
+
+  printResult(result);
+  if (result.status !== "ok") process.exitCode = 1;
+}
+
 const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
@@ -258,6 +348,26 @@ else if (cmd === "connection-check") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "anthropic-adapter-spike") {
+  runAnthropicAdapterSpike().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "anthropic_adapter_spike_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
+else if (cmd === "anthropic-connection-check") {
+  runAnthropicConnectionCheck().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "anthropic_connection_check_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else {
   console.log("Usage:");
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
@@ -266,5 +376,8 @@ else {
   console.log("  node src/poc/cli.js adapter-spike --vendor openai --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js adapter-spike --vendor openai --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js connection-check");
+  console.log("  node src/poc/cli.js anthropic-adapter-spike --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js anthropic-adapter-spike --live true --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js anthropic-connection-check");
   process.exitCode = 1;
 }

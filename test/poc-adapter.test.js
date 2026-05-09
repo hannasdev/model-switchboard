@@ -9,6 +9,11 @@ import {
   createOpenAICodexAdapter
 } from "../src/poc/adapters/openai_codex_adapter.js";
 import { createOpenAISDKClient } from "../src/poc/adapters/openai_sdk_client.js";
+import {
+  createMockAnthropicClient,
+  createAnthropicClaudeAdapter
+} from "../src/poc/adapters/anthropic_claude_adapter.js";
+import { createAnthropicSDKClient } from "../src/poc/adapters/anthropic_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +23,7 @@ function readJson(relPath) {
 }
 
 const openaiTargets = readJson("../src/poc/data/targets.openai.json").targets;
+const anthropicTargets = readJson("../src/poc/data/targets.anthropic.json").targets;
 
 test("openai adapter maps routed target to codex profile and executes", async () => {
   const routeResult = routePrompt({
@@ -87,4 +93,74 @@ test("openai sdk client path is safe when api key is missing", async () => {
   assert.equal(execution.status, "not_executed");
   assert.equal(execution.reason, "client_execution_not_ok");
   assert.equal(execution.response.reason, "missing_openai_api_key");
+});
+
+test("anthropic adapter maps routed target to claude profile and executes", async () => {
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced", currentTargetId: "anthropic-balanced" },
+    targets: anthropicTargets,
+    executionSupported: true
+  });
+
+  assert.equal(routeResult.status, "ok");
+  assert.equal(routeResult.selectedTarget?.id, "anthropic-coder");
+
+  const adapter = createAnthropicClaudeAdapter(createMockAnthropicClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult,
+    session: { threadId: "poc-thread-2" }
+  });
+
+  assert.equal(execution.status, "executed");
+  assert.equal(execution.profile, "claude-best-coder");
+  assert.equal(execution.response.provider, "anthropic-claude");
+  assert.equal(execution.response.trace, "simulated_adapter_spike");
+});
+
+test("anthropic adapter returns not_executed when route is refused", async () => {
+  const quickOnly = anthropicTargets.filter((t) => t.label === "quick");
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced" },
+    targets: quickOnly,
+    executionSupported: true
+  });
+
+  assert.equal(routeResult.status, "refused");
+
+  const adapter = createAnthropicClaudeAdapter(createMockAnthropicClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult
+  });
+
+  assert.equal(execution.status, "not_executed");
+  assert.equal(execution.reason, "route_not_ok");
+});
+
+test("anthropic sdk client path is safe when api key is missing", async () => {
+  const previousKey = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+
+  const routeResult = routePrompt({
+    input: "Implement the plan.",
+    session: { mode: "plan", cost_posture: "balanced" },
+    targets: anthropicTargets,
+    executionSupported: true
+  });
+
+  const adapter = createAnthropicClaudeAdapter(createAnthropicSDKClient());
+  const execution = await adapter.executeRoutedTurn({
+    input: "Implement the plan.",
+    routeResult
+  });
+
+  if (previousKey) process.env.ANTHROPIC_API_KEY = previousKey;
+  else delete process.env.ANTHROPIC_API_KEY;
+
+  assert.equal(execution.status, "not_executed");
+  assert.equal(execution.reason, "client_execution_not_ok");
+  assert.equal(execution.response.reason, "missing_anthropic_api_key");
 });
