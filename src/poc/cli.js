@@ -7,6 +7,7 @@ import { createOpenAISDKClient } from "./adapters/openai_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const ROUTE_LOG_PATH = path.join(__dirname, "logs", "route-decisions.ndjson");
 
 function readJson(relPath) {
@@ -18,6 +19,22 @@ function getArg(flag) {
   const idx = process.argv.indexOf(flag);
   if (idx === -1 || idx + 1 >= process.argv.length) return null;
   return process.argv[idx + 1];
+}
+
+function loadEnvFile(configPath) {
+  if (!fs.existsSync(configPath)) return;
+  const text = fs.readFileSync(configPath, "utf8");
+  const lines = text.split(/\r?\n/);
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1).trim();
+    if (!key || process.env[key]) continue;
+    process.env[key] = value;
+  }
 }
 
 function loadTargets(vendorKey) {
@@ -138,6 +155,11 @@ async function runOpenAIAdapterSpike() {
   }
 
   const input = getArg("--input") || "Implement the plan.";
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
   const targets = loadTargets("openai");
   const session = { mode: "plan", cost_posture: "balanced", currentTargetId: targets[1]?.id || null };
 
@@ -174,6 +196,44 @@ async function runOpenAIAdapterSpike() {
   printResult(spikeResult);
 }
 
+async function runConnectionCheck() {
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+
+  const client = createOpenAISDKClient();
+  const response = await client.execute({
+    profile: "codex-fast",
+    input: getArg("--input") || "Connection check. Reply with OK."
+  });
+
+  const result = {
+    status: response.result === "ok" ? "ok" : "failed",
+    vendor: "openai-codex",
+    clientKind: client.kind || "sdk_unknown",
+    check: {
+      profile: "codex-fast",
+      model: response.model || null,
+      result: response.result,
+      reason: response.reason || null,
+      responseId: response.responseId || null,
+      outputText: response.outputText || ""
+    }
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "connection_check",
+    vendor: "openai-codex",
+    result
+  });
+
+  printResult(result);
+  if (result.status !== "ok") process.exitCode = 1;
+}
+
 const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
@@ -188,6 +248,16 @@ else if (cmd === "adapter-spike") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "connection-check") {
+  runConnectionCheck().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "connection_check_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else {
   console.log("Usage:");
   console.log("  node src/poc/cli.js route --vendor openai --input \"Implement the plan.\"");
@@ -195,5 +265,6 @@ else {
   console.log("  node src/poc/cli.js vendor-matrix");
   console.log("  node src/poc/cli.js adapter-spike --vendor openai --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js adapter-spike --vendor openai --live true --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js connection-check");
   process.exitCode = 1;
 }

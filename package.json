@@ -9,7 +9,8 @@
     "poc:fixtures": "node src/poc/cli.js fixtures",
     "poc:vendor-matrix": "node src/poc/cli.js vendor-matrix",
     "poc:adapter-spike": "node src/poc/cli.js adapter-spike --vendor openai",
-    "poc:adapter-live": "node src/poc/cli.js adapter-spike --vendor openai --live true"
+    "poc:adapter-live": "node src/poc/cli.js adapter-spike --vendor openai --live true",
+    "poc:connection-check": "node src/poc/cli.js connection-check"
   },
   "dependencies": {
     "openai": "^6.37.0"
