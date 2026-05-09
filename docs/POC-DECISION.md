@@ -37,17 +37,24 @@ The current PoC validates the local deterministic routing policy, target registr
    * Safe file read capability executed in routed `best coder` turns.
    * Safe file edit capability executed to scoped probe path (`src/poc/logs/capability-probe.txt`).
    * Shell/test capability executed via controlled `npm test` action with captured exit status and output preview.
+11. Repeated-turn continuity confirmation completed on May 9, 2026:
+   * `gateway-thread-turn` persists `nextSession` by `threadId` and reloads it on subsequent turns.
+   * Two-turn evidence shows state progression (`turnCount: 0 -> 1 -> 2`) and routed target continuity updates (`openai-coder -> openai-quick`) across separate invocations.
+   * Thread/session store and gateway continuity tests pass (`test/poc-thread-session-store.test.js`, `test/poc-gateway-thread-turn.test.js`).
+12. Release-gate workflow confirmation completed on May 9, 2026:
+   * `poc:release-gate` now executes mapping checks and all vendor connection checks in a single command.
+   * Gate output is structured and non-crashing under transient failures, with explicit per-vendor reasons.
+   * Current run correctly surfaced environment connectivity failures as `failed`, making it suitable as a release-blocking signal.
 
 ## Missing PoC Confirmation
 
-1. Validate repeated-turn continuity in product-level thread or agent orchestration beyond local session-field passthrough.
-2. Re-run `poc:mapping-check` and vendor connection checks as a release-gate step whenever mappings or SDK versions change.
+1. No blocking PoC confirmations remain for the local gateway-scoped validation path.
 
 ## Remaining Risks
 
 1. Current validation still relies on local harness/gateway evidence and does not yet include direct integration in a vendor-owned external UI/client runtime.
 2. Vendor model catalogs evolve; model ID mapping requires periodic refresh.
-3. Session continuity is validated as local session passthrough, not full production-grade thread orchestration.
+3. Thread continuity is currently file-backed local orchestration; it still needs confirmation in a vendor-owned external runtime if that runtime is chosen for MVP delivery.
 4. Capability proof is currently against the router-owned gateway contract and scoped safe actions; equivalent controls still need confirmation in a vendor-owned external runtime.
 
 ## MVP Guidance

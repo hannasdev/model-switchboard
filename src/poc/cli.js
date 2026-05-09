@@ -14,11 +14,13 @@ import { createGeminiSDKClient } from "./adapters/gemini_sdk_client.js";
 import { executeProductionHookTurn } from "./production_hook.js";
 import { validateMappings } from "./model_mappings.js";
 import { executeGatewayTurn } from "./gateway_surface.js";
+import { loadThreadSession, saveThreadSession } from "./thread_session_store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const ROUTE_LOG_PATH = path.join(__dirname, "logs", "route-decisions.ndjson");
+const THREAD_SESSION_STORE_PATH = path.join(__dirname, "logs", "thread-sessions.json");
 
 function readJson(relPath) {
   const p = path.join(__dirname, relPath);
@@ -435,6 +437,7 @@ async function runGeminiConnectionCheck() {
 
   printResult(result);
   if (result.status !== "ok") process.exitCode = 1;
+  return result;
 }
 
 async function runGatewaySurface() {
@@ -489,6 +492,150 @@ async function runGatewaySurface() {
   });
   printResult(result);
   if (result.status !== "executed") process.exitCode = 1;
+}
+
+async function runGatewayThreadTurn() {
+  const vendor = getArg("--vendor") || "openai";
+  const input = getArg("--input") || "Implement the plan.";
+  const threadId = getArg("--thread-id") || "poc-thread-1";
+  const targets = loadTargets(vendor);
+  const persisted = loadThreadSession({ storePath: THREAD_SESSION_STORE_PATH, threadId }) || {};
+  const baseSession = {
+    mode: "plan",
+    cost_posture: "balanced",
+    currentTargetId: targets[1]?.id || null,
+    turnCount: 0
+  };
+  const session = {
+    ...baseSession,
+    ...persisted
+  };
+
+  let adapter;
+  if (vendor === "openai") adapter = createOpenAICodexAdapter(createMockOpenAIClient());
+  else if (vendor === "anthropic") adapter = createAnthropicClaudeAdapter(createMockAnthropicClient());
+  else if (vendor === "gemini") adapter = createGeminiAdapter(createMockGeminiClient());
+  else {
+    printResult({ status: "failed", reason: "unsupported_vendor", vendor });
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = await executeGatewayTurn({
+    request: { input, session },
+    targets,
+    adapter,
+    executionSupported: true,
+    repoRoot: REPO_ROOT,
+    toolAction: getArg("--tool-action") || "none"
+  });
+
+  const savedSession = saveThreadSession({
+    storePath: THREAD_SESSION_STORE_PATH,
+    threadId,
+    session: result.nextSession
+  });
+
+  const out = {
+    ...result,
+    thread: {
+      threadId,
+      previousSession: persisted,
+      savedSession
+    }
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "gateway_thread_turn",
+    vendor,
+    threadId,
+    input,
+    session,
+    result: out
+  });
+  printResult(out);
+  if (result.status !== "executed") process.exitCode = 1;
+}
+
+async function runReleaseGate() {
+  const checks = {};
+  async function safeConnectionCheck(fn, meta) {
+    try {
+      const response = await fn();
+      return {
+        status: response.result === "ok" ? "ok" : "failed",
+        ...meta,
+        model: response.model || null,
+        reason: response.reason || null
+      };
+    } catch (error) {
+      return {
+        status: "failed",
+        ...meta,
+        model: null,
+        reason: error?.message || String(error)
+      };
+    }
+  }
+
+  const mapping = [
+    { vendor: "openai-codex", targets: loadTargets("openai") },
+    { vendor: "anthropic-claude", targets: loadTargets("anthropic") },
+    { vendor: "google-gemini", targets: loadTargets("gemini") }
+  ].map((entry) => validateMappings(entry));
+  checks.mappingCheck = {
+    status: mapping.every((c) => c.ok) ? "ok" : "failed",
+    checks: mapping
+  };
+
+  const configArg = getArg("--config");
+  const configPath = configArg
+    ? path.resolve(process.cwd(), configArg)
+    : path.join(REPO_ROOT, ".env.local");
+  loadEnvFile(configPath);
+
+  checks.openaiConnection = await safeConnectionCheck(
+    () =>
+      createOpenAISDKClient().execute({
+        profile: "codex-fast",
+        input: "Connection check. Reply with OK."
+      }),
+    { vendor: "openai-codex", profile: "codex-fast" }
+  );
+
+  checks.anthropicConnection = await safeConnectionCheck(
+    () =>
+      createAnthropicSDKClient().execute({
+        profile: "claude-fast",
+        input: "Connection check. Reply with OK."
+      }),
+    { vendor: "anthropic-claude", profile: "claude-fast" }
+  );
+
+  checks.geminiConnection = await safeConnectionCheck(
+    () =>
+      createGeminiSDKClient().execute({
+        profile: "gemini-fast",
+        input: "Connection check. Reply with OK."
+      }),
+    { vendor: "google-gemini", profile: "gemini-fast" }
+  );
+
+  const failed = Object.values(checks).some((c) => c.status !== "ok");
+  const result = {
+    status: failed ? "failed" : "ok",
+    checkedAt: new Date().toISOString(),
+    checks
+  };
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: "release_gate",
+    result
+  });
+  printResult(result);
+  if (failed) process.exitCode = 1;
 }
 
 function runProductionHook() {
@@ -619,6 +766,26 @@ else if (cmd === "gateway-surface") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "gateway-thread-turn") {
+  runGatewayThreadTurn().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "gateway_thread_turn_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
+else if (cmd === "release-gate") {
+  runReleaseGate().catch((error) => {
+    printResult({
+      status: "failed",
+      reason: "release_gate_runtime_error",
+      message: error?.message || String(error)
+    });
+    process.exitCode = 1;
+  });
+}
 else if (cmd === "production-hook") runProductionHook();
 else {
   console.log("Usage:");
@@ -638,6 +805,8 @@ else {
   console.log("  node src/poc/cli.js gemini-adapter-spike --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js gemini-connection-check");
   console.log("  node src/poc/cli.js gateway-surface --vendor openai --input \"Implement the plan.\" --tool-action safe_file_edit");
+  console.log("  node src/poc/cli.js gateway-thread-turn --vendor openai --thread-id poc-thread-1 --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js release-gate");
   console.log("  node src/poc/cli.js production-hook --vendor openai --input \"Implement the plan.\" --tool-action read_file");
   process.exitCode = 1;
 }

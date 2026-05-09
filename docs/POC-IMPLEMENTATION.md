@@ -27,12 +27,14 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Live connection-check refresh completed on May 9, 2026 (OpenAI, Anthropic, Gemini) with successful profile-to-model execution.
 * Router-owned gateway entrypoint validates pre-execution interception contract, routing, and adapter dispatch boundaries (`gateway_entrypoint` evidence in NDJSON logs).
 * `best coder` capability actions are now validated in the gateway path under explicit controls: safe file read, safe file edit to scoped probe log, and shell test execution (`npm test`).
+* Threaded gateway turns now persist and reload continuity state by `threadId`, proving repeated-turn routing continuity beyond per-request in-memory session fields.
+* Release-gate command now runs mapping consistency checks and vendor connection checks in one pass with structured per-vendor pass/fail output (`poc:release-gate`).
 
 ## What Is Not Yet Proven
 
 * A real router-owned pre-execution hook surface is validated locally; direct integration into an external vendor-owned UI/client surface is still not validated.
 * SDK live execution proves prompt submission to selected model/profile mappings; it does not prove routed execution inside the intended product surface.
-* Session continuity is represented as local session passthrough with turn-count/current-target advancement, not production-grade thread or agent orchestration.
+* Continuity is currently proven with local file-backed thread orchestration, not a vendor-owned external thread/runtime service.
 
 ## Paths
 
@@ -41,6 +43,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Production hook simulator: `src/poc/production_hook.js`
 * Gateway surface entrypoint: `src/poc/gateway_surface.js`
 * Capability action runner: `src/poc/capability_actions.js`
+* Thread session store: `src/poc/thread_session_store.js`
 * OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`
 * OpenAI SDK client: `src/poc/adapters/openai_sdk_client.js`
 * Anthropic/Claude adapter: `src/poc/adapters/anthropic_claude_adapter.js`
@@ -58,6 +61,8 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Production hook tests: `test/poc-production-hook.test.js`
 * Gateway surface tests: `test/poc-gateway-surface.test.js`
 * Capability action tests: `test/poc-capability-actions.test.js`
+* Thread session tests: `test/poc-thread-session-store.test.js`
+* Gateway thread continuity tests: `test/poc-gateway-thread-turn.test.js`
 
 ## Commands
 
@@ -69,6 +74,8 @@ npm run poc:vendor-matrix
 npm run poc:mapping-check
 npm run poc:gateway-surface
 npm run poc:gateway-surface -- --tool-action run_tests
+npm run poc:gateway-thread-turn -- --thread-id poc-thread-1 --input "Implement the plan."
+npm run poc:release-gate
 npm run poc:openai-adapter-spike -- --input "Implement the plan."
 npm run poc:openai-adapter-live -- --input "Implement the plan."
 npm run poc:openai-connection-check
@@ -83,4 +90,4 @@ npm run poc:production-hook -- --input "Implement the plan." --tool-action read_
 
 ## Current Gaps
 
-* Refresh and confirm model/profile mappings before relying on them outside the PoC.
+* External vendor connectivity is environment-dependent; release-gate should be executed in CI or release environment with valid network access and credentials.

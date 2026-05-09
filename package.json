@@ -10,6 +10,8 @@
     "poc:vendor-matrix": "node src/poc/cli.js vendor-matrix",
     "poc:mapping-check": "node src/poc/cli.js mapping-check",
     "poc:gateway-surface": "node src/poc/cli.js gateway-surface --vendor openai --input \"Implement the plan.\" --tool-action safe_file_edit",
+    "poc:gateway-thread-turn": "node src/poc/cli.js gateway-thread-turn --vendor openai --thread-id poc-thread-1 --input \"Implement the plan.\"",
+    "poc:release-gate": "node src/poc/cli.js release-gate",
     "poc:openai-adapter-spike": "node src/poc/cli.js openai-adapter-spike",
     "poc:openai-adapter-live": "node src/poc/cli.js openai-adapter-spike --live true",
     "poc:openai-connection-check": "node src/poc/cli.js openai-connection-check",
