@@ -8,6 +8,8 @@ const MODE_TO_REQUIREMENTS = {
   out_of_domain: ["chat"]
 };
 
+const MODE_VALUES = new Set(Object.keys(MODE_TO_REQUIREMENTS));
+
 const MODE_TO_CLASS = {
   plan: "medium_reasoning",
   implement: "strong_coding",
@@ -25,6 +27,27 @@ const CLASS_TO_LABEL = {
   strong_coding: "best coder"
 };
 
+const LABEL_TO_CLASS_RANK = {
+  quick: 1,
+  balanced: 2,
+  "deep reasoning": 3,
+  "best coder": 4
+};
+
+const PRIVACY_TIER_RANK = {
+  external: 1,
+  standard: 2,
+  restricted: 3,
+  local: 4,
+  unknown: 0
+};
+
+const TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS = {
+  failing_tests: ["test_execution"],
+  multi_file_refactor: ["file_edit"],
+  code_review: ["reasoning", "structured_output"]
+};
+
 function hasAny(text, patterns) {
   return patterns.some((pattern) => text.includes(pattern));
 }
@@ -33,38 +56,258 @@ export function classifyPrompt(input) {
   const text = input.trim().toLowerCase();
 
   if (text.length === 0) {
-    return { mode: "summarize", confidence: 0.3, reason: "empty_input" };
+    return {
+      taskType: "handoff_summary",
+      proposedMode: "summarize",
+      confidence: 0.3,
+      reason: "empty_input",
+      modeStrongSignal: true,
+      explicitModeShift: false
+    };
   }
 
   if (hasAny(text, ["thanks", "thank you", "thx"])) {
-    return { mode: "summarize", confidence: 0.95, reason: "acknowledgement" };
+    return {
+      taskType: "simple_explanation",
+      proposedMode: "summarize",
+      confidence: 0.95,
+      reason: "acknowledgement",
+      modeStrongSignal: true,
+      explicitModeShift: false
+    };
   }
 
   if (hasAny(text, ["test suite is failing", "fix it", "failing test", "debug", "error"])) {
-    return { mode: "debug", confidence: 0.88, reason: "debug_signal" };
+    return {
+      taskType: "failing_tests",
+      proposedMode: "debug",
+      confidence: 0.88,
+      reason: "debug_signal",
+      modeStrongSignal: true,
+      explicitModeShift: true
+    };
   }
 
   if (hasAny(text, ["implement", "apply the plan", "/implement", "/apply"])) {
-    return { mode: "implement", confidence: 0.9, reason: "implementation_signal" };
+    return {
+      taskType: "multi_file_refactor",
+      proposedMode: "implement",
+      confidence: 0.9,
+      reason: "implementation_signal",
+      modeStrongSignal: true,
+      explicitModeShift: true
+    };
   }
 
   if (hasAny(text, ["review", "auth change", "pr review"])) {
-    return { mode: "review", confidence: 0.8, reason: "review_signal" };
+    return {
+      taskType: "code_review",
+      proposedMode: "review",
+      confidence: 0.8,
+      reason: "review_signal",
+      modeStrongSignal: true,
+      explicitModeShift: true
+    };
   }
 
   if (hasAny(text, ["wrong assumption", "you are wrong", "that's wrong"])) {
-    return { mode: "plan", confidence: 0.75, reason: "user_correction_signal", escalate: "strong_reasoning" };
+    return {
+      taskType: "architecture_decision",
+      proposedMode: "plan",
+      confidence: 0.75,
+      reason: "user_correction_signal",
+      escalate: "strong_reasoning",
+      modeStrongSignal: true,
+      explicitModeShift: false
+    };
   }
 
   if (hasAny(text, ["tradeoff", "compare", "architecture", "plan"])) {
-    return { mode: "plan", confidence: 0.86, reason: "planning_signal" };
+    return {
+      taskType: "compare_tradeoffs",
+      proposedMode: "plan",
+      confidence: 0.86,
+      reason: "planning_signal",
+      modeStrongSignal: true,
+      explicitModeShift: false
+    };
   }
 
-  return { mode: "plan", confidence: 0.6, reason: "fallback_plan" };
+  return {
+    taskType: "project_discussion",
+    proposedMode: "plan",
+    confidence: 0.6,
+    reason: "fallback_plan",
+    modeStrongSignal: false,
+    explicitModeShift: false
+  };
+}
+
+function resolveSessionMode(session = {}, classification = {}) {
+  const currentMode = MODE_VALUES.has(session.mode) ? session.mode : null;
+  const proposedMode = MODE_VALUES.has(classification.proposedMode)
+    ? classification.proposedMode
+    : "plan";
+
+  if (!currentMode) {
+    return {
+      previousMode: null,
+      proposedMode,
+      resolvedMode: proposedMode,
+      transitionReason: "no_previous_mode"
+    };
+  }
+
+  if (classification.explicitModeShift) {
+    return {
+      previousMode: currentMode,
+      proposedMode,
+      resolvedMode: proposedMode,
+      transitionReason: "explicit_task_signal"
+    };
+  }
+
+  if (proposedMode === "summarize") {
+    return {
+      previousMode: currentMode,
+      proposedMode,
+      resolvedMode: proposedMode,
+      transitionReason: "acknowledgement_summary"
+    };
+  }
+
+  if (!classification.modeStrongSignal && ["implement", "debug", "review"].includes(currentMode)) {
+    return {
+      previousMode: currentMode,
+      proposedMode,
+      resolvedMode: currentMode,
+      transitionReason: "preserve_current_mode_for_ambiguous_turn"
+    };
+  }
+
+  return {
+    previousMode: currentMode,
+    proposedMode,
+    resolvedMode: proposedMode,
+    transitionReason: "default_mode_resolution"
+  };
 }
 
 function includesAllCapabilities(target, requiredCaps) {
   return requiredCaps.every((cap) => target.capabilities.includes(cap));
+}
+
+function buildRequiredCapabilities(resolvedMode, taskType) {
+  const modeRequirements = MODE_TO_REQUIREMENTS[resolvedMode] || ["chat"];
+  const additionalRequirements = TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS[taskType] || [];
+  return [...new Set([...modeRequirements, ...additionalRequirements])];
+}
+
+function resolveProjectOverrideLabel(session = {}, mode) {
+  const override = session.projectOverride;
+  if (!override || typeof override !== "object") return null;
+
+  if (override.forceLabel && typeof override.forceLabel === "string") {
+    return override.forceLabel;
+  }
+
+  if (override.modeLabelMap && typeof override.modeLabelMap === "object") {
+    return override.modeLabelMap[mode] || null;
+  }
+
+  if (override.preferLabel && typeof override.preferLabel === "string") {
+    return override.preferLabel;
+  }
+
+  return null;
+}
+
+function evaluateHardConstraintBlockers(target, requiredCapabilities, hardConstraintInputs = {}) {
+  const missingCapabilities = requiredCapabilities.filter((cap) => !target.capabilities.includes(cap));
+  const constraintReasons = [];
+
+  if (hardConstraintInputs.availability === "enforced" && target.availability && target.availability !== "available") {
+    constraintReasons.push("target_unavailable");
+  }
+
+  if (hardConstraintInputs.privacy === "enforced") {
+    const requestedPrivacy = hardConstraintInputs.requiredPrivacyTier;
+    if (requestedPrivacy) {
+      const targetTier = target.privacy_tier || "unknown";
+      const targetRank = PRIVACY_TIER_RANK[targetTier] ?? PRIVACY_TIER_RANK.unknown;
+      const requiredRank = PRIVACY_TIER_RANK[requestedPrivacy] ?? PRIVACY_TIER_RANK.unknown;
+      if (targetRank < requiredRank) {
+        constraintReasons.push("privacy_tier_below_required");
+      }
+    }
+  }
+
+  if (hardConstraintInputs.clientCompatibility === "enforced" && hardConstraintInputs.clientSurface) {
+    const surfaces = Array.isArray(target.client_surfaces) ? target.client_surfaces : null;
+    if (surfaces && !surfaces.includes(hardConstraintInputs.clientSurface)) {
+      constraintReasons.push("client_surface_incompatible");
+    }
+  }
+
+  return {
+    missingCapabilities,
+    constraintReasons,
+    blocked: missingCapabilities.length > 0 || constraintReasons.length > 0
+  };
+}
+
+function buildConstraintInputs(session = {}) {
+  return {
+    hardConstraints: {
+      privacy: session?.policyInputs?.hardConstraints?.privacy || "off",
+      availability: session?.policyInputs?.hardConstraints?.availability || "off",
+      clientCompatibility: session?.policyInputs?.hardConstraints?.clientCompatibility || "off",
+      requiredPrivacyTier: session?.policyInputs?.hardConstraints?.requiredPrivacyTier || null,
+      clientSurface: session?.policyInputs?.hardConstraints?.clientSurface || session.clientSurface || null
+    },
+    softConstraints: {
+      userPreference: session.routingOverride || "auto",
+      projectOverride: session.projectOverride || null
+    }
+  };
+}
+
+function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }) {
+  const currentTarget = session.currentTargetId
+    ? eligible.find((target) => target.id === session.currentTargetId)
+    : null;
+
+  const turnCount = Number(session.turnCount || 0);
+  const continuityCost = turnCount >= 8 ? "high" : turnCount >= 3 ? "medium" : "low";
+
+  if (!selectedTarget || !currentTarget || selectedTarget.id === currentTarget.id) {
+    return {
+      selectedTarget,
+      continuityCost,
+      continuityDecision: "stay_on_current_target",
+      continuityReason: currentTarget ? "same_target" : "no_current_target"
+    };
+  }
+
+  const selectedRank = LABEL_TO_CLASS_RANK[selectedTarget.label] || 0;
+  const currentRank = LABEL_TO_CLASS_RANK[currentTarget.label] || 0;
+  const qualityGain = selectedRank > currentRank;
+
+  if (continuityCost === "high" && !qualityGain && mode !== "summarize" && session.routingOverride !== "stronger") {
+    return {
+      selectedTarget: currentTarget,
+      continuityCost,
+      continuityDecision: "avoid_switch_due_to_continuity_cost",
+      continuityReason: "high_continuity_cost_low_incremental_gain"
+    };
+  }
+
+  return {
+    selectedTarget,
+    continuityCost,
+    continuityDecision: "switch_target",
+    continuityReason: qualityGain ? "quality_gain" : "cost_or_latency_gain"
+  };
 }
 
 function selectByLabelPriority(eligible, preferredLabelOrder) {
@@ -129,22 +372,39 @@ export function routePrompt({
   executionSupported = false
 }) {
   const classification = classifyPrompt(input);
-  const mode = classification.mode;
-  const requiredCapabilities = MODE_TO_REQUIREMENTS[mode] || ["chat"];
+  const modeResolution = resolveSessionMode(session, classification);
+  const mode = modeResolution.resolvedMode;
+  const requiredCapabilities = buildRequiredCapabilities(mode, classification.taskType);
   const desiredClass = classification.escalate || MODE_TO_CLASS[mode] || "medium_reasoning";
-  const desiredLabel = CLASS_TO_LABEL[desiredClass] || "balanced";
+  const projectOverrideLabel = resolveProjectOverrideLabel(session, mode);
+  const desiredLabel = projectOverrideLabel || CLASS_TO_LABEL[desiredClass] || "balanced";
 
-  const eligible = targets.filter((target) => includesAllCapabilities(target, requiredCapabilities));
-  const blocked = targets
-    .filter((target) => !includesAllCapabilities(target, requiredCapabilities))
-    .map((target) => ({
-      id: target.id,
-      missingCapabilities: requiredCapabilities.filter((cap) => !target.capabilities.includes(cap))
-    }));
+  const constraintInputs = buildConstraintInputs(session);
+  const blocked = [];
+  const eligible = [];
+  for (const target of targets) {
+    const blocker = evaluateHardConstraintBlockers(target, requiredCapabilities, constraintInputs.hardConstraints);
+    if (blocker.blocked) {
+      blocked.push({
+        id: target.id,
+        missingCapabilities: blocker.missingCapabilities,
+        constraintReasons: blocker.constraintReasons
+      });
+      continue;
+    }
+    eligible.push(target);
+  }
 
   const overrideSelection = applyRoutingOverride({ eligible, desiredLabel, session });
   const preferredOrder = [desiredLabel, "balanced", "deep reasoning", "best coder", "quick"];
-  const selectedTarget = overrideSelection.target || selectByLabelPriority(eligible, preferredOrder);
+  const preferredTarget = overrideSelection.target || selectByLabelPriority(eligible, preferredOrder);
+  const continuitySelection = applyContinuitySwitchPolicy({
+    selectedTarget: preferredTarget,
+    session,
+    eligible,
+    mode
+  });
+  const selectedTarget = continuitySelection.selectedTarget;
   const currentTargetId = session.currentTargetId || null;
   const shouldSwitch = Boolean(selectedTarget && currentTargetId && selectedTarget.id !== currentTargetId);
 
@@ -153,9 +413,12 @@ export function routePrompt({
       status: "refused",
       reason: "no_eligible_target",
       mode,
+      taskType: classification.taskType,
       requiredCapabilities,
       blocked,
       classification,
+      modeResolution,
+      policyInputs: constraintInputs,
       explanation: "No eligible target satisfies required capabilities for this turn."
     };
   }
@@ -178,11 +441,17 @@ export function routePrompt({
     status: "ok",
     action,
     mode,
+    taskType: classification.taskType,
     selectedTarget,
     shouldSwitch,
+    continuityCost: continuitySelection.continuityCost,
+    continuityDecision: continuitySelection.continuityDecision,
+    continuityReason: continuitySelection.continuityReason,
     requiredCapabilities,
     blocked,
     classification,
+    modeResolution,
+    policyInputs: constraintInputs,
     routingOverride: {
       requested: overrideSelection.override,
       applied: overrideSelection.overrideApplied,

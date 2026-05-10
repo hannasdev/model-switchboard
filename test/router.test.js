@@ -79,3 +79,70 @@ test("route refusal when no target satisfies required capabilities", () => {
   assert.equal(result.status, "refused");
   assert.equal(result.mode, "implement");
 });
+
+test("ambiguous prompt preserves current implementation mode", () => {
+  const result = routePrompt({
+    input: "What does this config option mean?",
+    session: {
+      mode: "implement",
+      currentTargetId: "openai-coder"
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.mode, "implement");
+  assert.equal(result.modeResolution.transitionReason, "preserve_current_mode_for_ambiguous_turn");
+  assert.equal(result.selectedTarget?.id, "openai-coder");
+});
+
+test("availability hard constraint can refuse otherwise-capable targets", () => {
+  const degradedTargets = openaiTargets.map((target) =>
+    target.id === "openai-coder"
+      ? { ...target, availability: "unavailable" }
+      : target
+  );
+
+  const result = routePrompt({
+    input: "Implement the plan.",
+    session: {
+      mode: "plan",
+      policyInputs: {
+        hardConstraints: {
+          availability: "enforced"
+        }
+      }
+    },
+    targets: degradedTargets,
+    executionSupported: true
+  });
+
+  assert.equal(result.status, "refused");
+  assert.equal(result.reason, "no_eligible_target");
+  assert.equal(result.blocked.some((b) => b.id === "openai-coder"), true);
+  assert.equal(
+    result.blocked.some((b) => b.id === "openai-coder" && b.constraintReasons.includes("target_unavailable")),
+    true
+  );
+});
+
+test("high continuity cost avoids low-gain switching", () => {
+  const result = routePrompt({
+    input: "Plan the rollout in phases with tradeoffs.",
+    session: {
+      mode: "plan",
+      turnCount: 10,
+      currentTargetId: "openai-coder"
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.mode, "plan");
+  assert.equal(result.continuityCost, "high");
+  assert.equal(result.continuityDecision, "avoid_switch_due_to_continuity_cost");
+  assert.equal(result.selectedTarget?.id, "openai-coder");
+  assert.equal(result.shouldSwitch, false);
+});
