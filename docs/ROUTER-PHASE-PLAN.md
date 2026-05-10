@@ -72,6 +72,10 @@ That means the next step is to strengthen session-aware decision quality and abs
 
 ### Milestone 1: Router Contracts
 
+Status: complete (2026-05-10)
+
+Decision record: see `DEC-2026-05-10-milestone-1-router-contracts-closeout` in `docs/decision-log.md`.
+
 Create the missing canonical contract document at:
 
 ```text

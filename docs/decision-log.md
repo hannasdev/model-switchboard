@@ -81,3 +81,45 @@ Consequences:
 Follow-up:
 - Next review milestone: Milestone 1 closeout.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
+
+## Milestone 1 Closeout
+
+Decision ID: DEC-2026-05-10-milestone-1-router-contracts-closeout
+Related deferred item: milestone closeout governance
+Status: committed
+Date: 2026-05-10
+Owners: team
+
+Context:
+- Milestone 1 required an experimental, minimal, revision-friendly contract baseline plus explicit Claude mapping without claiming universal behavior.
+
+Options considered:
+- Option A: treat Milestone 1 as complete after contract file creation only.
+- Option B: treat Milestone 1 as complete only after acceptance criteria mapping and decision-log closeout.
+
+Tradeoffs:
+- Option A: faster progress marker, weaker audit trail and weaker governance enforcement.
+- Option B: slightly more process overhead, stronger evidence and repeatable milestone governance.
+
+Verification signal:
+- Expected signal from phase plan: Milestone 1 acceptance criteria met and documented.
+- Evidence observed:
+	- `docs/contracts/router-contracts.md` exists and is implementation-usable.
+	- Contract version is explicitly `0.1.0-experimental` and provisional.
+	- Minimal normative core plus Claude mapping appendix are present.
+	- Core contracts represent handoff/context-transfer.
+	- Phase and contract docs both include deferred-commitment guardrails.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: Milestone 1 is formally complete as of 2026-05-10.
+- What remains intentionally deferred: taxonomy freeze, numeric continuity scoring, strict constraint enforcement depth, attribution ontology stabilization, and extraction timeline.
+
+Consequences:
+- Near-term implementation impact: proceed to Milestone 2 with a stable experimental contract baseline.
+- Test and replay impact: enables contract-backed test and replay work in next milestones.
+- Migration impact: low; experimental schema remains revision-friendly.
+
+Follow-up:
+- Next review milestone: Milestone 2 plan-to-implementation checkpoint.
+- Linked artifacts (logs, fixtures, docs, PRs): docs/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
