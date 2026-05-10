@@ -45,9 +45,9 @@ High-level flow:
 
 ## Project Status
 
-This project is in active MVP development, focused on a narrow, reliable routing experience before broader expansion.
+Version 1.0.0 is the first stable release of the prompt-driven Switchboard workflow for Claude Code.
 
-Non-interactive continuity is verified for routed turns. Interactive continuity is verified in a live environment: same Claude session id across turns, resume semantics confirmed, hook events correlated. Stale-resume recovery is automatic.
+Non-interactive continuity is verified for routed turns. Interactive continuity is verified for session reuse, resume semantics, hook correlation, and override handling, while stale-resume recovery and fail-closed error handling remain explicitly tracked as follow-up validation for fully supported interactive parity.
 
 ## Delivery Model
 

@@ -203,17 +203,123 @@ test("Live interactive continuity probe verifies resume and session continuity",
 
   assert.equal(result.status, "verified");
   assert.deepEqual(result.verified, {
-    bothExecuted: true,
-    sameClaudeSession: true,
+    allExecuted: true,
+    sameClaudeSessionAcrossThreeTurns: true,
     secondTurnUsesResume: true,
+    thirdTurnUsesResume: true,
     interactiveArgsOmitPrompt: true,
     turnCountAdvanced: true
   });
+  assert.equal(result.turns.length, 3);
   assert.equal(result.turns[0].claudePlan.interactive, true);
   assert.equal(result.turns[1].claudePlan.resume, true);
+  assert.equal(result.turns[2].claudePlan.resume, true);
   assert.equal(executions[0].args.includes("--print"), false);
   assert.equal(executions[1].args.includes("--print"), false);
+  assert.equal(executions[2].args.includes("--print"), false);
   assert.equal(executions[1].args.includes("--resume"), true);
+  assert.equal(executions[2].args.includes("--resume"), true);
+});
+
+test("Live interactive continuity probe with explicit hook log requires present correlated events", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  const hookLogPath = path.join(path.dirname(logPath), "hook-events.ndjson");
+  const result = executeSwitchboardInteractiveContinuityProbe({
+    threadId: "thread-5-hooks-missing",
+    sessionId: "claude-session-5-hooks-missing",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    hookLogPath,
+    commandRunner() {
+      return {
+        status: 0,
+        signal: null,
+        stdout: "interactive-ok",
+        stderr: "",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "needs_review");
+  assert.equal(result.verified.hookEventsPresent, false);
+  assert.equal(result.verified.hookEventsCorrelated, false);
+});
+
+test("Live interactive continuity probe ignores stale hook events from older runs", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  const hookLogPath = path.join(path.dirname(logPath), "hook-events.ndjson");
+  fs.writeFileSync(
+    hookLogPath,
+    `${JSON.stringify({
+      ts: "2000-01-01T00:00:00.000Z",
+      sessionId: "claude-session-5-hooks-stale",
+      correlation: { status: "matched" }
+    })}\n`,
+    "utf8"
+  );
+
+  const result = executeSwitchboardInteractiveContinuityProbe({
+    threadId: "thread-5-hooks-stale",
+    sessionId: "claude-session-5-hooks-stale",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    hookLogPath,
+    commandRunner() {
+      return {
+        status: 0,
+        signal: null,
+        stdout: "interactive-ok",
+        stderr: "",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "needs_review");
+  assert.equal(result.verified.hookEventsPresent, false);
+  assert.equal(result.verified.hookEventsCorrelated, false);
+});
+
+test("Live interactive continuity probe passes hook checks when fresh matched events are present", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  const hookLogPath = path.join(path.dirname(logPath), "hook-events.ndjson");
+
+  const result = executeSwitchboardInteractiveContinuityProbe({
+    threadId: "thread-5-hooks-present",
+    sessionId: "claude-session-5-hooks-present",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    hookLogPath,
+    commandRunner(plan) {
+      fs.appendFileSync(
+        hookLogPath,
+        `${JSON.stringify({
+          ts: new Date().toISOString(),
+          sessionId: plan.sessionId,
+          correlation: { status: "matched" }
+        })}\n`,
+        "utf8"
+      );
+      return {
+        status: 0,
+        signal: null,
+        stdout: "interactive-ok",
+        stderr: "",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "verified");
+  assert.equal(result.verified.hookEventsPresent, true);
+  assert.equal(result.verified.hookEventsCorrelated, true);
 });
 
 test("Interactive live turn does NOT recover from non-stale-resume failures", () => {

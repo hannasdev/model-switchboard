@@ -87,7 +87,7 @@ function printUsage(stdout) {
   stdout.write("  switchboard --stay \"Thanks\"\n");
   stdout.write("  switchboard explain [--thread-id <id>]\n");
   stdout.write("  switchboard probe continuity [--no-tools] [--inter-turn-delay-ms <ms>]\n");
-  stdout.write("  switchboard probe continuity-interactive [--inter-turn-delay-ms <ms>]\n");
+  stdout.write("  switchboard probe continuity-interactive [--inter-turn-delay-ms <ms>] [--hook-log-path <path>]\n");
 }
 
 export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
@@ -133,7 +133,10 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     };
     const probeResult = probe === "continuity"
       ? executeSwitchboardContinuityProbe(sharedProbeOptions)
-      : executeSwitchboardInteractiveContinuityProbe(sharedProbeOptions);
+      : executeSwitchboardInteractiveContinuityProbe({
+          ...sharedProbeOptions,
+          hookLogPath: getArg(argv, "--hook-log-path") || undefined
+        });
     if (hasFlag(argv, "--json")) {
       stdout.write(`${JSON.stringify(probeResult, null, 2)}\n`);
     } else {

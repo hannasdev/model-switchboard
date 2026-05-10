@@ -411,8 +411,10 @@ export function executeSwitchboardContinuityProbe({
 export function executeSwitchboardInteractiveContinuityProbe({
   threadId = "poc2-continuity-interactive-live",
   interTurnDelayMs = 0,
+  hookLogPath,
   ...options
 } = {}) {
+  const probeStartMs = Date.now();
   const firstTurn = executeSwitchboardTurn({
     ...options,
     threadId,
@@ -426,28 +428,60 @@ export function executeSwitchboardInteractiveContinuityProbe({
     input: "",
     interactive: true
   });
+  sleepSync(interTurnDelayMs);
+  const thirdTurn = executeSwitchboardTurn({
+    ...options,
+    threadId,
+    input: "",
+    interactive: true
+  });
+
+  const claudeSessionId = firstTurn.selectedClaude?.sessionId;
+
+  // Hook correlation is optional and only evaluated when a hook log path is
+  // explicitly provided by the caller.
+  const hookEvents = hookLogPath
+    ? readNdjson(hookLogPath).filter((entry) => {
+        if (entry.sessionId !== claudeSessionId) return false;
+        const eventTs = Date.parse(entry.ts || "");
+        return Number.isFinite(eventTs) && eventTs >= probeStartMs;
+      })
+    : null;
 
   const verified = {
-    bothExecuted: firstTurn.status === "executed" && secondTurn.status === "executed",
-    sameClaudeSession:
-      firstTurn.selectedClaude?.sessionId &&
-      firstTurn.selectedClaude.sessionId === secondTurn.selectedClaude?.sessionId,
+    allExecuted:
+      firstTurn.status === "executed" &&
+      secondTurn.status === "executed" &&
+      thirdTurn.status === "executed",
+    sameClaudeSessionAcrossThreeTurns:
+      claudeSessionId &&
+      claudeSessionId === secondTurn.selectedClaude?.sessionId &&
+      claudeSessionId === thirdTurn.selectedClaude?.sessionId,
     secondTurnUsesResume: secondTurn.claudePlan?.resume === true,
+    thirdTurnUsesResume: thirdTurn.claudePlan?.resume === true,
     interactiveArgsOmitPrompt:
       !firstTurn.claudePlan?.args?.includes("--print") &&
-      !secondTurn.claudePlan?.args?.includes("--print"),
+      !secondTurn.claudePlan?.args?.includes("--print") &&
+      !thirdTurn.claudePlan?.args?.includes("--print"),
     // Check that turn count advances by exactly 1 per turn relative to the
-    // starting count, rather than asserting absolute values of 1 and 2.
-    // This keeps the check correct even if the probe thread is reused.
+    // starting count, rather than asserting absolute values. This keeps the
+    // check correct even if the probe thread is reused.
     turnCountAdvanced:
-      secondTurn.nextSession.turnCount === firstTurn.nextSession.turnCount + 1
+      secondTurn.nextSession.turnCount === firstTurn.nextSession.turnCount + 1 &&
+      thirdTurn.nextSession.turnCount === secondTurn.nextSession.turnCount + 1,
+    ...(hookEvents !== null && {
+      hookEventsPresent: hookEvents.length > 0,
+      hookEventsCorrelated:
+        hookEvents.some((entry) => entry.correlation?.status === "matched")
+    })
   };
 
   return {
     status: Object.values(verified).every(Boolean) ? "verified" : "needs_review",
     threadId,
     verified,
-    turns: [firstTurn, secondTurn]
+    hookEvents: hookEvents || [],
+    turns: [firstTurn, secondTurn, thirdTurn]
   };
 }
 
