@@ -1,0 +1,37 @@
+name: CI/CD Preflight
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  verify-secrets:
+    name: Verify required secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate release and publish secrets
+        env:
+          RELEASE_DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          missing=0
+
+          if [ -z "$RELEASE_DEPLOY_KEY" ]; then
+            echo "Missing required secret: RELEASE_DEPLOY_KEY"
+            missing=1
+          fi
+
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "Missing required secret: NPM_TOKEN"
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Preflight failed: required CI/CD secrets are missing."
+            exit 1
+          fi
+
+          echo "Preflight passed: required CI/CD secrets are configured."

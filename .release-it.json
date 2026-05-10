@@ -1,0 +1,20 @@
+{
+  "git": {
+    "requireCleanWorkingDir": true,
+    "requireCommits": true,
+    "commit": true,
+    "tag": true,
+    "push": true,
+    "changelog": "npx auto-changelog --stdout --unreleased --commit-limit false -u --hide-credit"
+  },
+  "github": {
+    "release": true
+  },
+  "npm": {
+    "publish": false
+  },
+  "hooks": {
+    "before:init": "npm test",
+    "after:bump": "npx auto-changelog -p"
+  }
+}

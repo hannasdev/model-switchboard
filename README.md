@@ -43,3 +43,9 @@ High-level flow:
 ## Project Status
 
 This project is in active MVP development, focused on a narrow, reliable routing experience before broader expansion.
+
+## Delivery Model
+
+Feature branches, tagged releases, and npm publishing are now part of the delivery workflow.
+
+See [CI/CD and Release Flow](docs/CI-CD.md).
