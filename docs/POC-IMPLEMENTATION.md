@@ -42,6 +42,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * MVP `switchboard explain` summarizes the latest route decision, Claude flags, session id, route-context match, hook events, and tool decisions from local evidence logs.
 * MVP CLI reports pre-launch failures cleanly so route-context write failures stop before Claude launch.
 * MVP hook policy now fails closed for `PreToolUse` events without matched Switchboard route context, including otherwise safe tools.
+* MVP coarse overrides are wired through generic routing and exposed by the CLI: `--stronger`, `--cheaper`, and `--stay`.
 
 ## What Is Not Yet Proven
 

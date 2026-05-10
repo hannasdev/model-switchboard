@@ -19,6 +19,15 @@ function hasFlag(args, flag) {
   return args.includes(flag);
 }
 
+function getRoutingOverride(args) {
+  const explicit = getArg(args, "--override");
+  if (explicit) return explicit;
+  if (hasFlag(args, "--stronger")) return "stronger";
+  if (hasFlag(args, "--cheaper")) return "cheaper";
+  if (hasFlag(args, "--stay")) return "stay";
+  return "auto";
+}
+
 function stripFlags(args, flagsWithValues, booleanFlags) {
   const output = [];
   for (let idx = 0; idx < args.length; idx += 1) {
@@ -38,6 +47,10 @@ function printHumanTurn(result, stdout) {
   stdout.write(`Thread: ${result.threadId}\n`);
   stdout.write(`Claude session: ${result.selectedClaude?.sessionId || "none"}\n`);
   stdout.write(`Claude target: ${result.selectedClaude?.model || "none"}/${result.selectedClaude?.effort || "none"}\n`);
+  if (result.routeDecision.routingOverride?.requested !== "auto") {
+    const override = result.routeDecision.routingOverride;
+    stdout.write(`Override: ${override.requested} (${override.reason})\n`);
+  }
   stdout.write(`Status: ${result.status}\n`);
   if (result.execution?.stdoutPreview) stdout.write(`${result.execution.stdoutPreview}\n`);
 }
@@ -65,6 +78,9 @@ function printUsage(stdout) {
   stdout.write("Usage:\n");
   stdout.write("  switchboard \"Implement the plan.\"\n");
   stdout.write("  switchboard --dry-run \"Implement the plan.\"\n");
+  stdout.write("  switchboard --stronger \"Thanks\"\n");
+  stdout.write("  switchboard --cheaper \"Summarize this\"\n");
+  stdout.write("  switchboard --stay \"Thanks\"\n");
   stdout.write("  switchboard explain [--thread-id <id>]\n");
 }
 
@@ -83,6 +99,7 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     claudeBin: getArg(argv, "--claude-bin") || "claude",
     outputFormat: getArg(argv, "--output-format") || "json",
     noTools: hasFlag(argv, "--no-tools"),
+    routingOverride: getRoutingOverride(argv),
     timeoutMs: Number(getArg(argv, "--timeout-ms") || "180000"),
     storePath: getArg(argv, "--store-path") || DEFAULT_SWITCHBOARD_STORE_PATH,
     logPath: getArg(argv, "--log-path") || DEFAULT_SWITCHBOARD_LOG_PATH,
@@ -112,9 +129,10 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
       "--store-path",
       "--log-path",
       "--route-context-path",
-      "--hook-log-path"
+      "--hook-log-path",
+      "--override"
     ]),
-    new Set(["--dry-run", "--json", "--no-tools"])
+    new Set(["--dry-run", "--json", "--no-tools", "--stronger", "--cheaper", "--stay", "--auto"])
   );
   const input = promptArgs.join(" ").trim();
   if (!input) {

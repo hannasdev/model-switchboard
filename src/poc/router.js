@@ -75,6 +75,53 @@ function selectByLabelPriority(eligible, preferredLabelOrder) {
   return eligible[0] || null;
 }
 
+function applyRoutingOverride({ eligible, desiredLabel, session }) {
+  const override = session.routingOverride || "auto";
+  const currentTarget = session.currentTargetId
+    ? eligible.find((target) => target.id === session.currentTargetId)
+    : null;
+
+  if (override === "stronger") {
+    const target = selectByLabelPriority(eligible, ["best coder", "deep reasoning", desiredLabel, "balanced", "quick"]);
+    return {
+      target,
+      override,
+      overrideApplied: target?.label !== desiredLabel,
+      overrideReason: target ? "user_requested_stronger_target" : "no_eligible_stronger_target"
+    };
+  }
+
+  if (override === "cheaper") {
+    const target = selectByLabelPriority(eligible, ["quick", "balanced", desiredLabel, "best coder"]);
+    return {
+      target,
+      override,
+      overrideApplied: target?.label !== desiredLabel,
+      overrideReason: target?.label === "quick"
+        ? "user_preferred_cheaper_target"
+        : "cheaper_target_lacks_required_capabilities"
+    };
+  }
+
+  if (override === "stay") {
+    return {
+      target: currentTarget || null,
+      override,
+      overrideApplied: Boolean(currentTarget),
+      overrideReason: currentTarget
+        ? "user_requested_stay_on_current_target"
+        : "current_target_lacks_required_capabilities"
+    };
+  }
+
+  return {
+    target: null,
+    override: "auto",
+    overrideApplied: false,
+    overrideReason: null
+  };
+}
+
 export function routePrompt({
   input,
   session = {},
@@ -95,8 +142,9 @@ export function routePrompt({
       missingCapabilities: requiredCapabilities.filter((cap) => !target.capabilities.includes(cap))
     }));
 
+  const overrideSelection = applyRoutingOverride({ eligible, desiredLabel, session });
   const preferredOrder = [desiredLabel, "balanced", "deep reasoning", "best coder", "quick"];
-  const selectedTarget = selectByLabelPriority(eligible, preferredOrder);
+  const selectedTarget = overrideSelection.target || selectByLabelPriority(eligible, preferredOrder);
   const currentTargetId = session.currentTargetId || null;
   const shouldSwitch = Boolean(selectedTarget && currentTargetId && selectedTarget.id !== currentTargetId);
 
@@ -135,6 +183,11 @@ export function routePrompt({
     requiredCapabilities,
     blocked,
     classification,
+    routingOverride: {
+      requested: overrideSelection.override,
+      applied: overrideSelection.overrideApplied,
+      reason: overrideSelection.overrideReason
+    },
     explanation: `Recommended: ${selectedTarget.label}\nWhy: ${whyParts.join(" + ")}.`
   };
 }

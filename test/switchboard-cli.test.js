@@ -160,3 +160,115 @@ test("switchboard reports pre-launch failures without executing Claude", () => {
   assert.match(io.stderrText, /failed before launching Claude/);
   assert.equal(io.stdoutText, "");
 });
+
+test("switchboard stronger override escalates a low-risk prompt", () => {
+  const paths = tempPaths();
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--stronger",
+      "--thread-id",
+      "stronger-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath,
+      "Thanks"
+    ],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(io.stdoutText, /Switchboard: best coder/);
+  assert.match(io.stdoutText, /Override: stronger/);
+  assert.match(io.stdoutText, /Claude target: sonnet\/high/);
+});
+
+test("switchboard stay override keeps an eligible current target", () => {
+  const paths = tempPaths();
+  const firstIo = memoryIo();
+  runSwitchboardCli(
+    [
+      "--dry-run",
+      "--thread-id",
+      "stay-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath,
+      "Implement the plan."
+    ],
+    firstIo
+  );
+
+  const secondIo = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--stay",
+      "--thread-id",
+      "stay-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath,
+      "Thanks"
+    ],
+    secondIo
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(secondIo.stdoutText, /Switchboard: best coder/);
+  assert.match(secondIo.stdoutText, /Override: stay/);
+  assert.match(secondIo.stdoutText, /Claude target: sonnet\/high/);
+});
+
+test("switchboard cheaper override downshifts when capability-safe", () => {
+  const paths = tempPaths();
+  const firstIo = memoryIo();
+  runSwitchboardCli(
+    [
+      "--dry-run",
+      "--thread-id",
+      "cheaper-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath,
+      "Implement the plan."
+    ],
+    firstIo
+  );
+
+  const secondIo = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--cheaper",
+      "--thread-id",
+      "cheaper-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath,
+      "Thanks"
+    ],
+    secondIo
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(secondIo.stdoutText, /Switchboard: quick/);
+  assert.match(secondIo.stdoutText, /Override: cheaper/);
+  assert.match(secondIo.stdoutText, /Claude target: haiku\/low/);
+});

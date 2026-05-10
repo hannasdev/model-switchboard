@@ -71,6 +71,7 @@ function routeDecisionSummary(plan) {
     targetId: route.selectedTarget?.id || plan.targetId || null,
     requiredCapabilities: route.requiredCapabilities || [],
     shouldSwitch: route.shouldSwitch ?? null,
+    routingOverride: route.routingOverride || null,
     explanation: route.explanation || null
   };
 }
@@ -151,6 +152,7 @@ function buildSwitchboardTurn({
   claudeBin = "claude",
   outputFormat = "json",
   noTools = false,
+  routingOverride = "auto",
   sessionId = randomUUID(),
   persist = true,
   execute = false,
@@ -165,7 +167,8 @@ function buildSwitchboardTurn({
     ...baseSession,
     ...persistedSession,
     claudeSessionId,
-    vendorClient: "claude-code"
+    vendorClient: "claude-code",
+    routingOverride
   };
 
   const plan = planClaudeCliLaunch({
@@ -209,7 +212,8 @@ function buildSwitchboardTurn({
           currentLabel: plan.selectedTarget.label,
           turnCount: Number(routeSession.turnCount || 0) + 1,
           lastRoute: routeDecision,
-          claudeSessionId
+          claudeSessionId,
+          routingOverride: "auto"
         }
       : routeSession;
 
