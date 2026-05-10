@@ -110,6 +110,15 @@ The product promise should become:
 Use Claude Code normally through Switchboard. Switchboard chooses the model/effort before the turn, explains the choice, and preserves Claude's safety posture while adding route-aware tool governance.
 ```
 
+There are also two separable product layers:
+
+1. A reusable routing engine that chooses among model targets.
+2. A workflow integration that puts routing on the pre-execution path for a specific user surface.
+
+The Claude Code wrapper/hooks path is the first applied workflow product, not proof that routing only matters for software development. The router core should remain extractable as `@model-switchboard/router`, while Claude-specific launch, resume, hook, and continuity behavior should live in a workflow package such as `@model-switchboard/claude-code`.
+
+The practical implication is that PoC 2 should validate the Claude workflow gap without tangling generic routing policy into Claude wrapper mechanics. Target registry, classification, policy, capability filtering, route explanation, and refusal logic should stay router-shaped.
+
 ## MVP Scope Implications
 
 ### Recommended MVP Scope

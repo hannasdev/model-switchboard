@@ -8,7 +8,12 @@ This PRD is intentionally conceptual. The next milestone is not a small MVP; it 
 
 Software engineers have access to many capable AI models and coding surfaces, but choosing the right model or effort level for every turn is a repeated cognitive tax.
 
-The MVP direction is a Claude Code-scoped Switchboard:
+There are two related product layers:
+
+1. `@model-switchboard/router`: a standalone routing engine for choosing among model targets.
+2. `@model-switchboard/claude-code`: a Claude Code workflow integration that uses the router.
+
+The MVP direction is the first applied workflow product: a Claude Code-scoped Switchboard built on a separable router core.
 
 ```text
 User
@@ -25,6 +30,8 @@ Use Claude Code normally through Switchboard. Switchboard chooses the model/effo
 ```
 
 The MVP should not promise in-session automatic model switching. The current evidence suggests model/effort authority belongs at the launch or resume boundary. Hooks are useful for visibility, context injection, logging, and tool governance, but should be treated as advisory inside an already-running Claude session.
+
+The router should remain reusable outside software-development workflows. PoC 2 should focus on Claude Code because that is the current highest-risk integration path, but target registry, classification, policy, capability filtering, route explanation, and refusal logic should stay independent of Claude-specific launch, hook, and session mechanics.
 
 ## 2. User Problem
 
@@ -90,7 +97,51 @@ PoC 2 should not include:
 
 Security is an architectural consideration because the wrapper can influence execution, but PoC 2 does not need to solve the full security model. It only needs to avoid adding unnecessary authority and record enough evidence to inform the later design.
 
-## 6. Assumptions To Verify Or Falsify
+PoC 2 should keep a clean module boundary between generic routing and Claude workflow code. The goal is not to publish `@model-switchboard/router` yet, but the implementation should make later extraction credible instead of trapping routing policy inside the wrapper.
+
+## 6. Product Packaging Direction
+
+Longer term, the router and workflow integration may become separate packages under one namespace:
+
+```text
+@model-switchboard/router
+@model-switchboard/claude-code
+@model-switchboard/cli
+```
+
+`@model-switchboard/router` should solve the limited routing problem well:
+
+* target registry schema
+* task/mode classification interface
+* deterministic routing policy
+* capability filtering
+* cost, privacy, latency, and availability constraints
+* route explanations
+* refusal reasons
+* fixture-based policy tests
+
+It should not know about Claude Code hooks, CLI launch flags, terminal workflow, local transcript paths, or software-development-specific UI.
+
+`@model-switchboard/claude-code` should solve the workflow integration problem:
+
+* `switchboard` command
+* Claude model/effort mapping
+* launch and resume behavior
+* hook setup and correlation
+* session continuity
+* route display
+* override UX
+* local route and hook logs
+* Claude-specific safety boundaries
+
+Sequence:
+
+1. Run PoC 2 inside this repo.
+2. Use PoC 2 to harden the router boundary and API shape.
+3. Extract and productize `@model-switchboard/router` as a public package once the boundary has survived real workflow pressure.
+4. Continue Claude Code work as a dependency of the router package.
+
+## 7. Assumptions To Verify Or Falsify
 
 ### A. Wrapper Routing Authority
 
@@ -192,7 +243,7 @@ Falsification:
 * Wrapper and hook evidence cannot be correlated.
 * Failure modes are ambiguous.
 
-## 7. MVP Scope If PoC 2 Passes
+## 8. MVP Scope If PoC 2 Passes
 
 If PoC 2 verifies the key assumptions, the MVP should include:
 
@@ -217,7 +268,7 @@ The MVP should defer:
 * Automatic context packaging.
 * Full gateway execution as the primary product surface.
 
-## 8. Conceptual Routing Model
+## 9. Conceptual Routing Model
 
 Start with these user-facing labels:
 
@@ -259,7 +310,7 @@ escalation:
 
 The policy should prefer continuity when the current target is capable enough and the expected quality gain from switching is small.
 
-## 9. UX Direction
+## 10. UX Direction
 
 The default command should be simple:
 
@@ -289,7 +340,7 @@ The user should be able to express simple controls without learning model names:
 * Return to auto.
 * Explain the route.
 
-## 10. MVP Acceptance Criteria
+## 11. MVP Acceptance Criteria
 
 The MVP is acceptable when:
 
@@ -302,7 +353,7 @@ The MVP is acceptable when:
 7. Logs distinguish user input, Switchboard context, route decisions, model/effort selection, and tool decisions.
 8. Failure modes are clear and fail closed where routing or hook setup cannot be trusted.
 
-## 11. Relationship To Other Docs
+## 12. Relationship To Other Docs
 
 [PoC](POC.md) describes the original risk-reduction plan.
 
