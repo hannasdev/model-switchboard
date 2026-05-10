@@ -34,6 +34,8 @@ const LABEL_TO_CLASS_RANK = {
   "best coder": 4
 };
 
+const LOW_CONFIDENCE_THRESHOLD = 0.7;
+
 const PRIVACY_TIER_RANK = {
   external: 1,
   standard: 2,
@@ -276,6 +278,84 @@ function buildConstraintInputs(session = {}) {
   };
 }
 
+function strongerClass(currentClass, candidateClass) {
+  const currentRank = LABEL_TO_CLASS_RANK[CLASS_TO_LABEL[currentClass]] || 0;
+  const candidateRank = LABEL_TO_CLASS_RANK[CLASS_TO_LABEL[candidateClass]] || 0;
+  return candidateRank > currentRank ? candidateClass : currentClass;
+}
+
+function preferredLabelOrderFor(desiredLabel) {
+  let fallbackOrder;
+  if (desiredLabel === "best coder") {
+    fallbackOrder = ["best coder", "deep reasoning", "balanced", "quick"];
+  } else if (desiredLabel === "deep reasoning") {
+    fallbackOrder = ["deep reasoning", "best coder", "balanced", "quick"];
+  } else if (desiredLabel === "quick") {
+    fallbackOrder = ["quick", "balanced", "deep reasoning", "best coder"];
+  } else {
+    fallbackOrder = ["balanced", "deep reasoning", "best coder", "quick"];
+  }
+
+  return [desiredLabel, ...fallbackOrder.filter((label) => label !== desiredLabel)];
+}
+
+function resolveEscalationPolicy({ classification = {}, session = {}, mode }) {
+  let desiredClass = MODE_TO_CLASS[mode] || "medium_reasoning";
+  const reasons = [];
+
+  const lowConfidence = Number(classification.confidence || 0) < LOW_CONFIDENCE_THRESHOLD;
+  const userCorrection = classification.reason === "user_correction_signal";
+  const repeatedFailures =
+    Number(session?.failureSignals?.recentToolFailures || 0) +
+      Number(session?.failureSignals?.recentTestFailures || 0) >=
+    2;
+  const highRiskImplementation = mode === "implement" && session.riskLevel === "high";
+
+  if (userCorrection) {
+    desiredClass = strongerClass(desiredClass, "strong_reasoning");
+    reasons.push("user_correction");
+  }
+
+  if (repeatedFailures && mode !== "summarize") {
+    const repeatedFailureClass = ["implement", "debug"].includes(mode)
+      ? "strong_coding"
+      : "strong_reasoning";
+    desiredClass = strongerClass(desiredClass, repeatedFailureClass);
+    reasons.push("repeated_failures");
+  }
+
+  if (highRiskImplementation) {
+    desiredClass = strongerClass(desiredClass, "strong_coding");
+    reasons.push("high_risk_implementation");
+  }
+
+  if (lowConfidence && ["implement", "debug", "review"].includes(mode)) {
+    const lowConfidenceClass = mode === "review" ? "strong_reasoning" : "strong_coding";
+    desiredClass = strongerClass(desiredClass, lowConfidenceClass);
+    reasons.push("low_confidence");
+  }
+
+  if (classification.escalate) {
+    const escalatedClass = strongerClass(desiredClass, classification.escalate);
+    if (escalatedClass !== desiredClass) {
+      desiredClass = escalatedClass;
+      reasons.push("classification_escalation");
+    }
+  }
+
+  return {
+    applied: reasons.length > 0,
+    reasons,
+    desiredClass,
+    signals: {
+      lowConfidence,
+      userCorrection,
+      repeatedFailures,
+      highRiskImplementation
+    }
+  };
+}
+
 function describeCurrentTargetStatus({ session, targets = [], eligible = [], blocked = [] }) {
   const currentTargetId = session.currentTargetId || null;
   if (!currentTargetId) {
@@ -440,7 +520,8 @@ export function routePrompt({
   const modeResolution = resolveSessionMode(session, classification);
   const mode = modeResolution.resolvedMode;
   const requiredCapabilities = buildRequiredCapabilities(mode, classification.taskType);
-  const desiredClass = classification.escalate || MODE_TO_CLASS[mode] || "medium_reasoning";
+  const escalationPolicy = resolveEscalationPolicy({ classification, session, mode });
+  const desiredClass = escalationPolicy.desiredClass;
   const projectOverrideLabel = resolveProjectOverrideLabel(session, mode);
   const desiredLabel = projectOverrideLabel || CLASS_TO_LABEL[desiredClass] || "balanced";
 
@@ -461,7 +542,7 @@ export function routePrompt({
   }
 
   const overrideSelection = applyRoutingOverride({ eligible, desiredLabel, session, targets, blocked });
-  const preferredOrder = [desiredLabel, "balanced", "deep reasoning", "best coder", "quick"];
+  const preferredOrder = preferredLabelOrderFor(desiredLabel);
   const preferredTarget = overrideSelection.target || selectByLabelPriority(eligible, preferredOrder);
   const continuitySelection = applyContinuitySwitchPolicy({
     selectedTarget: preferredTarget,
@@ -491,6 +572,7 @@ export function routePrompt({
       classification,
       modeResolution,
       policyInputs: constraintInputs,
+      escalationPolicy,
       routingOverride: {
         requested: overrideSelection.override,
         applied: overrideSelection.overrideApplied,
@@ -514,6 +596,10 @@ export function routePrompt({
   if (requiredCapabilities.includes("file_edit")) whyParts.push("repo edits");
   if (requiredCapabilities.includes("test_execution")) whyParts.push("test execution");
 
+  if (escalationPolicy.applied) {
+    whyParts.push(`escalation(${escalationPolicy.reasons.join(",")})`);
+  }
+
   return {
     status: "ok",
     action,
@@ -529,6 +615,7 @@ export function routePrompt({
     classification,
     modeResolution,
     policyInputs: constraintInputs,
+    escalationPolicy,
     routingOverride: {
       requested: overrideSelection.override,
       applied: overrideSelection.overrideApplied,

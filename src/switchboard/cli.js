@@ -68,6 +68,10 @@ function printHumanExplain(explanation, stdout) {
   stdout.write(`Claude session: ${explanation.selectedClaude?.sessionId || "unknown"}\n`);
   stdout.write(`Claude target: ${explanation.selectedClaude?.model || "unknown"}/${explanation.selectedClaude?.effort || "unknown"}\n`);
   stdout.write(`Route: ${explanation.routeDecision?.label || "unknown"} (${explanation.routeDecision?.mode || "unknown"})\n`);
+  const escalation = explanation.routeDecision?.escalationPolicy;
+  if (escalation?.applied && Array.isArray(escalation.reasons) && escalation.reasons.length > 0) {
+    stdout.write(`Escalation: ${escalation.reasons.join(",")}\n`);
+  }
   stdout.write(`Route context: ${explanation.routeContext.status}\n`);
   stdout.write(`Hook events: ${explanation.hookEvents.length}\n`);
   for (const event of explanation.hookEvents) {
