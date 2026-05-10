@@ -12,7 +12,7 @@ A preflight workflow also runs on `main` pushes (and manual dispatch) to validat
 
 - Branch from `main` using `feature/<name>`.
 - Open a PR to `main`.
-- CI runs tests on PRs and on pushes to `main`/`feature/*`.
+- CI runs tests on PRs and on pushes to `main`.
 
 Workflow: [ci.yml](../.github/workflows/ci.yml)
 

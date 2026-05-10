@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/**
       - release-please--branches--**
   pull_request:
     branches:
