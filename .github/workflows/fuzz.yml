@@ -1,0 +1,37 @@
+name: Fuzz tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - test/**
+      - chore/**
+      - feat/**
+      - fix/**
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Router fuzz
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run fuzz tests
+        run: npm run test:fuzz
