@@ -273,6 +273,18 @@ test("switchboard cheaper override downshifts when capability-safe", () => {
   assert.match(secondIo.stdoutText, /Claude target: haiku\/low/);
 });
 
+test("switchboard rejects a prompt when --interactive is set", () => {
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["--dry-run", "--interactive", "Implement the plan."],
+    io
+  );
+
+  assert.equal(exitCode, 1);
+  assert.match(io.stderrText, /does not accept a prompt argument/);
+  assert.equal(io.stdoutText, "");
+});
+
 test("switchboard interactive dry-run works without a prompt", () => {
   const paths = tempPaths();
   const io = memoryIo();

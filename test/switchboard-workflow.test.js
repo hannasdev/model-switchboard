@@ -215,6 +215,46 @@ test("Live interactive continuity probe verifies resume and session continuity",
   assert.equal(executions[1].args.includes("--resume"), true);
 });
 
+test("Interactive live turn does NOT recover from non-stale-resume failures", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  planSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-7",
+    sessionId: "claude-session-7",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+
+  const executions = [];
+  const result = executeSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-7",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner(plan) {
+      executions.push([...plan.args]);
+      return {
+        status: 1,
+        signal: null,
+        stdout: "",
+        stderr: "Error: authentication failed\n",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.recovery.recoveredFromResumeRetry, false);
+  assert.equal(executions.length, 1);
+  assert.equal(executions[0].includes("--resume"), true);
+});
+
 test("Interactive live turn recovers from stale resume by retrying with session-id", () => {
   const { storePath, logPath, routeContextPath } = tempPaths();
   planSwitchboardTurn({

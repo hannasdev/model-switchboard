@@ -97,16 +97,12 @@ function selectedClaudeSummary(plan) {
 
 function defaultCommandRunner(plan, timeoutMs) {
   const interactiveOptions = plan.interactive
-    ? {
-        stdio: "inherit"
-      }
-    : {
-        encoding: "utf8",
-        timeout: timeoutMs
-      };
+    ? { stdio: "inherit" }
+    : { encoding: "utf8" };
 
   return spawnSync(plan.claudeBin, plan.args, {
     cwd: plan.cwd,
+    timeout: timeoutMs,
     ...interactiveOptions
   });
 }
@@ -229,15 +225,25 @@ function buildSwitchboardTurn({
       ? commandRunner(plan, timeoutMs)
       : null;
 
-  if (execute && plan.status === "planned" && plan.interactive && plan.resume && execution?.status !== 0) {
-    effectivePlan = {
+  const isStaleResume =
+    execute &&
+    plan.status === "planned" &&
+    plan.interactive &&
+    plan.resume &&
+    execution?.status !== 0 &&
+    typeof execution?.stderr === "string" &&
+    execution.stderr.includes("No conversation found with session ID");
+
+  if (isStaleResume) {
+    const retryPlan = {
       ...plan,
       args: replaceResumeWithSessionId(plan.args),
       resume: false
     };
-    effectivePlan.commandPreview = [effectivePlan.claudeBin, ...effectivePlan.args];
-    const retryExecution = commandRunner(effectivePlan, timeoutMs);
+    retryPlan.commandPreview = [retryPlan.claudeBin, ...retryPlan.args];
+    const retryExecution = commandRunner(retryPlan, timeoutMs);
     if (retryExecution?.status === 0) {
+      effectivePlan = retryPlan;
       execution = retryExecution;
       recoveredFromResumeRetry = true;
     }

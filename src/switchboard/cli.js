@@ -188,7 +188,10 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     stderr.write("switchboard requires a prompt. Use `switchboard \"Implement the plan.\"`.\n");
     return 1;
   }
-
+  if (input && options.interactive) {
+    stderr.write("switchboard --interactive does not accept a prompt argument. Omit the prompt or remove --interactive.\n");
+    return 1;
+  }
   const dryRun = hasFlag(argv, "--dry-run");
   let result;
   try {
