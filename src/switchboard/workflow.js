@@ -206,7 +206,10 @@ function buildSwitchboardTurn({
   let recoveredFromResumeRetry = false;
   const wrapperContext = buildWrapperContext(plan);
   const routeDecision = routeDecisionSummary(plan);
-  const persistedSelectedClaude = selectedClaudeSummary(plan);
+  // plannedSelectedClaude reflects the pre-execution plan (before any stale-resume retry).
+  // It is used for route-context persistence so the context always records what was planned,
+  // while selectedClaude (computed after retry resolution) reflects what actually ran.
+  const plannedSelectedClaude = selectedClaudeSummary(plan);
   const plannedTurnCount =
     plan.status === "planned" ? Number(routeSession.turnCount || 0) + 1 : Number(routeSession.turnCount || 0);
   persistRouteContext({
@@ -215,7 +218,7 @@ function buildSwitchboardTurn({
     claudeSessionId,
     turnCount: plannedTurnCount,
     routeDecision,
-    selectedClaude: persistedSelectedClaude,
+    selectedClaude: plannedSelectedClaude,
     executionMode: execute ? "live" : "planned",
     wrapperContext
   });
@@ -429,8 +432,11 @@ export function executeSwitchboardInteractiveContinuityProbe({
     interactiveArgsOmitPrompt:
       !firstTurn.claudePlan?.args?.includes("--print") &&
       !secondTurn.claudePlan?.args?.includes("--print"),
+    // Check that turn count advances by exactly 1 per turn relative to the
+    // starting count, rather than asserting absolute values of 1 and 2.
+    // This keeps the check correct even if the probe thread is reused.
     turnCountAdvanced:
-      firstTurn.nextSession.turnCount === 1 && secondTurn.nextSession.turnCount === 2
+      secondTurn.nextSession.turnCount === firstTurn.nextSession.turnCount + 1
   };
 
   return {

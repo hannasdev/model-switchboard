@@ -33,6 +33,7 @@
     "check:openai": "node bin/check.js --vendor openai",
     "check:gemini": "node bin/check.js --vendor gemini",
     "switchboard:turn": "node bin/switchboard.js",
+    "_switchboard:turn:comment": "pass prompt as trailing arg, e.g.: npm run switchboard:turn -- 'Implement the plan.'",
     "switchboard:interactive": "node bin/switchboard.js --interactive",
     "switchboard:explain": "node bin/switchboard.js explain --json",
     "switchboard:continuity": "node bin/switchboard.js probe continuity --no-tools --inter-turn-delay-ms 1000",
