@@ -407,7 +407,7 @@ The MVP is acceptable when:
 
 [PoC](archive/POC.md) describes the original risk-reduction plan.
 
-[PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md) contains the executable PoC 2 evidence. [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) contains the PoC 2 outcome summary with verified assumptions and MVP implications.
+[PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed, including the PoC 2 outcome summary with verified assumptions and MVP implications. [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md) contains the executable PoC 2 evidence.
 
 [Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
 
