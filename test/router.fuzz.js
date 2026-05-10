@@ -1,21 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import fc from "fast-check";
 import { routePrompt } from "../src/router/router.js";
 
-const CAPABILITIES = [
-  "chat",
-  "reasoning",
-  "structured_output",
-  "repo_context",
-  "file_read",
-  "file_edit",
-  "shell_execution",
-  "test_execution"
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const OVERRIDES = ["auto", "stronger", "cheaper", "stay"];
+
+function readTargets(relPath) {
+  const contents = fs.readFileSync(path.join(__dirname, relPath), "utf8");
+  return JSON.parse(contents).targets;
+}
+
+const fixtureTargets = [
+  ...readTargets("../src/router/data/targets.openai.json"),
+  ...readTargets("../src/router/data/targets.anthropic.json"),
+  ...readTargets("../src/router/data/targets.gemini.json")
 ];
 
-const TARGET_LABELS = ["quick", "balanced", "deep reasoning", "best coder"];
-const OVERRIDES = ["auto", "stronger", "cheaper", "stay"];
+const TARGET_LABELS = [...new Set(fixtureTargets.map((target) => target.label))];
+const CAPABILITIES = [
+  ...new Set(fixtureTargets.flatMap((target) => target.capabilities))
+];
 
 const arbitraryTarget = fc.record({
   id: fc.string({ minLength: 1, maxLength: 30 }),

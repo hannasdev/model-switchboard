@@ -27,9 +27,9 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "release": "release-it",
-    "test:fuzz": "node --test test/router.fuzz.test.js",
+    "test:fuzz": "node --test test/router.fuzz.js",
     "check:anthropic": "node bin/check.js --vendor anthropic",
     "check:openai": "node bin/check.js --vendor openai",
     "check:gemini": "node bin/check.js --vendor gemini",
