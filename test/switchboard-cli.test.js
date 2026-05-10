@@ -272,3 +272,71 @@ test("switchboard cheaper override downshifts when capability-safe", () => {
   assert.match(secondIo.stdoutText, /Override: cheaper/);
   assert.match(secondIo.stdoutText, /Claude target: haiku\/low/);
 });
+
+test("switchboard rejects a prompt when --interactive is set", () => {
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["--dry-run", "--interactive", "Implement the plan."],
+    io
+  );
+
+  assert.equal(exitCode, 1);
+  assert.match(io.stderrText, /does not accept a prompt argument/);
+  assert.equal(io.stdoutText, "");
+});
+
+test("switchboard interactive dry-run works without a prompt", () => {
+  const paths = tempPaths();
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--interactive",
+      "--thread-id",
+      "interactive-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(io.stdoutText, /Switchboard: quick/);
+  assert.match(io.stdoutText, /Status: planned/);
+  assert.equal(io.stderrText, "");
+});
+
+test("switchboard interactive continuity probe command reports verified checks", () => {
+  const paths = tempPaths();
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "probe",
+      "continuity-interactive",
+      "--thread-id",
+      "probe-interactive-thread",
+      "--claude-bin",
+      "true",
+      "--inter-turn-delay-ms",
+      "0",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(io.stdoutText, /Probe: continuity-interactive/);
+  assert.match(io.stdoutText, /Status: verified/);
+  assert.match(io.stdoutText, /bothExecuted/);
+  assert.match(io.stdoutText, /secondTurnUsesResume/);
+  assert.equal(io.stderrText, "");
+});

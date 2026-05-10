@@ -37,7 +37,8 @@ export function planClaudeCliLaunch({
   sessionId = randomUUID(),
   outputFormat = "json",
   noTools = false,
-  resume = false
+  resume = false,
+  interactive = false
 }) {
   const route = routePrompt({
     input,
@@ -65,22 +66,29 @@ export function planClaudeCliLaunch({
     };
   }
 
-  const args = [
-    "--print",
-    "--output-format",
-    outputFormat,
-    "--model",
-    cliTarget.model,
-    "--effort",
-    cliTarget.effort,
-    resume ? "--resume" : "--session-id",
-    sessionId,
-    input
-  ];
+  const args = interactive
+    ? [
+        "--model",
+        cliTarget.model,
+        "--effort",
+        cliTarget.effort,
+        resume ? "--resume" : "--session-id",
+        sessionId
+      ]
+    : [
+        "--print",
+        "--output-format",
+        outputFormat,
+        "--model",
+        cliTarget.model,
+        "--effort",
+        cliTarget.effort,
+        resume ? "--resume" : "--session-id",
+        sessionId
+      ];
 
-  if (noTools) {
-    args.splice(args.length - 1, 0, "--tools=");
-  }
+  if (noTools) args.push("--tools=");
+  if (!interactive) args.push(input);
 
   return {
     status: "planned",
@@ -90,6 +98,7 @@ export function planClaudeCliLaunch({
     args,
     sessionId,
     resume,
+    interactive,
     selectedTarget: {
       ...cliTarget,
       targetId,

@@ -37,12 +37,17 @@ High-level flow:
 ## Primary Commands
 
 - `switchboard "your prompt"`
+- `switchboard --interactive`
 - `switchboard explain`
+- `switchboard probe continuity`
+- `switchboard probe continuity-interactive`
 - `npm test`
 
 ## Project Status
 
 This project is in active MVP development, focused on a narrow, reliable routing experience before broader expansion.
+
+Non-interactive continuity is verified for routed turns. Interactive continuity is verified in a live environment: same Claude session id across turns, resume semantics confirmed, hook events correlated. Stale-resume recovery is automatic.
 
 ## Delivery Model
 

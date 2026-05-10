@@ -1,10 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
   executeSwitchboardContinuityProbe,
+  executeSwitchboardInteractiveContinuityProbe,
+  executeSwitchboardTurn,
   planSwitchboardContinuityProbe,
   planSwitchboardTurn
 } from "../src/switchboard/workflow.js";
@@ -137,4 +140,193 @@ test("Live Switchboard continuity probe captures execution evidence", () => {
   assert.equal(entries[0].executionMode, "live");
   assert.equal(entries[0].execution.status, "executed");
   assert.equal(entries[1].execution.stdoutPreview, "{\"result\":\"switchboard-continuity-2718\"}");
+});
+
+test("Switchboard interactive turns preserve Claude continuity without prompt args", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  const firstTurn = planSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-4",
+    sessionId: "claude-session-4",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+  const secondTurn = planSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-4",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+
+  assert.equal(firstTurn.status, "planned");
+  assert.equal(secondTurn.status, "planned");
+  assert.equal(firstTurn.claudePlan.interactive, true);
+  assert.equal(secondTurn.claudePlan.interactive, true);
+  assert.equal(firstTurn.claudePlan.args.includes("--print"), false);
+  assert.equal(secondTurn.claudePlan.args.includes("--print"), false);
+  assert.equal(firstTurn.claudePlan.args.includes("--session-id"), true);
+  assert.equal(secondTurn.claudePlan.args.includes("--resume"), true);
+  assert.equal(firstTurn.selectedClaude.sessionId, "claude-session-4");
+  assert.equal(secondTurn.selectedClaude.sessionId, "claude-session-4");
+  assert.equal(firstTurn.nextSession.turnCount, 1);
+  assert.equal(secondTurn.nextSession.turnCount, 2);
+  assert.equal(secondTurn.claudePlan.args.at(-1), "claude-session-4");
+});
+
+test("Live interactive continuity probe verifies resume and session continuity", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  const executions = [];
+  const result = executeSwitchboardInteractiveContinuityProbe({
+    threadId: "thread-5",
+    sessionId: "claude-session-5",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner(plan) {
+      executions.push(plan);
+      return {
+        status: 0,
+        signal: null,
+        stdout: "interactive-ok",
+        stderr: "",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "verified");
+  assert.deepEqual(result.verified, {
+    bothExecuted: true,
+    sameClaudeSession: true,
+    secondTurnUsesResume: true,
+    interactiveArgsOmitPrompt: true,
+    turnCountAdvanced: true
+  });
+  assert.equal(result.turns[0].claudePlan.interactive, true);
+  assert.equal(result.turns[1].claudePlan.resume, true);
+  assert.equal(executions[0].args.includes("--print"), false);
+  assert.equal(executions[1].args.includes("--print"), false);
+  assert.equal(executions[1].args.includes("--resume"), true);
+});
+
+test("Interactive live turn does NOT recover from non-stale-resume failures", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  planSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-7",
+    sessionId: "claude-session-7",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+
+  const executions = [];
+  const result = executeSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-7",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner(plan) {
+      executions.push([...plan.args]);
+      return {
+        status: 1,
+        signal: null,
+        stdout: "",
+        stderr: "Error: authentication failed\n",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.recovery.recoveredFromResumeRetry, false);
+  assert.equal(executions.length, 1);
+  assert.equal(executions[0].includes("--resume"), true);
+});
+
+test("Interactive live turn recovers from stale resume by retrying with session-id", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  planSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-6",
+    sessionId: "claude-session-6",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+
+  const executions = [];
+  const result = executeSwitchboardTurn({
+    input: "",
+    interactive: true,
+    threadId: "thread-6",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner(plan) {
+      executions.push([...plan.args]);
+      if (plan.args.includes("--resume")) {
+        return {
+          status: 1,
+          signal: null,
+          stdout: "",
+          stderr: "No conversation found with session ID: claude-session-6\n",
+          error: null
+        };
+      }
+      return {
+        status: 0,
+        signal: null,
+        stdout: "interactive-recovered",
+        stderr: "",
+        error: null
+      };
+    }
+  });
+
+  assert.equal(result.status, "executed");
+  assert.equal(result.recovery.recoveredFromResumeRetry, true);
+  assert.equal(result.claudePlan.resume, false);
+  assert.equal(result.claudePlan.args.includes("--session-id"), true);
+  assert.equal(result.nextSession.turnCount, 2);
+  assert.equal(executions.length, 2);
+  assert.equal(executions[0].includes("--resume"), true);
+  assert.equal(executions[1].includes("--session-id"), true);
+});
+
+test("Interactive default runner captures stderr while passing stdin/stdout to terminal", () => {
+  // Directly verify the stdio shape used by the default runner.
+  // With stdio: ["inherit", "inherit", "pipe"] and encoding: "utf8",
+  // spawnSync returns a string for stderr and null for stdout (inherited).
+  // This proves the stale-resume detection can actually fire in real runs.
+  const result = spawnSync(
+    "sh",
+    ["-c", "echo 'No conversation found with session ID: test-id' >&2; exit 1"],
+    {
+      encoding: "utf8",
+      timeout: 5000,
+      stdio: ["inherit", "inherit", "pipe"]
+    }
+  );
+
+  assert.equal(result.status, 1);
+  assert.equal(typeof result.stderr, "string");
+  assert.match(result.stderr, /No conversation found with session ID/);
+  // stdout is null because it was inherited, not piped
+  assert.equal(result.stdout, null);
 });

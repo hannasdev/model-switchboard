@@ -77,3 +77,21 @@ test("Claude CLI launcher can resume an existing session", () => {
     "Thanks, that makes sense."
   ]);
 });
+
+test("Claude CLI launcher supports interactive mode without a prompt argument", () => {
+  const plan = planClaudeCliLaunch({
+    input: "",
+    sessionId: "00000000-0000-4000-8000-000000000005",
+    cwd: "/repo",
+    interactive: true
+  });
+
+  assert.equal(plan.status, "planned");
+  assert.equal(plan.interactive, true);
+  assert.equal(plan.args.includes("--print"), false);
+  assert.equal(plan.args.includes("--output-format"), false);
+  assert.deepEqual(plan.args.slice(-2), [
+    "--session-id",
+    "00000000-0000-4000-8000-000000000005"
+  ]);
+});

@@ -96,10 +96,18 @@ function selectedClaudeSummary(plan) {
 }
 
 function defaultCommandRunner(plan, timeoutMs) {
+  // Interactive turns inherit stdin and stdout so Claude's TTY session works
+  // normally, but pipe stderr so we can capture it for stale-resume detection
+  // and evidence logging. Non-interactive turns pipe all three for full capture.
+  const interactiveOptions = plan.interactive
+    ? { stdio: ["inherit", "inherit", "pipe"] }
+    : {};
+
   return spawnSync(plan.claudeBin, plan.args, {
     cwd: plan.cwd,
     encoding: "utf8",
-    timeout: timeoutMs
+    timeout: timeoutMs,
+    ...interactiveOptions
   });
 }
 
@@ -113,6 +121,13 @@ function executionSummary(execution) {
     stderrPreview: execution.stderr ? execution.stderr.slice(0, 2000) : "",
     error: execution.error ? execution.error.message : null
   };
+}
+
+function replaceResumeWithSessionId(args = []) {
+  const nextArgs = [...args];
+  const resumeIdx = nextArgs.indexOf("--resume");
+  if (resumeIdx !== -1) nextArgs[resumeIdx] = "--session-id";
+  return nextArgs;
 }
 
 function sleepSync(ms) {
@@ -150,6 +165,7 @@ function persistRouteContext({
 
 function buildSwitchboardTurn({
   input,
+  interactive = false,
   threadId = "default",
   targets = readJson(ANTHROPIC_TARGETS_PATH).targets,
   storePath = DEFAULT_SWITCHBOARD_STORE_PATH,
@@ -187,11 +203,17 @@ function buildSwitchboardTurn({
     sessionId: claudeSessionId,
     outputFormat,
     noTools,
-    resume: resumeClaudeSession
+    resume: resumeClaudeSession,
+    interactive
   });
+  let effectivePlan = plan;
+  let recoveredFromResumeRetry = false;
   const wrapperContext = buildWrapperContext(plan);
   const routeDecision = routeDecisionSummary(plan);
-  const selectedClaude = selectedClaudeSummary(plan);
+  // plannedSelectedClaude reflects the pre-execution plan (before any stale-resume retry).
+  // It is used for route-context persistence so the context always records what was planned,
+  // while selectedClaude (computed after retry resolution) reflects what actually ran.
+  const plannedSelectedClaude = selectedClaudeSummary(plan);
   const plannedTurnCount =
     plan.status === "planned" ? Number(routeSession.turnCount || 0) + 1 : Number(routeSession.turnCount || 0);
   persistRouteContext({
@@ -200,23 +222,51 @@ function buildSwitchboardTurn({
     claudeSessionId,
     turnCount: plannedTurnCount,
     routeDecision,
-    selectedClaude,
+    selectedClaude: plannedSelectedClaude,
     executionMode: execute ? "live" : "planned",
     wrapperContext
   });
-  const execution =
+
+  let execution =
     execute && plan.status === "planned"
       ? commandRunner(plan, timeoutMs)
       : null;
+
+  const isStaleResume =
+    execute &&
+    plan.status === "planned" &&
+    plan.interactive &&
+    plan.resume &&
+    execution?.status !== 0 &&
+    typeof execution?.stderr === "string" &&
+    execution.stderr.includes("No conversation found with session ID");
+
+  if (isStaleResume) {
+    const retryPlan = {
+      ...plan,
+      args: replaceResumeWithSessionId(plan.args),
+      resume: false
+    };
+    retryPlan.commandPreview = [retryPlan.claudeBin, ...retryPlan.args];
+    const retryExecution = commandRunner(retryPlan, timeoutMs);
+    if (retryExecution?.status === 0) {
+      effectivePlan = retryPlan;
+      execution = retryExecution;
+      recoveredFromResumeRetry = true;
+    }
+  }
+
+  const selectedClaude = selectedClaudeSummary(effectivePlan);
+
   const executionResult = executionSummary(execution);
   const turnStatus = executionResult?.status || plan.status;
 
   const nextSession =
-    plan.status === "planned" && (!execute || executionResult?.status === "executed")
+    effectivePlan.status === "planned" && (!execute || executionResult?.status === "executed")
       ? {
           ...routeSession,
-          currentTargetId: plan.selectedTarget.targetId,
-          currentLabel: plan.selectedTarget.label,
+          currentTargetId: effectivePlan.selectedTarget.targetId,
+          currentLabel: effectivePlan.selectedTarget.label,
           turnCount: Number(routeSession.turnCount || 0) + 1,
           lastRoute: routeDecision,
           claudeSessionId,
@@ -225,7 +275,7 @@ function buildSwitchboardTurn({
       : routeSession;
 
   const savedSession =
-    persist && plan.status === "planned"
+    persist && effectivePlan.status === "planned"
       ? saveThreadSession({ storePath, threadId, session: nextSession })
       : null;
 
@@ -239,6 +289,9 @@ function buildSwitchboardTurn({
     routeDecision,
     selectedClaude,
     execution: executionResult,
+    recovery: {
+      recoveredFromResumeRetry
+    },
     session: {
       threadId,
       claudeSessionId,
@@ -258,7 +311,10 @@ function buildSwitchboardTurn({
     routeDecision,
     selectedClaude,
     execution: executionResult,
-    claudePlan: plan,
+    claudePlan: effectivePlan,
+    recovery: {
+      recoveredFromResumeRetry
+    },
     previousSession: persistedSession,
     nextSession: savedSession || nextSession,
     evidence
@@ -342,6 +398,49 @@ export function executeSwitchboardContinuityProbe({
     turnCountAdvanced:
       firstTurn.nextSession.turnCount === 1 && secondTurn.nextSession.turnCount === 2,
     secondTurnHasFirstTurnContext: secondOutput.includes("switchboard-continuity-2718")
+  };
+
+  return {
+    status: Object.values(verified).every(Boolean) ? "verified" : "needs_review",
+    threadId,
+    verified,
+    turns: [firstTurn, secondTurn]
+  };
+}
+
+export function executeSwitchboardInteractiveContinuityProbe({
+  threadId = "poc2-continuity-interactive-live",
+  interTurnDelayMs = 0,
+  ...options
+} = {}) {
+  const firstTurn = executeSwitchboardTurn({
+    ...options,
+    threadId,
+    input: "",
+    interactive: true
+  });
+  sleepSync(interTurnDelayMs);
+  const secondTurn = executeSwitchboardTurn({
+    ...options,
+    threadId,
+    input: "",
+    interactive: true
+  });
+
+  const verified = {
+    bothExecuted: firstTurn.status === "executed" && secondTurn.status === "executed",
+    sameClaudeSession:
+      firstTurn.selectedClaude?.sessionId &&
+      firstTurn.selectedClaude.sessionId === secondTurn.selectedClaude?.sessionId,
+    secondTurnUsesResume: secondTurn.claudePlan?.resume === true,
+    interactiveArgsOmitPrompt:
+      !firstTurn.claudePlan?.args?.includes("--print") &&
+      !secondTurn.claudePlan?.args?.includes("--print"),
+    // Check that turn count advances by exactly 1 per turn relative to the
+    // starting count, rather than asserting absolute values of 1 and 2.
+    // This keeps the check correct even if the probe thread is reused.
+    turnCountAdvanced:
+      secondTurn.nextSession.turnCount === firstTurn.nextSession.turnCount + 1
   };
 
   return {
