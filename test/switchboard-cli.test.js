@@ -440,3 +440,57 @@ test("switchboard interactive continuity probe command reports verified checks",
   assert.match(io.stdoutText, /thirdTurnUsesResume/);
   assert.equal(io.stderrText, "");
 });
+
+test("switchboard interactive continuity probe only enforces hook checks when hook log is explicit", () => {
+  const paths = tempPaths();
+
+  const defaultIo = memoryIo();
+  const defaultExitCode = runSwitchboardCli(
+    [
+      "probe",
+      "continuity-interactive",
+      "--thread-id",
+      "probe-interactive-hook-default-thread",
+      "--claude-bin",
+      "true",
+      "--inter-turn-delay-ms",
+      "0",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    defaultIo
+  );
+  assert.equal(defaultExitCode, 0);
+  assert.doesNotMatch(defaultIo.stdoutText, /hookEventsPresent/);
+
+  fs.writeFileSync(paths.hookLogPath, "", "utf8");
+  const explicitIo = memoryIo();
+  const explicitExitCode = runSwitchboardCli(
+    [
+      "probe",
+      "continuity-interactive",
+      "--thread-id",
+      "probe-interactive-hook-explicit-thread",
+      "--claude-bin",
+      "true",
+      "--inter-turn-delay-ms",
+      "0",
+      "--hook-log-path",
+      paths.hookLogPath,
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    explicitIo
+  );
+  assert.equal(explicitExitCode, 1);
+  assert.match(explicitIo.stdoutText, /hookEventsPresent/);
+  assert.match(explicitIo.stdoutText, /hookEventsCorrelated/);
+});

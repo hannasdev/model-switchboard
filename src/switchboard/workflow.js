@@ -414,6 +414,7 @@ export function executeSwitchboardInteractiveContinuityProbe({
   hookLogPath,
   ...options
 } = {}) {
+  const probeStartMs = Date.now();
   const firstTurn = executeSwitchboardTurn({
     ...options,
     threadId,
@@ -437,10 +438,14 @@ export function executeSwitchboardInteractiveContinuityProbe({
 
   const claudeSessionId = firstTurn.selectedClaude?.sessionId;
 
-  // Hook correlation: check that hook events for this Claude session exist and
-  // at least one was matched. Only checked when a hookLogPath is provided.
+  // Hook correlation is optional and only evaluated when a hook log path is
+  // explicitly provided by the caller.
   const hookEvents = hookLogPath
-    ? readNdjson(hookLogPath).filter((entry) => entry.sessionId === claudeSessionId)
+    ? readNdjson(hookLogPath).filter((entry) => {
+        if (entry.sessionId !== claudeSessionId) return false;
+        const eventTs = Date.parse(entry.ts || "");
+        return Number.isFinite(eventTs) && eventTs >= probeStartMs;
+      })
     : null;
 
   const verified = {
@@ -464,7 +469,8 @@ export function executeSwitchboardInteractiveContinuityProbe({
     turnCountAdvanced:
       secondTurn.nextSession.turnCount === firstTurn.nextSession.turnCount + 1 &&
       thirdTurn.nextSession.turnCount === secondTurn.nextSession.turnCount + 1,
-    ...(hookEvents !== null && hookEvents.length > 0 && {
+    ...(hookEvents !== null && {
+      hookEventsPresent: hookEvents.length > 0,
       hookEventsCorrelated:
         hookEvents.some((entry) => entry.correlation?.status === "matched")
     })
