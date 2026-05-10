@@ -1,21 +1,39 @@
 {
   "name": "model-switchboard",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.1",
+  "description": "Session-aware routing layer for AI-assisted software delivery workflows",
   "type": "module",
   "bin": {
     "switchboard": "./bin/switchboard.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node --test",
+    "release": "release-it",
     "check:anthropic": "node bin/check.js --vendor anthropic",
     "check:openai": "node bin/check.js --vendor openai",
     "check:gemini": "node bin/check.js --vendor gemini",
     "switchboard:continuity": "node bin/switchboard.js probe continuity --no-tools --inter-turn-delay-ms 1000"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hannasdev/model-switchboard"
+  },
+  "license": "UNLICENSED",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
     "@google/genai": "^2.0.1",
     "openai": "^6.37.0"
+  },
+  "devDependencies": {
+    "auto-changelog": "^2.5.1",
+    "release-it": "^20.0.1"
   }
 }
