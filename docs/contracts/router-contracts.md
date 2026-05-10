@@ -154,7 +154,7 @@ Notes:
   "selectedTargetId": "string|null",
   "shouldSwitch": "boolean|null",
   "continuityCost": "low|medium|high|null",
-  "override": {
+  "routingOverride": {
     "requested": "auto|stronger|cheaper|stay",
     "applied": "boolean",
     "reason": "string|null"
@@ -169,6 +169,7 @@ Notes:
 * `status=refused` requires `refusalReason` and no selected target.
 * `shouldSwitch` and `continuityCost` may be `null` when status is refused.
 * `softConstraintInputs` records preference inputs for explainability even when policy depth is staged.
+* `routingOverride` matches current implementation output naming.
 
 ### 5) ContextPackage
 
@@ -180,8 +181,8 @@ Notes:
   "turnIndex": "number",
   "routeLabel": "string",
   "targetId": "string",
-  "mode": "string",
-  "wrapperContext": "string|null",
+  "mode": "plan|implement|debug|review|summarize|agent_workflow|out_of_domain",
+  "wrapperContext": "{ kind: string, text: string }|null",
   "handoffSummary": "string|null",
   "createdAt": "ISO-8601 timestamp"
 }
@@ -190,6 +191,7 @@ Notes:
 Notes:
 
 * This is the minimal handoff/context contract for current scope.
+* `wrapperContext` maps to current structured wrapper context evidence (for example `kind` and `text`).
 * `handoffSummary` may remain null until explicit handoff flows are implemented.
 
 ### 6) RouterConfig
@@ -251,7 +253,7 @@ Notes:
   },
   "classification": {
     "taskType": "string",
-    "mode": "string",
+    "mode": "plan|implement|debug|review|summarize|agent_workflow|out_of_domain",
     "confidence": "number"
   },
   "decision": {

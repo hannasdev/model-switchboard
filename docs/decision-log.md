@@ -49,7 +49,7 @@ Follow-up:
 
 Decision ID: DEC-2026-05-10-router-phase-governance
 Related deferred item: process bootstrap
-Status: deferred
+Status: committed
 Date: 2026-05-10
 Owners: team
 
@@ -104,11 +104,11 @@ Tradeoffs:
 Verification signal:
 - Expected signal from phase plan: Milestone 1 acceptance criteria met and documented.
 - Evidence observed:
-	- `docs/contracts/router-contracts.md` exists and is implementation-usable.
-	- Contract version is explicitly `0.1.0-experimental` and provisional.
-	- Minimal normative core plus Claude mapping appendix are present.
-	- Core contracts represent handoff/context-transfer.
-	- Phase and contract docs both include deferred-commitment guardrails.
+  - `docs/contracts/router-contracts.md` exists and is implementation-usable.
+  - Contract version is explicitly `0.1.0-experimental` and provisional.
+  - Minimal normative core plus Claude mapping appendix are present.
+  - Core contracts represent handoff/context-transfer.
+  - Phase and contract docs both include deferred-commitment guardrails.
 
 Decision:
 - Chosen option: Option B.
