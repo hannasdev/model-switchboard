@@ -1115,6 +1115,40 @@ escalation:
 
 ## 17. Future Enhancements
 
+### 17.1 Deferred from MVP
+
+These items were explicitly deferred from the Claude Code MVP. They are the first candidates for post-MVP work once the MVP has proven value under real usage.
+
+**Cross-vendor routing**: Route among OpenAI, Anthropic, and Gemini targets based on task classification and capability. The router/workflow boundary was designed to support this, but it requires proven MVP routing pressure before the boundary is hardened enough to extract a separate `@model-switchboard/router` package.
+
+**`@model-switchboard/router` package extraction**: Once the boundary has survived real workflow pressure, extract and publish the router as a standalone public package under the `@model-switchboard` namespace. The MVP should use the current monorepo structure while the boundary is still stabilizing.
+
+**`deep reasoning` as a standalone target**: Only worth adding if a vendor exposes a meaningful distinction from `balanced` or `best coder` routing. No current Claude evidence supports a useful distinction.
+
+**In-session automatic model switching**: Hooks cannot change the active model inside a running Claude session through any supported mechanism. Defer unless Claude exposes a supported hook output for this.
+
+**Fully interactive Claude shell parity**: `switchboard --interactive` is implemented and live-verified for basic continuity. It is not yet considered fully supported. See Section 17.2 for the validation criteria before removing the experimental label.
+
+**Broad tool permission automation**: The MVP policy is conservative and fail-closed. Richer tool-governance policy requires real usage data to know where automation adds value without adding risk.
+
+**Automatic context packaging**: Valuable before target switches, but adds a second major failure surface. Defer until routing value is proven first.
+
+**Full gateway execution as the primary product surface**: Viable but not the right first UX. The Claude Code wrapper path proved a better early product fit.
+
+**Learned routing**: Requires real usage logs. The deterministic policy should be proven first.
+
+### 17.2 `--interactive` Validation Criteria
+
+`switchboard --interactive` will be considered fully supported (not experimental) when the following are verified in a live environment:
+
+1. **Continuity across multiple interactive turns**: At least three sequential interactive turns share the same Claude session id, each resuming without prompting the user to restate settled context.
+2. **Stale-resume recovery in interactive mode**: If Claude no longer holds the session id, the wrapper retries with a fresh `--session-id` automatically and the user sees a clear recovery message rather than a crash.
+3. **Hook correlation in interactive mode**: `UserPromptSubmit` and `PreToolUse` hook events are captured and correlated with route context during an interactive session, not just in prompt-driven mode.
+4. **Override controls work in interactive mode**: `--stronger`, `--cheaper`, and `--stay` flags are accepted and applied correctly when launching an interactive session.
+5. **Failure behavior is consistent with prompt-driven mode**: Auth failure, route-context write failure, and hook setup failure all fail closed rather than silently degrading.
+
+### 17.3 General Future Enhancements
+
 Possible later features:
 
 1. Automatic context packaging before model switches.

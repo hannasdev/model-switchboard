@@ -203,17 +203,22 @@ test("Live interactive continuity probe verifies resume and session continuity",
 
   assert.equal(result.status, "verified");
   assert.deepEqual(result.verified, {
-    bothExecuted: true,
-    sameClaudeSession: true,
+    allExecuted: true,
+    sameClaudeSessionAcrossThreeTurns: true,
     secondTurnUsesResume: true,
+    thirdTurnUsesResume: true,
     interactiveArgsOmitPrompt: true,
     turnCountAdvanced: true
   });
+  assert.equal(result.turns.length, 3);
   assert.equal(result.turns[0].claudePlan.interactive, true);
   assert.equal(result.turns[1].claudePlan.resume, true);
+  assert.equal(result.turns[2].claudePlan.resume, true);
   assert.equal(executions[0].args.includes("--print"), false);
   assert.equal(executions[1].args.includes("--print"), false);
+  assert.equal(executions[2].args.includes("--print"), false);
   assert.equal(executions[1].args.includes("--resume"), true);
+  assert.equal(executions[2].args.includes("--resume"), true);
 });
 
 test("Interactive live turn does NOT recover from non-stale-resume failures", () => {

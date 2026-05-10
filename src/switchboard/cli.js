@@ -133,7 +133,10 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     };
     const probeResult = probe === "continuity"
       ? executeSwitchboardContinuityProbe(sharedProbeOptions)
-      : executeSwitchboardInteractiveContinuityProbe(sharedProbeOptions);
+      : executeSwitchboardInteractiveContinuityProbe({
+          ...sharedProbeOptions,
+          hookLogPath: getArg(argv, "--hook-log-path") || DEFAULT_CLAUDE_HOOK_LOG_PATH
+        });
     if (hasFlag(argv, "--json")) {
       stdout.write(`${JSON.stringify(probeResult, null, 2)}\n`);
     } else {

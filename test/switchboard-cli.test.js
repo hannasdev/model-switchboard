@@ -310,6 +310,104 @@ test("switchboard interactive dry-run works without a prompt", () => {
   assert.equal(io.stderrText, "");
 });
 
+test("switchboard interactive stronger override escalates target selection", () => {
+  const paths = tempPaths();
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--interactive",
+      "--stronger",
+      "--thread-id",
+      "interactive-stronger-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(io.stdoutText, /Switchboard: best coder/);
+  assert.match(io.stdoutText, /Override: stronger/);
+  assert.match(io.stdoutText, /Claude target: sonnet\/high/);
+  assert.equal(io.stderrText, "");
+});
+
+test("switchboard interactive cheaper override downshifts target selection", () => {
+  const paths = tempPaths();
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--interactive",
+      "--cheaper",
+      "--thread-id",
+      "interactive-cheaper-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(io.stdoutText, /Switchboard: quick/);
+  assert.match(io.stdoutText, /Override: cheaper/);
+  assert.match(io.stdoutText, /Claude target: haiku\/low/);
+  assert.equal(io.stderrText, "");
+});
+
+test("switchboard interactive stay override keeps the current eligible target", () => {
+  const paths = tempPaths();
+  const firstIo = memoryIo();
+  runSwitchboardCli(
+    [
+      "--dry-run",
+      "--interactive",
+      "--thread-id",
+      "interactive-stay-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    firstIo
+  );
+
+  const secondIo = memoryIo();
+  const exitCode = runSwitchboardCli(
+    [
+      "--dry-run",
+      "--interactive",
+      "--stay",
+      "--thread-id",
+      "interactive-stay-thread",
+      "--store-path",
+      paths.storePath,
+      "--log-path",
+      paths.logPath,
+      "--route-context-path",
+      paths.routeContextPath
+    ],
+    secondIo
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(secondIo.stdoutText, /Switchboard: quick/);
+  assert.match(secondIo.stdoutText, /Override: stay/);
+  assert.match(secondIo.stdoutText, /Claude target: haiku\/low/);
+  assert.equal(secondIo.stderrText, "");
+});
+
 test("switchboard interactive continuity probe command reports verified checks", () => {
   const paths = tempPaths();
   const io = memoryIo();
@@ -336,7 +434,9 @@ test("switchboard interactive continuity probe command reports verified checks",
   assert.equal(exitCode, 0);
   assert.match(io.stdoutText, /Probe: continuity-interactive/);
   assert.match(io.stdoutText, /Status: verified/);
-  assert.match(io.stdoutText, /bothExecuted/);
+  assert.match(io.stdoutText, /allExecuted/);
+  assert.match(io.stdoutText, /sameClaudeSessionAcrossThreeTurns/);
   assert.match(io.stdoutText, /secondTurnUsesResume/);
+  assert.match(io.stdoutText, /thirdTurnUsesResume/);
   assert.equal(io.stderrText, "");
 });

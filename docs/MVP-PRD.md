@@ -100,11 +100,13 @@ Verified:
 
 Remaining validation before calling the MVP shippable:
 
-1. Replace PoC npm commands with a first-class `switchboard` command.
-2. Decide whether the initial MVP supports prompt-driven turns only, or also supports a no-prompt interactive mode.
-3. Harden failure behavior when Claude auth, hook setup, or route-context correlation is unavailable.
-4. Define the minimum production tool-governance policy.
-5. Write a concise PoC 2 outcome summary with MVP implications.
+All items resolved. See Section 8 for implementation status and [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) for the PoC 2 outcome summary with MVP implications.
+
+1. ~~Replace PoC npm commands with a first-class `switchboard` command.~~ Done.
+2. ~~Decide whether the initial MVP supports prompt-driven turns only, or also supports a no-prompt interactive mode.~~ Done: both prompt-driven and `--interactive` modes are implemented and live-verified.
+3. ~~Harden failure behavior when Claude auth, hook setup, or route-context correlation is unavailable.~~ Done: CLI fails closed pre-launch; hook policy fails closed without matched route context.
+4. ~~Define the minimum production tool-governance policy.~~ Done: documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
+5. ~~Write a concise PoC 2 outcome summary with MVP implications.~~ Done: captured in [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md).
 
 The MVP should still not include:
 
@@ -405,7 +407,7 @@ The MVP is acceptable when:
 
 [PoC](archive/POC.md) describes the original risk-reduction plan.
 
-[PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md) currently contains the freshest PoC 2 execution evidence until a dedicated PoC 2 outcome summary is written.
+[PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md) contains the executable PoC 2 evidence. [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) contains the PoC 2 outcome summary with verified assumptions and MVP implications.
 
 [Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
 
