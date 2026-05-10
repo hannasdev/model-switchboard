@@ -8,11 +8,11 @@
   },
   "scripts": {
     "test": "node --test",
-    "check:anthropic": "node src/poc/cli.js anthropic-connection-check",
-    "check:openai": "node src/poc/cli.js openai-connection-check",
-    "check:gemini": "node src/poc/cli.js gemini-connection-check",
-    "switchboard:turn": "node src/poc/switchboard_cli.js turn",
-    "switchboard:continuity": "node src/poc/switchboard_cli.js continuity-probe --live true --no-tools true --inter-turn-delay-ms 1000"
+    "check": "node bin/check.js --vendor",
+    "check:anthropic": "node bin/check.js --vendor anthropic",
+    "check:openai": "node bin/check.js --vendor openai",
+    "check:gemini": "node bin/check.js --vendor gemini",
+    "switchboard:continuity": "node bin/switchboard.js probe continuity --no-tools --inter-turn-delay-ms 1000"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",

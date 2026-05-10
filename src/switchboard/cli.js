@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import {
   DEFAULT_SWITCHBOARD_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH,
+  executeSwitchboardContinuityProbe,
   executeSwitchboardTurn,
   explainLatestSwitchboardTurn,
   planSwitchboardTurn
@@ -82,12 +83,13 @@ function printUsage(stdout) {
   stdout.write("  switchboard --cheaper \"Summarize this\"\n");
   stdout.write("  switchboard --stay \"Thanks\"\n");
   stdout.write("  switchboard explain [--thread-id <id>]\n");
+  stdout.write("  switchboard probe continuity [--no-tools] [--inter-turn-delay-ms <ms>]\n");
 }
 
 export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
   const stdout = io.stdout || process.stdout;
   const stderr = io.stderr || process.stderr;
-  const command = argv[0] === "explain" || argv[0] === "help" ? argv[0] : "turn";
+  const command = argv[0] === "explain" || argv[0] === "help" || argv[0] === "probe" ? argv[0] : "turn";
 
   if (command === "help" || hasFlag(argv, "--help")) {
     printUsage(stdout);
@@ -106,6 +108,33 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     routeContextPath: getArg(argv, "--route-context-path") || DEFAULT_ROUTE_CONTEXT_PATH
   };
   const json = hasFlag(argv, "--json");
+
+  if (command === "probe") {
+    const probe = argv[1];
+    if (probe !== "continuity") {
+      stderr.write(`switchboard probe: unknown probe '${probe || ""}'.\nAvailable: continuity\n`);
+      return 1;
+    }
+    const probeResult = executeSwitchboardContinuityProbe({
+      threadId: getArg(argv, "--thread-id") || `probe-continuity-${Date.now()}`,
+      noTools: hasFlag(argv, "--no-tools"),
+      interTurnDelayMs: Number(getArg(argv, "--inter-turn-delay-ms") || "1000"),
+      storePath: getArg(argv, "--store-path") || DEFAULT_SWITCHBOARD_STORE_PATH,
+      logPath: getArg(argv, "--log-path") || DEFAULT_SWITCHBOARD_LOG_PATH,
+      routeContextPath: getArg(argv, "--route-context-path") || DEFAULT_ROUTE_CONTEXT_PATH
+    });
+    if (hasFlag(argv, "--json")) {
+      stdout.write(`${JSON.stringify(probeResult, null, 2)}\n`);
+    } else {
+      stdout.write(`Probe: continuity\n`);
+      stdout.write(`Status: ${probeResult.status}\n`);
+      stdout.write(`Thread: ${probeResult.threadId}\n`);
+      for (const [check, passed] of Object.entries(probeResult.verified || {})) {
+        stdout.write(`  ${passed ? "✓" : "✗"} ${check}\n`);
+      }
+    }
+    return probeResult.status === "verified" ? 0 : 1;
+  }
 
   if (command === "explain") {
     const explanation = explainLatestSwitchboardTurn({
