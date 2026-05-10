@@ -154,11 +154,32 @@ Notes:
   "selectedTargetId": "string|null",
   "shouldSwitch": "boolean|null",
   "continuityCost": "low|medium|high|null",
+  "continuityDecision": "stay_on_current_target|select_target_without_current_context|avoid_switch_due_to_continuity_cost|switch_target|no_selected_target|null",
+  "continuityReason": "string|null",
   "routingOverride": {
     "requested": "auto|stronger|cheaper|stay",
     "applied": "boolean",
     "reason": "string|null"
   },
+  "modeResolution": {
+    "previousMode": "plan|implement|debug|review|summarize|agent_workflow|out_of_domain|null",
+    "proposedMode": "plan|implement|debug|review|summarize|agent_workflow|out_of_domain",
+    "resolvedMode": "plan|implement|debug|review|summarize|agent_workflow|out_of_domain",
+    "transitionReason": "string"
+  }|null,
+  "policyInputs": {
+    "hardConstraints": {
+      "privacy": "enforced|advisory|off",
+      "availability": "enforced|advisory|off",
+      "clientCompatibility": "enforced|advisory|off",
+      "requiredPrivacyTier": "local|standard|restricted|unknown|null",
+      "clientSurface": "string|null"
+    },
+    "softConstraints": {
+      "userPreference": "auto|stronger|cheaper|stay",
+      "projectOverride": "string|object|null"
+    }
+  }|null,
   "explanation": "string",
   "refusalReason": "string|null"
 }
@@ -170,6 +191,7 @@ Notes:
 * `shouldSwitch` and `continuityCost` may be `null` when status is refused.
 * `softConstraintInputs` records preference inputs for explainability even when policy depth is staged.
 * `routingOverride` matches current implementation output naming.
+* `continuityDecision`, `continuityReason`, `modeResolution`, and `policyInputs` are currently emitted by the implementation and treated as additive experimental fields in `0.1.0-experimental`.
 
 ### 5) ContextPackage
 

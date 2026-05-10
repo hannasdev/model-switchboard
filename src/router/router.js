@@ -48,6 +48,14 @@ const TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS = {
   code_review: ["reasoning", "structured_output"]
 };
 
+const CONTINUITY_DECISION = {
+  STAY: "stay_on_current_target",
+  SELECT_WITHOUT_CURRENT: "select_target_without_current_context",
+  AVOID_SWITCH: "avoid_switch_due_to_continuity_cost",
+  SWITCH: "switch_target",
+  NO_SELECTED_TARGET: "no_selected_target"
+};
+
 function hasAny(text, patterns) {
   return patterns.some((pattern) => text.includes(pattern));
 }
@@ -281,10 +289,10 @@ function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }
       selectedTarget,
       continuityCost,
       continuityDecision: !selectedTarget
-        ? "no_selected_target"
+        ? CONTINUITY_DECISION.NO_SELECTED_TARGET
         : currentTarget
-          ? "stay_on_current_target"
-          : "select_target_without_current_context",
+          ? CONTINUITY_DECISION.STAY
+          : CONTINUITY_DECISION.SELECT_WITHOUT_CURRENT,
       continuityReason: !selectedTarget
         ? "no_selected_target"
         : currentTarget
@@ -301,7 +309,7 @@ function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }
     return {
       selectedTarget: currentTarget,
       continuityCost,
-      continuityDecision: "avoid_switch_due_to_continuity_cost",
+      continuityDecision: CONTINUITY_DECISION.AVOID_SWITCH,
       continuityReason: "high_continuity_cost_low_incremental_gain"
     };
   }
@@ -309,7 +317,7 @@ function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }
   return {
     selectedTarget,
     continuityCost,
-    continuityDecision: "switch_target",
+    continuityDecision: CONTINUITY_DECISION.SWITCH,
     continuityReason: qualityGain ? "quality_gain" : "cost_or_latency_gain"
   };
 }

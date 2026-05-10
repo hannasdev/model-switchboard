@@ -123,6 +123,26 @@
     }
   },
   {
+    "name": "availability_constraint_refusal",
+    "input": "Implement the plan.",
+    "session": {
+      "mode": "plan",
+      "policyInputs": {
+        "hardConstraints": {
+          "availability": "enforced"
+        }
+      }
+    },
+    "targetOverride": "coder_unavailable",
+    "expected": {
+      "status": "refused",
+      "mode": "implement",
+      "requiredCapabilities": ["repo_context", "file_read", "file_edit"],
+      "explanationIncludes": ["hard constraints"],
+      "classificationReason": "implementation_signal"
+    }
+  },
+  {
     "name": "ambiguous_implementation_approval",
     "input": "Sounds good, go ahead.",
     "session": { "mode": "plan", "cost_posture": "balanced" },

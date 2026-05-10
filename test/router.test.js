@@ -17,10 +17,18 @@ const fixtures = readJson("../src/router/data/fixtures.json");
 
 test("fixtures map to expected route decisions", () => {
   for (const fx of fixtures) {
-    const targets =
-      fx.targetOverride === "quick_only"
-        ? openaiTargets.filter((t) => t.label === "quick")
-        : openaiTargets;
+    let targets;
+    if (fx.targetOverride === "quick_only") {
+      targets = openaiTargets.filter((t) => t.label === "quick");
+    } else if (fx.targetOverride === "coder_unavailable") {
+      targets = openaiTargets.map((target) =>
+        target.id === "openai-coder"
+          ? { ...target, availability: "unavailable" }
+          : target
+      );
+    } else {
+      targets = openaiTargets;
+    }
 
     const result = routePrompt({
       input: fx.input,
