@@ -63,10 +63,10 @@ Set these repository secrets before enabling releases:
 - Allow the deploy-key actor to bypass branch protections for automated release commits/tags.
 - Create an `npm` environment in Actions for deployment visibility (optional but recommended).
 
-## First Release
+## Release Runbook
 
-After secrets are configured:
+For each release:
 
-1. Merge a PR into `main` with conventional commit text.
+1. Merge a PR into `main` with conventional commit text (`feat:`, `fix:`, or `!`/`BREAKING CHANGE`).
 2. Release workflow creates a `Release x.y.z` commit and `vX.Y.Z` tag.
 3. Publish workflow runs on the new tag and publishes to npm.
