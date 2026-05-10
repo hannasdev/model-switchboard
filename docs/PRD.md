@@ -274,8 +274,9 @@ Best MVP path.
 
 Examples:
 
-* OpenClaw integration.
 * Custom CLI wrapper.
+* Claude Code wrapper.
+* OpenClaw integration.
 * Local orchestrator.
 
 Benefits:
@@ -1044,16 +1045,18 @@ Those can be analyzed later from logs. The first version should make the data vi
 
 The first version should be deliberately boring.
 
+The authoritative first-release scope is defined in [MVP PRD](MVP-PRD.md). The current applied MVP is a Claude Code-scoped Switchboard wrapper with pre-launch/pre-resume model and effort routing, hook correlation, local logs, and conservative tool governance. The broader checklist below remains useful architectural context, but it should not expand MVP scope beyond the dedicated MVP PRD.
+
 ### 16.1 MVP Checklist
 
 | Area           | MVP includes                                                     | MVP defers                                      |
 | -------------- | ---------------------------------------------------------------- | ----------------------------------------------- |
-| Integration    | One integration surface, preferably OpenClaw or custom CLI       | Multi-client adapters                           |
+| Integration    | One integration surface: Claude Code wrapper or custom CLI       | Multi-client adapters                           |
 | Commands       | Explicit approval and escalation commands                        | Natural-language approval inference             |
 | Classification | Minimal rule-based classifier                                    | Learned classifier or complex inference         |
 | Routing        | Deterministic YAML policy                                        | Learned routing                                 |
 | Targets        | Execution-target registry                                        | Full gateway abstraction                        |
-| Context        | Manual handoff command                                           | Automatic context packaging before every switch |
+| Context        | Minimal local session continuity and explicit handoff            | Automatic context packaging before every switch |
 | State          | Local state in `~/.<router-name>/` and `./.<router-name>/state/` | Distributed or server-side state                |
 | Observability  | Basic routing logs                                               | Advanced telemetry scoring                      |
 | Privacy        | Enforce declared constraints                                     | Privacy scanning / DLP                          |
@@ -1061,7 +1064,7 @@ The first version should be deliberately boring.
 
 ### 16.2 MVP Components
 
-1. One integration surface, preferably OpenClaw or a custom CLI.
+1. One integration surface: Claude Code wrapper or custom CLI.
 2. Session state per conversation.
 3. Explicit approval and escalation commands.
 4. Minimal rule-based classifier.

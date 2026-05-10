@@ -1,6 +1,6 @@
 # PoC Implementation Notes
 
-This document tracks the executable PoC harness that supports [POC](POC.md).
+This document tracks the executable PoC harness that supports [POC](POC.md) and the follow-up PoC 2 Claude Code wrapper/hook validation.
 
 ## What Is Implemented
 
@@ -41,16 +41,25 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 
 ## What Is Not Yet Proven
 
-* A real router-owned pre-execution hook surface is validated locally; direct integration into an external vendor-owned UI/client surface is still not validated.
-* SDK live execution proves prompt submission to selected model/profile mappings; it does not prove routed execution inside the intended product surface.
-* Continuity is currently proven with local file-backed thread orchestration, not a vendor-owned external thread/runtime service.
-* PoC 2 live continuity depends on Claude CLI authentication and must run outside the sandbox when Claude auth is stored in the local keychain/session.
+* The current product surface is still a PoC harness, not a polished end-user `switchboard` command.
+* Live Claude continuity has been verified for non-interactive Claude CLI turns using `--session-id` for the first turn and `--resume <session-id>` for later turns; the interactive Claude session UX is not yet validated.
+* Hook correlation is verified by Claude session id for live `UserPromptSubmit` and `PreToolUse` events, but broader production tool-governance policy is not hardened.
+* PoC 2 live runs depend on Claude CLI authentication and may need to run outside sandboxed environments when Claude auth is stored in the local keychain/session.
+* Cross-vendor routing remains intentionally unproven for the workflow product.
+* Router extraction into `@model-switchboard/router` is not yet done; the current code only keeps the router/workflow boundary credible.
+
+## Key Constraints Learned
+
 * Reusing `--session-id` for the second non-interactive Claude turn fails with `Session ID ... is already in use`; resumed turns must use `--resume <session-id>`.
+* Route context must be written before launching Claude so pre-execution hooks can correlate against wrapper decisions.
+* Runtime logs and Claude local settings are intentionally ignored by git; live evidence should be summarized in docs rather than committed as generated artifacts.
 
 ## Paths
 
 * Router core: `src/poc/router.js`
 * CLI harness: `src/poc/cli.js`
+* Claude CLI launcher: `src/poc/claude_cli_launcher.js`
+* Claude hook bridge: `src/poc/claude_hook_bridge.js`
 * Production hook simulator: `src/poc/production_hook.js`
 * Gateway surface entrypoint: `src/poc/gateway_surface.js`
 * PoC 2 Switchboard workflow: `src/poc/switchboard_workflow.js`
@@ -72,6 +81,8 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Vendor matrix scaffold: `src/poc/vendor_matrix.json`
 * Tests: `test/poc-router.test.js`
 * Adapter tests: `test/poc-adapter.test.js`
+* Claude CLI launcher tests: `test/poc-claude-cli-launcher.test.js`
+* Claude hook bridge tests: `test/poc-claude-hook-bridge.test.js`
 * Production hook tests: `test/poc-production-hook.test.js`
 * Gateway surface tests: `test/poc-gateway-surface.test.js`
 * Capability action tests: `test/poc-capability-actions.test.js`
@@ -91,7 +102,10 @@ npm run poc:gateway-surface
 npm run poc:gateway-surface -- --tool-action run_tests
 npm run poc:gateway-thread-turn -- --thread-id poc-thread-1 --input "Implement the plan."
 npm run poc:release-gate
+npm run poc:claude-cli-route -- --input "Implement the plan."
+npm run poc:claude-cli-live -- --input "Implement the plan."
 npm run poc:switchboard-turn -- --input "Implement the plan."
+npm run poc:switchboard-turn -- --live true --thread-id poc2-toolhook --input "Review package.json by using the Read tool to inspect it, then reply with only the package name."
 npm run poc:switchboard-continuity -- --thread-id poc2-continuity
 npm run poc:switchboard-continuity-live -- --thread-id poc2-continuity-live
 npm run poc:openai-adapter-spike -- --input "Implement the plan."
@@ -108,4 +122,6 @@ npm run poc:production-hook -- --input "Implement the plan." --tool-action read_
 
 ## Current Gaps
 
-* External vendor connectivity is environment-dependent; release-gate should be executed in CI or release environment with valid network access and credentials.
+* Release-gate requires valid API credentials and network access to the configured vendors.
+* The PoC 2 outcome has been summarized in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md); keep that decision record current as new live evidence lands.
+* The router remains in the PoC source tree; extraction into a package boundary is a future productization step.

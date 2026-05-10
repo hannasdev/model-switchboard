@@ -1,8 +1,8 @@
 # Session-Aware AI Router MVP PRD
 
-The latest PoC learning is captured in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md). That document supersedes the earlier generic vendor-router direction.
+The latest PoC learning is captured in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) and the executable evidence summarized in [PoC Implementation Notes](POC-IMPLEMENTATION.md). Those documents supersede the earlier generic vendor-router direction.
 
-This PRD is intentionally conceptual. The next milestone is not a small MVP; it is PoC 2, whose job is to verify or falsify the remaining assumptions behind the Claude Code wrapper and hook architecture.
+This PRD is intentionally scoped to the first product slice. PoC 2 has now verified enough of the Claude Code wrapper and hook architecture to proceed toward an MVP, with one important boundary: the verified path is prompt-driven non-interactive Claude CLI launch/resume, not a fully polished interactive Claude replacement.
 
 ## 1. Product Summary
 
@@ -31,7 +31,7 @@ Use Claude Code normally through Switchboard. Switchboard chooses the model/effo
 
 The MVP should not promise in-session automatic model switching. The current evidence suggests model/effort authority belongs at the launch or resume boundary. Hooks are useful for visibility, context injection, logging, and tool governance, but should be treated as advisory inside an already-running Claude session.
 
-The router should remain reusable outside software-development workflows. PoC 2 should focus on Claude Code because that is the current highest-risk integration path, but target registry, classification, policy, capability filtering, route explanation, and refusal logic should stay independent of Claude-specific launch, hook, and session mechanics.
+The router should remain reusable outside software-development workflows. The MVP should focus on Claude Code because that is the current highest-confidence integration path, but target registry, classification, policy, capability filtering, route explanation, and refusal logic should stay independent of Claude-specific launch, hook, and session mechanics.
 
 ## 2. User Problem
 
@@ -67,37 +67,57 @@ The first PoC supports the following:
 The first PoC did not prove:
 
 * Automatic model/effort switching inside an active Claude Code turn.
-* A satisfying continuity model across routed Claude wrapper turns.
 * A seamless `switchboard` user experience.
 * A production-ready wrapper trust boundary.
 
-## 5. PoC 2 Scope
+PoC 2 added the following evidence:
 
-PoC 2 exists to prove the missing gaps, not to build a small MVP.
+* A planned Switchboard workflow can route Claude turns while keeping router policy independent of Claude launch mechanics.
+* Two routed non-interactive Claude CLI turns can share one Claude session id while changing route labels and model/effort flags.
+* The working resume pattern is `--session-id` for the first turn and `--resume <session-id>` for later turns.
+* Live continuity evidence shows the second routed turn can recover first-turn context.
+* Wrapper route metadata can be written before launch and correlated with live `UserPromptSubmit` and `PreToolUse` hook events by Claude session id.
+* Hook correlation can support injected route context and route-aware tool-decision logs.
 
-PoC 2 should include:
+PoC 2 still did not prove:
 
-1. A minimal `switchboard` wrapper command for Claude Code.
-2. A two-turn continuity probe across routed turns.
-3. Route selection at Claude launch or resume time using model/effort flags.
-4. Claude hooks that display or inject route context and log tool decisions.
-5. Local evidence logs that distinguish user prompt, route decision, wrapper context, selected model/effort, session identity, and hook events.
-6. A concise PoC 2 outcome write-up with verified assumptions, falsified assumptions, and MVP implications.
+* A polished end-user `switchboard` command.
+* A fully interactive Claude session UX.
+* Hardened production tool-governance policy.
+* Router package extraction.
 
-PoC 2 should not include:
+## 5. PoC 2 Result And Remaining Validation
+
+PoC 2 has shifted from an open gating experiment to implementation evidence for the MVP.
+
+Verified:
+
+1. Route selection at Claude launch or resume time using model/effort flags.
+2. Two-turn non-interactive continuity across routed turns.
+3. Route-context correlation between wrapper decisions and Claude hooks.
+4. Local evidence logs that distinguish route decision, wrapper context, selected model/effort, Claude session identity, and hook events.
+5. A clean enough router/workflow boundary to continue productization without trapping policy inside Claude-specific code.
+
+Remaining validation before calling the MVP shippable:
+
+1. Replace PoC npm commands with a first-class `switchboard` command.
+2. Decide whether the initial MVP supports prompt-driven turns only, or also supports a no-prompt interactive mode.
+3. Harden failure behavior when Claude auth, hook setup, or route-context correlation is unavailable.
+4. Define the minimum production tool-governance policy.
+5. Write a concise PoC 2 outcome summary with MVP implications.
+
+The MVP should still not include:
 
 * Cross-vendor routing.
 * Rich UI.
 * Learned routing.
-* Automatic context packaging beyond the minimum needed for the continuity probe.
-* Production-grade security policy.
+* Automatic context packaging beyond the minimum needed for continuity.
+* Production-grade security policy beyond the wrapper threat model and conservative defaults.
 * Broad tool permission automation.
 * Full gateway execution as the primary UX.
-* Polished override ergonomics beyond the minimum needed to test the workflow.
+* Router package extraction.
 
-Security is an architectural consideration because the wrapper can influence execution, but PoC 2 does not need to solve the full security model. It only needs to avoid adding unnecessary authority and record enough evidence to inform the later design.
-
-PoC 2 should keep a clean module boundary between generic routing and Claude workflow code. The goal is not to publish `@model-switchboard/router` yet, but the implementation should make later extraction credible instead of trapping routing policy inside the wrapper.
+Security is now an MVP design requirement because the wrapper can influence execution. The MVP does not need full enterprise policy, but it must avoid hidden authority expansion, fail closed when route/hook trust cannot be established, and record enough evidence for a user to audit what happened.
 
 ## 6. Product Packaging Direction
 
@@ -136,8 +156,8 @@ It should not know about Claude Code hooks, CLI launch flags, terminal workflow,
 
 Sequence:
 
-1. Run PoC 2 inside this repo.
-2. Use PoC 2 to harden the router boundary and API shape.
+1. Productize the Claude Code workflow inside this repo while preserving the router/workflow boundary.
+2. Use the MVP to harden the router boundary and API shape under real usage.
 3. Extract and productize `@model-switchboard/router` as a public package once the boundary has survived real workflow pressure.
 4. Continue Claude Code work as a dependency of the router package.
 
@@ -152,6 +172,8 @@ Verification:
 * `quick` routes to the intended lower-cost/lower-effort Claude target.
 * `best coder` routes to the intended stronger/higher-effort Claude target.
 * The evidence log records the selected route and the actual model/effort used.
+
+Status: verified for the PoC harness and live Claude CLI launch path; productization still needs a first-class command.
 
 Falsification:
 
@@ -170,6 +192,8 @@ Verification:
 * The second turn retains enough project/session context to feel coherent.
 * The user does not need to manually reconstruct settled context.
 
+Status: verified for two non-interactive CLI turns using `--session-id` on the first turn and `--resume <session-id>` on the second turn. Interactive continuity is not yet verified.
+
 Falsification:
 
 * Changing model/effort breaks session continuity.
@@ -186,6 +210,8 @@ Verification:
 * `PreToolUse` sees tool calls early enough to log and, where appropriate, deny them.
 * Hook logs can be correlated with wrapper route decisions and Claude session identity.
 
+Status: verified for live `UserPromptSubmit` and `PreToolUse` correlation by Claude session id. Production policy hardening remains.
+
 Falsification:
 
 * Hook timing is too late or inconsistent.
@@ -199,9 +225,11 @@ Assumption: A first-class command can hide PoC wiring without hiding important r
 Verification:
 
 * `switchboard "prompt"` works for a single-turn prompt.
-* `switchboard` can start or resume an interactive Claude flow.
+* `switchboard "prompt"` can create or resume a Claude session while hiding PoC wiring.
 * The user sees a short route explanation such as `Switchboard: best coder - repo edits - higher effort`.
 * Detailed route state is available in logs or an explain command.
+
+Interactive no-prompt usage should be treated as a follow-up validation or stretch goal. The verified MVP wedge is prompt-driven routed turns.
 
 Falsification:
 
@@ -237,25 +265,29 @@ Verification:
 * Logs distinguish user prompt from Switchboard-generated context.
 * Failures are explicit rather than silently falling back.
 
+Status: partially verified. Route and hook correlation are proven in PoC 2; MVP implementation must make the evidence accessible through stable local logs and an explain path.
+
 Falsification:
 
 * Logs cannot prove what happened.
 * Wrapper and hook evidence cannot be correlated.
 * Failure modes are ambiguous.
 
-## 8. MVP Scope If PoC 2 Passes
+## 8. MVP Scope Based On PoC 2
 
-If PoC 2 verifies the key assumptions, the MVP should include:
+The MVP should include:
 
 1. A `switchboard` command that wraps Claude Code.
 2. Claude-scoped target labels: `quick`, `balanced`, and `best coder`.
 3. Pre-launch or pre-resume routing to Claude model/effort flags.
-4. Minimal persistent local session state.
-5. Compact route explanations.
-6. Basic override controls: stronger, cheaper, stay, auto, explain.
-7. Claude hooks for route context, tool-decision logging, and conservative governance.
-8. Local route and hook logs.
-9. A documented wrapper threat model before production hardening.
+4. Correct Claude continuity semantics: create the first turn with `--session-id`, resume later turns with `--resume <session-id>`.
+5. Route-context writes before Claude launch so hooks can correlate against wrapper decisions.
+6. Minimal persistent local session state.
+7. Compact route explanations.
+8. Basic override controls: stronger, cheaper, stay, auto, explain.
+9. Claude hooks for route context, tool-decision logging, and conservative governance.
+10. Local route and hook logs plus an explain path.
+11. A documented wrapper threat model before production hardening.
 
 The MVP should defer:
 
@@ -267,6 +299,8 @@ The MVP should defer:
 * Broad tool permission automation.
 * Automatic context packaging.
 * Full gateway execution as the primary product surface.
+* Fully interactive Claude shell parity unless the prompt-driven wrapper proves insufficient.
+* Publishing `@model-switchboard/router` as a separate package.
 
 ## 9. Conceptual Routing Model
 
@@ -312,16 +346,16 @@ The policy should prefer continuity when the current target is capable enough an
 
 ## 10. UX Direction
 
-The default command should be simple:
-
-```bash
-switchboard
-```
-
-or:
+The default verified command shape should be simple:
 
 ```bash
 switchboard "Implement the plan."
+```
+
+A no-prompt interactive command may be added after validation:
+
+```bash
+switchboard
 ```
 
 The route explanation should be short:
@@ -344,19 +378,21 @@ The user should be able to express simple controls without learning model names:
 
 The MVP is acceptable when:
 
-1. A user can start or resume Claude Code through `switchboard`.
+1. A user can start or resume a routed Claude turn through `switchboard "prompt"`.
 2. Switchboard routes before execution to the selected Claude model/effort.
 3. The route explanation is visible and compact.
 4. The user can override routing at a coarse label level.
-5. Session continuity is good enough for normal multi-turn coding work.
-6. Hook evidence correlates with wrapper route decisions.
-7. Logs distinguish user input, Switchboard context, route decisions, model/effort selection, and tool decisions.
-8. Failure modes are clear and fail closed where routing or hook setup cannot be trusted.
+5. Session continuity is good enough for normal prompt-driven multi-turn coding work.
+6. The first Claude turn uses `--session-id` and subsequent routed turns use `--resume <session-id>`.
+7. Route context is persisted before Claude launch.
+8. Hook evidence correlates with wrapper route decisions.
+9. Logs distinguish user input, Switchboard context, route decisions, model/effort selection, Claude session identity, and tool decisions.
+10. Failure modes are clear and fail closed where routing, resume, hook setup, or route-context correlation cannot be trusted.
 
 ## 12. Relationship To Other Docs
 
 [PoC](POC.md) describes the original risk-reduction plan.
 
-[PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed.
+[PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](POC-IMPLEMENTATION.md) currently contains the freshest PoC 2 execution evidence until a dedicated PoC 2 outcome summary is written.
 
 [Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
