@@ -74,11 +74,17 @@ function routeDecisionSummary(plan) {
   return {
     status: route.status || plan.status,
     mode: route.mode || null,
+    taskType: route.taskType || null,
     label: route.selectedTarget?.label || null,
     targetId: route.selectedTarget?.id || plan.targetId || null,
     requiredCapabilities: route.requiredCapabilities || [],
     shouldSwitch: route.shouldSwitch ?? null,
+    continuityCost: route.continuityCost ?? null,
+    continuityDecision: route.continuityDecision || null,
+    continuityReason: route.continuityReason || null,
     routingOverride: route.routingOverride || null,
+    modeResolution: route.modeResolution || null,
+    policyInputs: route.policyInputs || null,
     explanation: route.explanation || null
   };
 }

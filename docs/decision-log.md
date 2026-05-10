@@ -123,3 +123,43 @@ Consequences:
 Follow-up:
 - Next review milestone: Milestone 2 plan-to-implementation checkpoint.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
+
+## Milestone 2 Checkpoint (Slice 1)
+
+Decision ID: DEC-2026-05-10-milestone-2-slice-1-session-policy
+Related deferred item: Milestone 2 staged policy depth
+Status: committed
+Date: 2026-05-10
+Owners: team
+
+Context:
+- Milestone 2 requires session-aware routing with explicit policy inputs, while keeping current behavior stable and deferring high-risk commitments until verification gates are met.
+
+Options considered:
+- Option A: implement full policy depth and enforcement in one large change.
+- Option B: ship a scoped first slice with session-mode resolution, named hard/soft inputs, and continuity-aware switching plus focused tests.
+
+Tradeoffs:
+- Option A: faster feature completion on paper, higher regression and review risk.
+- Option B: lower risk and clearer validation trail, requires additional follow-up slices.
+
+Verification signal:
+- Expected signal from phase plan: policy inputs represented explicitly and decision outputs explainable with session and continuity context.
+- Evidence observed:
+  - Router now exposes `modeResolution`, `policyInputs`, `taskType`, and continuity fields in route decisions.
+  - Switchboard evidence summaries now carry these fields through workflow logs.
+  - Tests cover staged hard constraints (availability, privacy, client compatibility) and continuity decisions.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: complete Milestone 2 slice 1 with deterministic session-policy behavior and evidence propagation.
+- What remains intentionally deferred: numeric continuity scoring, final taxonomy freeze, strict universal enforcement defaults, and cross-surface validation beyond current scope.
+
+Consequences:
+- Near-term implementation impact: improves explainability and policy shape with minimal API disruption.
+- Test and replay impact: adds coverage for staged hard constraints and continuity cost behavior.
+- Migration impact: low; fields are additive and aligned with experimental contracts.
+
+Follow-up:
+- Next review milestone: Milestone 2 slice 2 planning.
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/switchboard/workflow.js, test/router.test.js, test/switchboard-workflow.test.js
