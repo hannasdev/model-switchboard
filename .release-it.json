@@ -4,6 +4,7 @@
     "requireCommits": true,
     "commit": true,
     "tag": true,
+    "tagName": "v${version}",
     "push": true,
     "changelog": "npx auto-changelog --stdout --unreleased --commit-limit false -u --hide-credit"
   },
