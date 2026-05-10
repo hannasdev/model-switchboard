@@ -59,3 +59,21 @@ test("Claude CLI launcher can disable tools for model-selection probes", () => {
   assert.equal(plan.selectedTarget.label, "best coder");
   assert.deepEqual(plan.args.slice(-2), ["--tools=", "Implement the plan. Do not use tools; reply exactly OK."]);
 });
+
+test("Claude CLI launcher can resume an existing session", () => {
+  const plan = planClaudeCliLaunch({
+    input: "Thanks, that makes sense.",
+    sessionId: "00000000-0000-4000-8000-000000000004",
+    cwd: "/repo",
+    resume: true
+  });
+
+  assert.equal(plan.status, "planned");
+  assert.equal(plan.resume, true);
+  assert.equal(plan.args.includes("--resume"), true);
+  assert.equal(plan.args.includes("--session-id"), false);
+  assert.deepEqual(plan.args.slice(-2), [
+    "00000000-0000-4000-8000-000000000004",
+    "Thanks, that makes sense."
+  ]);
+});

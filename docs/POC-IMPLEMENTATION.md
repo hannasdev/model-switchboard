@@ -29,12 +29,19 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * `best coder` capability actions are now validated in the gateway path under explicit controls: safe file read, safe file edit to scoped probe log, and shell test execution (`npm test`).
 * Threaded gateway turns now persist and reload continuity state by `threadId`, proving repeated-turn routing continuity beyond per-request in-memory session fields.
 * Release-gate command now runs mapping consistency checks and vendor connection checks in one pass with structured per-vendor pass/fail output (`poc:release-gate`).
+* PoC 2 Switchboard workflow slice plans Claude Code launch/resume turns through a separable workflow layer while keeping router policy independent of Claude mechanics.
+* PoC 2 continuity probe verifies two planned routed turns can share one Claude session id while changing route labels and model/effort flags.
+* PoC 2 live continuity harness can execute planned Claude CLI turns, capture stdout/stderr previews, and verify whether the second turn sees first-turn context.
+* PoC 2 live continuity is verified when the first turn starts Claude with `--session-id` and the second routed turn resumes with `--resume <session-id>`.
+* Live run `live-poc2-007` verified both turns executed, the same Claude session id was used, route changed from `best coder` to `balanced`, turn count advanced, and the second turn returned the first-turn probe phrase.
 
 ## What Is Not Yet Proven
 
 * A real router-owned pre-execution hook surface is validated locally; direct integration into an external vendor-owned UI/client surface is still not validated.
 * SDK live execution proves prompt submission to selected model/profile mappings; it does not prove routed execution inside the intended product surface.
 * Continuity is currently proven with local file-backed thread orchestration, not a vendor-owned external thread/runtime service.
+* PoC 2 live continuity depends on Claude CLI authentication and must run outside the sandbox when Claude auth is stored in the local keychain/session.
+* Reusing `--session-id` for the second non-interactive Claude turn fails with `Session ID ... is already in use`; resumed turns must use `--resume <session-id>`.
 
 ## Paths
 
@@ -42,6 +49,8 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * CLI harness: `src/poc/cli.js`
 * Production hook simulator: `src/poc/production_hook.js`
 * Gateway surface entrypoint: `src/poc/gateway_surface.js`
+* PoC 2 Switchboard workflow: `src/poc/switchboard_workflow.js`
+* PoC 2 Switchboard CLI harness: `src/poc/switchboard_cli.js`
 * Capability action runner: `src/poc/capability_actions.js`
 * Thread session store: `src/poc/thread_session_store.js`
 * OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`
@@ -63,6 +72,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Capability action tests: `test/poc-capability-actions.test.js`
 * Thread session tests: `test/poc-thread-session-store.test.js`
 * Gateway thread continuity tests: `test/poc-gateway-thread-turn.test.js`
+* PoC 2 Switchboard workflow tests: `test/poc-switchboard-workflow.test.js`
 
 ## Commands
 
@@ -76,6 +86,9 @@ npm run poc:gateway-surface
 npm run poc:gateway-surface -- --tool-action run_tests
 npm run poc:gateway-thread-turn -- --thread-id poc-thread-1 --input "Implement the plan."
 npm run poc:release-gate
+npm run poc:switchboard-turn -- --input "Implement the plan."
+npm run poc:switchboard-continuity -- --thread-id poc2-continuity
+npm run poc:switchboard-continuity-live -- --thread-id poc2-continuity-live
 npm run poc:openai-adapter-spike -- --input "Implement the plan."
 npm run poc:openai-adapter-live -- --input "Implement the plan."
 npm run poc:openai-connection-check

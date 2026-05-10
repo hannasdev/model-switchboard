@@ -37,7 +37,8 @@ export function planClaudeCliLaunch({
   cwd = process.cwd(),
   sessionId = randomUUID(),
   outputFormat = "json",
-  noTools = false
+  noTools = false,
+  resume = false
 }) {
   const route = routePrompt({
     input,
@@ -73,7 +74,7 @@ export function planClaudeCliLaunch({
     cliTarget.model,
     "--effort",
     cliTarget.effort,
-    "--session-id",
+    resume ? "--resume" : "--session-id",
     sessionId,
     input
   ];
@@ -89,6 +90,7 @@ export function planClaudeCliLaunch({
     claudeBin,
     args,
     sessionId,
+    resume,
     selectedTarget: {
       ...cliTarget,
       targetId,
