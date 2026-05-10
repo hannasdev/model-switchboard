@@ -41,12 +41,13 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * MVP `switchboard` bin entrypoint now supports prompt-driven routed turns, with `--dry-run` for deterministic route planning and default live execution for real use.
 * MVP `switchboard explain` summarizes the latest route decision, Claude flags, session id, route-context match, hook events, and tool decisions from local evidence logs.
 * MVP CLI reports pre-launch failures cleanly so route-context write failures stop before Claude launch.
+* MVP hook policy now fails closed for `PreToolUse` events without matched Switchboard route context, including otherwise safe tools.
 
 ## What Is Not Yet Proven
 
 * The current product surface is an initial prompt-driven `switchboard` command, not yet a fully polished end-user workflow.
 * Live Claude continuity has been verified for non-interactive Claude CLI turns using `--session-id` for the first turn and `--resume <session-id>` for later turns; the interactive Claude session UX is not yet validated.
-* Hook correlation is verified by Claude session id for live `UserPromptSubmit` and `PreToolUse` events, but broader production tool-governance policy is not hardened.
+* Hook correlation is verified by Claude session id for live `UserPromptSubmit` and `PreToolUse` events, but broader production tool-governance policy beyond route-context trust is not hardened.
 * PoC 2 live runs depend on Claude CLI authentication and may need to run outside sandboxed environments when Claude auth is stored in the local keychain/session.
 * Cross-vendor routing remains intentionally unproven for the workflow product.
 * Router extraction into `@model-switchboard/router` is not yet done; the current code only keeps the router/workflow boundary credible.

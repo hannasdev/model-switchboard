@@ -92,7 +92,7 @@ function isDangerousShellCommand(command) {
   return /\brm\s+-rf\b/.test(command) || /\bsudo\b/.test(command);
 }
 
-function createPreToolUseOutput(hookInput) {
+function createPreToolUseOutput(hookInput, correlation) {
   const toolName = hookInput.tool_name || "unknown";
   const command = hookInput.tool_input?.command || "";
 
@@ -102,6 +102,17 @@ function createPreToolUseOutput(hookInput) {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
         permissionDecisionReason: "Router capability policy blocks destructive or privileged shell commands in this probe."
+      }
+    };
+  }
+
+  if (correlation.status !== "matched") {
+    return {
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason:
+          "Switchboard requires matched wrapper route context before allowing Claude tool use."
       }
     };
   }
@@ -151,7 +162,7 @@ export function handleClaudeHookInput(hookInput, options = {}) {
   }
 
   if (eventName === "PreToolUse") {
-    const output = createPreToolUseOutput(hookInput);
+    const output = createPreToolUseOutput(hookInput, correlation);
     appendLog(
       {
         ts: new Date().toISOString(),

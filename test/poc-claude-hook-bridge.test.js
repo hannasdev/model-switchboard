@@ -143,3 +143,24 @@ test("PreToolUse denies destructive shell commands", () => {
   const [entry] = readLog(logPath);
   assert.equal(entry.correlation.status, "missing");
 });
+
+test("PreToolUse denies safe tools without matched Switchboard route context", () => {
+  const { logPath, routeContextPath } = tempPaths();
+  const output = handleClaudeHookInput(
+    {
+      session_id: "claude-session-1",
+      hook_event_name: "PreToolUse",
+      tool_name: "Read",
+      tool_input: { file_path: "package.json" }
+    },
+    { logPath, routeContextPath }
+  );
+
+  assert.equal(output.hookSpecificOutput.hookEventName, "PreToolUse");
+  assert.equal(output.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(output.hookSpecificOutput.permissionDecisionReason, /matched wrapper route context/);
+
+  const [entry] = readLog(logPath);
+  assert.equal(entry.correlation.status, "missing");
+  assert.equal(entry.output.hookSpecificOutput.permissionDecision, "deny");
+});
