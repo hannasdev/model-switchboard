@@ -13,7 +13,8 @@ function tempPaths() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "switchboard-workflow-test-"));
   return {
     storePath: path.join(dir, "sessions.json"),
-    logPath: path.join(dir, "turns.ndjson")
+    logPath: path.join(dir, "turns.ndjson"),
+    routeContextPath: path.join(dir, "route-context.json")
   };
 }
 
@@ -22,14 +23,15 @@ function readLog(logPath) {
 }
 
 test("Switchboard turn plans Claude launch and records separable evidence", () => {
-  const { storePath, logPath } = tempPaths();
+  const { storePath, logPath, routeContextPath } = tempPaths();
   const result = planSwitchboardTurn({
     input: "Implement the plan.",
     threadId: "thread-1",
     sessionId: "claude-session-1",
     cwd: "/repo",
     storePath,
-    logPath
+    logPath,
+    routeContextPath
   });
 
   assert.equal(result.status, "planned");
@@ -48,16 +50,22 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(entry.routeDecision.label, "best coder");
   assert.equal(entry.selectedClaude.effort, "high");
   assert.equal(entry.session.claudeSessionId, "claude-session-1");
+
+  const routeContext = JSON.parse(fs.readFileSync(routeContextPath, "utf8"));
+  assert.equal(routeContext["claude-session-1"].latest.threadId, "thread-1");
+  assert.equal(routeContext["claude-session-1"].latest.routeLabel, "best coder");
+  assert.equal(routeContext["claude-session-1"].latest.model, "sonnet");
 });
 
 test("Switchboard continuity probe preserves Claude session while route changes", () => {
-  const { storePath, logPath } = tempPaths();
+  const { storePath, logPath, routeContextPath } = tempPaths();
   const result = planSwitchboardContinuityProbe({
     threadId: "thread-2",
     sessionId: "claude-session-2",
     cwd: "/repo",
     storePath,
-    logPath
+    logPath,
+    routeContextPath
   });
 
   assert.equal(result.status, "verified");
@@ -84,7 +92,7 @@ test("Switchboard continuity probe preserves Claude session while route changes"
 });
 
 test("Live Switchboard continuity probe captures execution evidence", () => {
-  const { storePath, logPath } = tempPaths();
+  const { storePath, logPath, routeContextPath } = tempPaths();
   const executions = [];
   const result = executeSwitchboardContinuityProbe({
     threadId: "thread-3",
@@ -92,6 +100,7 @@ test("Live Switchboard continuity probe captures execution evidence", () => {
     cwd: "/repo",
     storePath,
     logPath,
+    routeContextPath,
     noTools: true,
     commandRunner(plan) {
       executions.push(plan);

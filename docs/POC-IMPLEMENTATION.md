@@ -34,6 +34,10 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * PoC 2 live continuity harness can execute planned Claude CLI turns, capture stdout/stderr previews, and verify whether the second turn sees first-turn context.
 * PoC 2 live continuity is verified when the first turn starts Claude with `--session-id` and the second routed turn resumes with `--resume <session-id>`.
 * Live run `live-poc2-007` verified both turns executed, the same Claude session id was used, route changed from `best coder` to `balanced`, turn count advanced, and the second turn returned the first-turn probe phrase.
+* PoC 2 route-context correlation stores wrapper route metadata by Claude session id and lets Claude hooks log whether wrapper context was matched or missing.
+* Hook correlation tests verify `UserPromptSubmit` can inject matched Switchboard route context and `PreToolUse` can log route-aware tool decision evidence.
+* Live hook-correlation run `live-poc2-hooks-001` verified real `UserPromptSubmit` hook events matched wrapper route context for both routed turns.
+* Live tool-correlation run `live-poc2-toolhook-001` verified a real `PreToolUse` hook event matched wrapper route context and logged an allowed `Read` decision.
 
 ## What Is Not Yet Proven
 
@@ -51,6 +55,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md).
 * Gateway surface entrypoint: `src/poc/gateway_surface.js`
 * PoC 2 Switchboard workflow: `src/poc/switchboard_workflow.js`
 * PoC 2 Switchboard CLI harness: `src/poc/switchboard_cli.js`
+* PoC 2 route context store: `src/poc/switchboard_route_context.js`
 * Capability action runner: `src/poc/capability_actions.js`
 * Thread session store: `src/poc/thread_session_store.js`
 * OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`

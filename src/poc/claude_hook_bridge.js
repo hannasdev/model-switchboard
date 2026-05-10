@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { routePrompt } from "./router.js";
+import { loadRouteContext } from "./switchboard_route_context.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +43,18 @@ function routeContextText(routeResult) {
   ].join("\n");
 }
 
+function correlatedRouteContextText(correlation) {
+  const latest = correlation.context?.latest;
+  if (!latest) return null;
+  return [
+    "Switchboard wrapper route for this Claude Code session:",
+    `Thread: ${latest.threadId || "unknown"}`,
+    `Target label: ${latest.routeLabel || "unknown"}`,
+    `Claude model/effort: ${latest.model || "unknown"}/${latest.effort || "unknown"}`,
+    latest.wrapperContext?.text ? `Summary: ${latest.wrapperContext.text}` : null
+  ].filter(Boolean).join("\n");
+}
+
 function buildSession(hookInput) {
   return {
     vendorClient: "claude-code",
@@ -52,7 +65,7 @@ function buildSession(hookInput) {
   };
 }
 
-function createUserPromptSubmitOutput(routeResult) {
+function createUserPromptSubmitOutput(routeResult, correlation) {
   if (routeResult.status === "refused") {
     return {
       continue: false,
@@ -61,11 +74,16 @@ function createUserPromptSubmitOutput(routeResult) {
     };
   }
 
+  const correlatedText = correlatedRouteContextText(correlation);
+  const additionalContext = correlatedText
+    ? `${correlatedText}\n\n${routeContextText(routeResult)}`
+    : routeContextText(routeResult);
+
   return {
     continue: true,
     hookSpecificOutput: {
       hookEventName: "UserPromptSubmit",
-      additionalContext: routeContextText(routeResult)
+      additionalContext
     }
   };
 }
@@ -100,6 +118,10 @@ function createPreToolUseOutput(hookInput) {
 export function handleClaudeHookInput(hookInput, options = {}) {
   const targets = options.targets || readJson(ANTHROPIC_TARGETS_PATH).targets;
   const eventName = hookInput.hook_event_name;
+  const correlation = loadRouteContext({
+    storePath: options.routeContextPath,
+    claudeSessionId: hookInput.session_id || null
+  });
 
   if (eventName === "UserPromptSubmit") {
     const input = hookInput.prompt || "";
@@ -109,7 +131,7 @@ export function handleClaudeHookInput(hookInput, options = {}) {
       session: buildSession(hookInput),
       executionSupported: false
     });
-    const output = createUserPromptSubmitOutput(routeResult);
+    const output = createUserPromptSubmitOutput(routeResult, correlation);
     appendLog(
       {
         ts: new Date().toISOString(),
@@ -118,6 +140,7 @@ export function handleClaudeHookInput(hookInput, options = {}) {
         cwd: hookInput.cwd || null,
         sessionId: hookInput.session_id || null,
         transcriptPath: hookInput.transcript_path || null,
+        correlation,
         prompt: input,
         route: routeResult,
         output
@@ -137,6 +160,7 @@ export function handleClaudeHookInput(hookInput, options = {}) {
         cwd: hookInput.cwd || null,
         sessionId: hookInput.session_id || null,
         transcriptPath: hookInput.transcript_path || null,
+        correlation,
         toolName: hookInput.tool_name || null,
         toolInput: hookInput.tool_input || null,
         output
@@ -152,6 +176,7 @@ export function handleClaudeHookInput(hookInput, options = {}) {
       ts: new Date().toISOString(),
       source: "claude_code_hook",
       event: eventName || "unknown",
+      correlation,
       output
     },
     options.logPath

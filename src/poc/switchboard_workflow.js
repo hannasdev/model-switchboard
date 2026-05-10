@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { planClaudeCliLaunch } from "./claude_cli_launcher.js";
+import { saveRouteContext } from "./switchboard_route_context.js";
 import { loadThreadSession, saveThreadSession } from "./thread_session_store.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -101,12 +102,41 @@ function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+function persistRouteContext({
+  routeContextPath,
+  threadId,
+  claudeSessionId,
+  turnCount,
+  routeDecision,
+  selectedClaude,
+  executionMode,
+  wrapperContext
+}) {
+  if (!selectedClaude) return null;
+  return saveRouteContext({
+    storePath: routeContextPath,
+    context: {
+      threadId,
+      claudeSessionId,
+      turnCount,
+      routeLabel: routeDecision.label,
+      targetId: routeDecision.targetId,
+      model: selectedClaude.model,
+      effort: selectedClaude.effort,
+      mode: routeDecision.mode,
+      executionMode,
+      wrapperContext
+    }
+  });
+}
+
 function buildSwitchboardTurn({
   input,
   threadId = "default",
   targets = readJson(ANTHROPIC_TARGETS_PATH).targets,
   storePath = DEFAULT_STORE_PATH,
   logPath = DEFAULT_LOG_PATH,
+  routeContextPath,
   cwd = process.cwd(),
   claudeBin = "claude",
   outputFormat = "json",
@@ -142,6 +172,18 @@ function buildSwitchboardTurn({
   const wrapperContext = buildWrapperContext(plan);
   const routeDecision = routeDecisionSummary(plan);
   const selectedClaude = selectedClaudeSummary(plan);
+  const plannedTurnCount =
+    plan.status === "planned" ? Number(routeSession.turnCount || 0) + 1 : Number(routeSession.turnCount || 0);
+  persistRouteContext({
+    routeContextPath,
+    threadId,
+    claudeSessionId,
+    turnCount: plannedTurnCount,
+    routeDecision,
+    selectedClaude,
+    executionMode: execute ? "live" : "planned",
+    wrapperContext
+  });
   const execution =
     execute && plan.status === "planned"
       ? commandRunner(plan, timeoutMs)
