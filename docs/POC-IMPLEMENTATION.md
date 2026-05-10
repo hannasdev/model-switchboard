@@ -44,6 +44,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * MVP hook policy now fails closed for `PreToolUse` events without matched Switchboard route context, including otherwise safe tools.
 * MVP coarse overrides are wired through generic routing and exposed by the CLI: `--stronger`, `--cheaper`, and `--stay`.
 * MVP wrapper threat model is documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
+* MVP live verification completed through `node bin/switchboard.js` with `--no-tools`: first turn executed via Claude CLI and returned `SWITCHBOARD_OK`; second turn reused the same Claude session id and recovered the previous-turn token; `switchboard explain` showed matched route context and correlated `UserPromptSubmit` hook events.
 
 ## What Is Not Yet Proven
 
