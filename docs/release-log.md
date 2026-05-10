@@ -6,4 +6,4 @@
 - Why it matters: Reduces CI token exposure and supply-chain drift while improving OpenSSF Scorecard readiness.
 - Who is affected: Repository maintainers and reviewers.
 - Action needed: Configure branch rules as desired (for example, require Code Owner review only if at least one non-author reviewer is available).
-- PR: https://github.com/hannasdev/model-switchboard/pull/new/chore/scorecard-security-hardening
+- PR: https://github.com/hannasdev/model-switchboard/pull/6
