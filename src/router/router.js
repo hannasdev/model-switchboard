@@ -34,19 +34,14 @@ const LABEL_TO_CLASS_RANK = {
   "best coder": 4
 };
 
+const LOW_CONFIDENCE_THRESHOLD = 0.7;
+
 const PRIVACY_TIER_RANK = {
   external: 1,
   standard: 2,
   restricted: 3,
   local: 4,
   unknown: 0
-};
-
-const CLASS_RANK = {
-  cheap_fast: 1,
-  medium_reasoning: 2,
-  strong_reasoning: 3,
-  strong_coding: 4
 };
 
 const TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS = {
@@ -284,8 +279,8 @@ function buildConstraintInputs(session = {}) {
 }
 
 function strongerClass(currentClass, candidateClass) {
-  const currentRank = CLASS_RANK[currentClass] || 0;
-  const candidateRank = CLASS_RANK[candidateClass] || 0;
+  const currentRank = LABEL_TO_CLASS_RANK[CLASS_TO_LABEL[currentClass]] || 0;
+  const candidateRank = LABEL_TO_CLASS_RANK[CLASS_TO_LABEL[candidateClass]] || 0;
   return candidateRank > currentRank ? candidateClass : currentClass;
 }
 
@@ -308,7 +303,7 @@ function resolveEscalationPolicy({ classification = {}, session = {}, mode }) {
   let desiredClass = MODE_TO_CLASS[mode] || "medium_reasoning";
   const reasons = [];
 
-  const lowConfidence = Number(classification.confidence || 0) < 0.7;
+  const lowConfidence = Number(classification.confidence || 0) < LOW_CONFIDENCE_THRESHOLD;
   const userCorrection = classification.reason === "user_correction_signal";
   const repeatedFailures =
     Number(session?.failureSignals?.recentToolFailures || 0) +
