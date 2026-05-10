@@ -193,10 +193,6 @@ function resolveSessionMode(session = {}, classification = {}) {
   };
 }
 
-function includesAllCapabilities(target, requiredCaps) {
-  return requiredCaps.every((cap) => target.capabilities.includes(cap));
-}
-
 function buildRequiredCapabilities(resolvedMode, taskType) {
   const modeRequirements = MODE_TO_REQUIREMENTS[resolvedMode] || ["chat"];
   const additionalRequirements = TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS[taskType] || [];
@@ -284,8 +280,16 @@ function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }
     return {
       selectedTarget,
       continuityCost,
-      continuityDecision: "stay_on_current_target",
-      continuityReason: currentTarget ? "same_target" : "no_current_target"
+      continuityDecision: !selectedTarget
+        ? "no_selected_target"
+        : currentTarget
+          ? "stay_on_current_target"
+          : "select_target_without_current_context",
+      continuityReason: !selectedTarget
+        ? "no_selected_target"
+        : currentTarget
+          ? "same_target"
+          : "no_current_target"
     };
   }
 
@@ -409,6 +413,11 @@ export function routePrompt({
   const shouldSwitch = Boolean(selectedTarget && currentTargetId && selectedTarget.id !== currentTargetId);
 
   if (!selectedTarget) {
+    const hasConstraintBlockers = blocked.some((entry) => Array.isArray(entry.constraintReasons) && entry.constraintReasons.length > 0);
+    const refusalExplanation = hasConstraintBlockers
+      ? "No eligible target satisfies required capabilities and hard constraints for this turn."
+      : "No eligible target satisfies required capabilities for this turn.";
+
     return {
       status: "refused",
       reason: "no_eligible_target",
@@ -419,7 +428,7 @@ export function routePrompt({
       classification,
       modeResolution,
       policyInputs: constraintInputs,
-      explanation: "No eligible target satisfies required capabilities for this turn."
+      explanation: refusalExplanation
     };
   }
 

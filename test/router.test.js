@@ -147,6 +147,21 @@ test("high continuity cost avoids low-gain switching", () => {
   assert.equal(result.shouldSwitch, false);
 });
 
+test("continuity metadata distinguishes missing current target from staying", () => {
+  const result = routePrompt({
+    input: "Plan the rollout in phases with tradeoffs.",
+    session: {
+      mode: "plan"
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.continuityDecision, "select_target_without_current_context");
+  assert.equal(result.continuityReason, "no_current_target");
+});
+
 test("privacy hard constraint can refuse targets below required tier", () => {
   const result = routePrompt({
     input: "Implement the plan.",
@@ -196,4 +211,5 @@ test("client compatibility hard constraint can refuse incompatible client surfac
     result.blocked.some((b) => b.id === "openai-coder" && b.constraintReasons.includes("client_surface_incompatible")),
     true
   );
+  assert.match(result.explanation, /hard constraints/);
 });
