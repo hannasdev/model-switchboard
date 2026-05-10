@@ -1,191 +1,233 @@
 # Session-Aware AI Router MVP PRD
 
-The first milestone before this MVP is the [PoC](POC.md), which validates vendor feasibility and the smallest routing loop before product buildout.
+The latest PoC learning is captured in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md). That document supersedes the earlier generic vendor-router direction.
+
+This PRD is intentionally conceptual. The next milestone is not a small MVP; it is PoC 2, whose job is to verify or falsify the remaining assumptions behind the Claude Code wrapper and hook architecture.
 
 ## 1. Product Summary
 
-Software engineers increasingly have access to many capable AI models and coding surfaces, but most users do not want to make a conscious model-selection decision for every turn. The router reduces model-choice fatigue by choosing an appropriate execution target for the current software-delivery step.
+Software engineers have access to many capable AI models and coding surfaces, but choosing the right model or effort level for every turn is a repeated cognitive tax.
 
-The MVP should be vendor-scoped at the product surface. It should route among multiple targets inside one vendor ecosystem first, such as OpenAI/Codex targets or Anthropic/Claude targets, while keeping the underlying router core vendor-neutral.
-
-The MVP should prove a simple thesis:
+The MVP direction is a Claude Code-scoped Switchboard:
 
 ```text
-Use cheaper or faster targets when the expected outcome is not meaningfully affected, and escalate when task risk, complexity, required tools, or user intent justify it.
+User
+  -> switchboard wrapper
+  -> router policy
+  -> Claude CLI launch/resume with selected model/effort
+  -> Claude Code hooks for explanation, logging, and tool governance
 ```
 
-The router is not primarily for users who enjoy manual model benchmarking. It is for engineers who want good defaults, visible reasoning, and a way to override the decision when they care.
+The product promise is:
 
-The MVP should not try to be a universal cross-vendor router. Cross-vendor routing can come later after the routing policy, labels, explanations, and outcome signals are proven within one ecosystem.
+```text
+Use Claude Code normally through Switchboard. Switchboard chooses the model/effort before the turn, explains the choice, and preserves Claude's safety posture while adding route-aware visibility.
+```
+
+The MVP should not promise in-session automatic model switching. The current evidence suggests model/effort authority belongs at the launch or resume boundary. Hooks are useful for visibility, context injection, logging, and tool governance, but should be treated as advisory inside an already-running Claude session.
 
 ## 2. User Problem
 
-The primary pain is not that users lack access to powerful models. The pain is that choosing among models and tools is a repeated cognitive tax.
+The primary pain is model-choice fatigue:
 
-Common examples:
+* Stronger models are valuable for implementation, debugging, high-risk review, and architectural ambiguity.
+* Faster or cheaper models are enough for acknowledgements, summaries, simple explanation, and low-risk turns.
+* Users do not want to track changing vendor model names, effort flags, and client-specific capabilities.
+* The right choice depends on task intent, continuity, tool needs, cost posture, and current session state.
 
-* A high-end model is useful for architecture and difficult debugging, but wasteful for acknowledgements, summaries, and low-risk routine turns.
-* A cheaper or faster model is fine for many steps, but users do not want to constantly decide where the boundary is.
-* Model names, vendor SKUs, and client capabilities change faster than most engineers want to track.
-* The best choice depends on the task, available tools, privacy constraints, cost posture, and current conversation state.
+The secondary pain is continuity. Routing is only useful if the user still feels like they are working in one coherent coding session rather than hopping between disconnected tools.
 
-The secondary need is continuity. Once routing is introduced, switching targets can lose context, permissions, approval state, or settled decisions. The MVP should acknowledge this need, but it should not promise seamless automatic handoff yet.
+## 3. Target User
 
-## 3. First User and Target Audience
+The first user is a high-context software engineer who already uses Claude Code and is comfortable with early local tooling.
 
-First user:
+The broader audience is engineers who want good defaults, a short explanation, and an escape hatch when they care enough to override.
 
-* A senior, high-context software engineer who actively uses AI tools.
-* Comfortable with configuration and early tooling.
-* Wants better defaults because repeated model choice is annoying, not because they cannot make the decision manually.
+The MVP should feel like a normal way to launch or use Claude Code, not like a bundle of PoC commands.
 
-Broader target audience:
+## 4. Current Evidence
 
-* Average software engineers using AI coding tools.
-* Engineers who know that model choice matters but do not know which model is best for which task.
-* Engineers who are overusing the most expensive model because it is easier than thinking.
-* Engineers who underuse stronger models because escalation requires too much conscious effort.
+The first PoC supports the following:
 
-The product should serve both groups by making the default path simple while keeping the decision inspectable.
+* Deterministic local routing works for `quick`, `balanced`, and `best coder`.
+* Compact route explanations are suitable for user-facing output.
+* Capability filtering and refusal paths can be deterministic.
+* Claude Code hooks can observe prompts and tool calls before execution.
+* Claude Code hooks can inject context and allow or deny tool calls.
+* Claude CLI launch flags can influence model/effort before execution.
+* Local gateway continuity and logging are feasible in a router-owned harness.
 
-## 4. Desired Outcome
+The first PoC did not prove:
 
-The user should feel:
+* Automatic model/effort switching inside an active Claude Code turn.
+* A satisfying continuity model across routed Claude wrapper turns.
+* A seamless `switchboard` user experience.
+* A production-ready wrapper trust boundary.
 
-```text
-I can let the router choose most of the time, and I understand why it escalated or stayed cheap.
-```
+## 5. PoC 2 Scope
 
-The router succeeds if it reduces conscious model-selection decisions without noticeably degrading work quality.
+PoC 2 exists to prove the missing gaps, not to build a small MVP.
 
-Early success signals:
+PoC 2 should include:
 
-* The user accepts most default routing decisions.
-* Manual escalations decrease over time for routine tasks.
-* Expensive targets are used less for low-value turns.
-* Users can explain why a route happened after reading the router explanation.
-* Switching or escalation does not surprise the user.
+1. A minimal `switchboard` wrapper command for Claude Code.
+2. A two-turn continuity probe across routed turns.
+3. Route selection at Claude launch or resume time using model/effort flags.
+4. Claude hooks that display or inject route context and log tool decisions.
+5. Local evidence logs that distinguish user prompt, route decision, wrapper context, selected model/effort, session identity, and hook events.
+6. A concise PoC 2 outcome write-up with verified assumptions, falsified assumptions, and MVP implications.
 
-## 5. MVP Scope
+PoC 2 should not include:
 
-The MVP includes:
-
-1. One vendor ecosystem.
-2. One integration surface inside that ecosystem.
-3. A manually configured execution-target registry for that vendor.
-4. A small set of user-facing target labels.
-5. Minimal session state.
-6. Rule-based task and mode classification.
-7. Deterministic routing policy.
-8. Capability and privacy filtering based on declared metadata.
-9. Outcome-focused route explanations.
-10. User-controlled escalation and return-to-auto.
-11. Basic routing logs.
-12. Manual handoff summary.
-
-The MVP does not include:
-
-* Learned routing.
-* Automatic context packaging before every switch.
-* Natural-language implementation approval inference.
 * Cross-vendor routing.
-* Multi-client support.
-* Full gateway abstraction.
-* Secret scanning or DLP.
-* Rich dashboards.
-* Automatic model benchmarking.
-* Full success scoring.
+* Rich UI.
+* Learned routing.
+* Automatic context packaging beyond the minimum needed for the continuity probe.
+* Production-grade security policy.
+* Broad tool permission automation.
+* Full gateway execution as the primary UX.
+* Polished override ergonomics beyond the minimum needed to test the workflow.
 
-## 6. First Workflow
+Security is an architectural consideration because the wrapper can influence execution, but PoC 2 does not need to solve the full security model. It only needs to avoid adding unnecessary authority and record enough evidence to inform the later design.
 
-The first workflow should be a tracer bullet through the whole system:
+## 6. Assumptions To Verify Or Falsify
 
-```text
-User starts or continues a software-delivery session.
-Router reads minimal session state and latest user turn.
-Router classifies the turn.
-Router filters targets by required capabilities and declared constraints.
-Router chooses a target label.
-Router explains the decision.
-User may accept, escalate, downshift, or return to auto.
-Router logs the decision and any override.
-```
+### A. Wrapper Routing Authority
 
-The long-term product workflow must put the router on the pre-execution path inside the selected vendor ecosystem:
+Assumption: Switchboard can choose Claude model/effort before execution by launching or resuming Claude with explicit flags.
 
-```text
-User writes prompt.
-Router receives the prompt before a model or agent processes it.
-Router chooses the vendor-scoped target or recommends a switch.
-Selected execution target handles the prompt.
-Router records the decision and outcome signals.
-```
+Verification:
 
-If the router only runs beside the user's primary tool after a prompt has already been processed, it can advise and learn, but it cannot fully remove model-choice fatigue.
+* `quick` routes to the intended lower-cost/lower-effort Claude target.
+* `best coder` routes to the intended stronger/higher-effort Claude target.
+* The evidence log records the selected route and the actual model/effort used.
 
-The MVP may use advisory mode as validation scaffolding. In advisory mode, the router recommends a target and produces an explanation or handoff/context note, but the user or client performs the actual switch. This validates routing quality before investing in deeper execution integration.
+Falsification:
 
-Direct execution is deferred until the selected vendor ecosystem can support pre-execution routing cleanly without forcing the router to become an agent runtime.
+* Claude ignores the selected flags.
+* The wrapper cannot reliably prove which model/effort executed.
+* The launch/resume path is too brittle for normal use.
 
-## 7. UX Direction
+### B. Claude Continuity
 
-The MVP should avoid exposing internal terms like `target_class` as the primary user language.
+Assumption: The wrapper can preserve a user's sense of one ongoing Claude Code session while routing different turns to different model/effort choices.
 
-Use a small global set of outcome-oriented labels:
+Verification:
+
+* Turn one can route to `best coder` and create or resume a Claude session.
+* Turn two can route to `quick` or `balanced`.
+* The second turn retains enough project/session context to feel coherent.
+* The user does not need to manually reconstruct settled context.
+
+Falsification:
+
+* Changing model/effort breaks session continuity.
+* Resume semantics do not work with routed turns.
+* The required context handoff is so manual that it reintroduces cognitive overhead.
+
+### C. Hook Usefulness
+
+Assumption: Claude hooks are useful for route explanation, context visibility, tool-decision logging, and basic governance even if they cannot switch the active model.
+
+Verification:
+
+* `UserPromptSubmit` sees the prompt early enough to add a labeled Switchboard context block or explanation.
+* `PreToolUse` sees tool calls early enough to log and, where appropriate, deny them.
+* Hook logs can be correlated with wrapper route decisions and Claude session identity.
+
+Falsification:
+
+* Hook timing is too late or inconsistent.
+* Injected route context is noisy or confusing.
+* Hook events cannot be correlated with the wrapper session.
+
+### D. Seamless CLI Shape
+
+Assumption: A first-class command can hide PoC wiring without hiding important routing evidence.
+
+Verification:
+
+* `switchboard "prompt"` works for a single-turn prompt.
+* `switchboard` can start or resume an interactive Claude flow.
+* The user sees a short route explanation such as `Switchboard: best coder - repo edits - higher effort`.
+* Detailed route state is available in logs or an explain command.
+
+Falsification:
+
+* The command requires users to understand multiple wrapper modes.
+* The route explanation is too noisy for normal use.
+* The workflow feels materially worse than invoking Claude directly.
+
+### E. Routing Policy Fit
+
+Assumption: The existing deterministic policy is good enough for the Claude-scoped workflow after target labels map to Claude model/effort choices.
+
+Verification:
+
+* Low-risk turns route to `quick`.
+* Planning routes to `balanced`.
+* Implementation and debugging route to `best coder`.
+* Capability misses refuse clearly.
+* The router avoids twitchy switching when continuity matters more than marginal cost savings.
+
+Falsification:
+
+* Claude-specific model/effort options do not map cleanly to current labels.
+* The policy switches too often in interactive use.
+* The explanation does not match the user's intuition.
+
+### F. Minimal Evidence And Auditability
+
+Assumption: PoC 2 can collect enough evidence to make a confident MVP decision.
+
+Verification:
+
+* Logs show route decision, selected Claude flags, session identity, hook events, and any tool decision.
+* Logs distinguish user prompt from Switchboard-generated context.
+* Failures are explicit rather than silently falling back.
+
+Falsification:
+
+* Logs cannot prove what happened.
+* Wrapper and hook evidence cannot be correlated.
+* Failure modes are ambiguous.
+
+## 7. MVP Scope If PoC 2 Passes
+
+If PoC 2 verifies the key assumptions, the MVP should include:
+
+1. A `switchboard` command that wraps Claude Code.
+2. Claude-scoped target labels: `quick`, `balanced`, and `best coder`.
+3. Pre-launch or pre-resume routing to Claude model/effort flags.
+4. Minimal persistent local session state.
+5. Compact route explanations.
+6. Basic override controls: stronger, cheaper, stay, auto, explain.
+7. Claude hooks for route context, tool-decision logging, and conservative governance.
+8. Local route and hook logs.
+9. A documented wrapper threat model before production hardening.
+
+The MVP should defer:
+
+* Cross-vendor routing.
+* In-session automatic model switching.
+* `deep reasoning` as a standalone user-facing target unless Claude exposes a meaningful distinction.
+* Learned routing.
+* Rich UI.
+* Broad tool permission automation.
+* Automatic context packaging.
+* Full gateway execution as the primary product surface.
+
+## 8. Conceptual Routing Model
+
+Start with these user-facing labels:
 
 * `quick`
 * `balanced`
-* `deep reasoning`
 * `best coder`
 
-These labels should map to internal target classes and eligible execution targets. The vocabulary should remain consistent across users and documentation, while each user may configure which concrete execution targets sit behind each label.
+Keep `deep reasoning` out of the initial Claude-scoped MVP unless PoC 2 or later vendor research shows a clear product distinction from `balanced` or `best coder`.
 
-In the MVP, those concrete targets should belong to one vendor ecosystem. For example, an OpenAI/Codex-scoped MVP might map `quick`, `balanced`, `deep reasoning`, and `best coder` to different OpenAI/Codex targets. An Anthropic/Claude-scoped MVP might map the same labels to different Anthropic/Claude targets.
-
-Privacy and cost should usually appear as constraints or supporting metadata, not as primary route labels.
-
-The UX should be outcome-focused:
-
-```text
-Chosen: best coder
-Why: implementation approved; task touches multiple files; repo edit tools required.
-Cost posture: higher cost accepted because quality risk is meaningful.
-```
-
-Instead of requiring protocol-heavy commands for every action, the MVP should support simple controls around outcomes:
-
-* "Use stronger target for this."
-* "Prefer cheaper unless quality is at risk."
-* "Stay on this target for now."
-* "Return to auto."
-* "Explain the route."
-
-Exact command syntax can exist underneath, but the product concept should not depend on users enjoying slash commands.
-
-Cost should be shown qualitatively in the main route explanation. Exact cost estimates may appear in logs or expanded details, but the main flow should not feel like accounting software.
-
-Advisory validation should use a recommendation-plus-action shape. The router should not merely report a passive suggestion, and it should not intercept every prompt before trust has been earned.
-
-Compact route explanation should show:
-
-```text
-Recommended: best coder
-Why: implementation + repo edits + tests.
-```
-
-Expanded explanation should be available on request and may show mode, required capabilities, blocked targets, cost posture, and continuity reasoning.
-
-Compact UI should show the selected outcome label plus at most two supporting badges, such as:
-
-```text
-Recommended: best coder · repo tools · higher cost
-```
-
-Detailed configuration may expose internal fields such as `target_class`, `capabilities`, `privacy_tier`, `cost_tier`, and `latency_tier`.
-
-## 8. MVP Routing Model
-
-Start with a small mode set:
+Start with these modes:
 
 * `plan`
 * `implement`
@@ -195,341 +237,75 @@ Start with a small mode set:
 * `agent_workflow`
 * `out_of_domain`
 
-Start with a small internal target-class set:
-
-* `cheap_fast`
-* `medium_reasoning`
-* `strong_reasoning`
-* `strong_coding`
-
-Initial default policy:
+Initial policy:
 
 ```yaml
 routes:
-  plan: medium_reasoning
-  implement: strong_coding
-  debug: strong_coding
-  review: medium_reasoning
-  summarize: cheap_fast
-  agent_workflow: medium_reasoning
-  out_of_domain: medium_reasoning
+  summarize: quick
+  plan: balanced
+  review: balanced
+  agent_workflow: balanced
+  out_of_domain: balanced
+  implement: best coder
+  debug: best coder
 
 escalation:
-  user_requests_stronger: strong_reasoning
-  implementation_approved: strong_coding
-  repeated_test_failure: strong_coding
-  high_risk_paths: strong_coding
-  low_classifier_confidence: strong_reasoning
+  user_requests_stronger: best coder
+  implementation_approved: best coder
+  repeated_test_failure: best coder
+  high_risk_paths: best coder
+  low_classifier_confidence: balanced
 ```
 
 The policy should prefer continuity when the current target is capable enough and the expected quality gain from switching is small.
 
-Before outcome logs exist, the router should estimate "not meaningfully affected" using conservative heuristics:
+## 9. UX Direction
 
-* Prefer cheaper or faster targets when no file edits, tool execution, high-risk reasoning, or project-direction decisions are needed.
-* Prefer stronger targets when the task involves implementation, debugging, multi-file work, high-risk areas, ambiguous architecture choices, repeated failure, or user correction.
-* Preserve the current target when switching would be more disruptive than the expected quality or cost benefit.
+The default command should be simple:
 
-The router should not twitch between targets for every trivial turn. If the current expensive target is active during implementation or debugging, the router may keep continuity unless the turn is clearly standalone or the user's cost posture strongly prefers cost savings.
+```bash
+switchboard
+```
 
-## 9. Minimal Session State
+or:
 
-The MVP session state should track only what routing needs:
+```bash
+switchboard "Implement the plan."
+```
 
-* Session ID.
-* Current mode.
-* Current selected target.
-* User cost posture.
-* User privacy posture.
-* Approval state.
-* Last route decision.
-* Recent user correction or dissatisfaction signal.
-* Recent validation failure signal.
-* Whether the user pinned, escalated, or downshifted the target.
-
-Everything else should be deferred until it directly improves routing quality.
-
-Cost posture should use three values:
-
-* `prefer_cost`
-* `balanced`
-* `prefer_quality`
-
-Precedence should be:
+The route explanation should be short:
 
 ```text
-session override > project preference > global default
+Switchboard: best coder - repo edits - higher effort
 ```
 
-Global default should exist first. Project preference is optional. Session override is useful for temporary intent, such as "keep this exploration cheap" or "bias quality for this task."
+Detailed route state belongs in logs or an explicit explain command.
 
-## 10. Execution Target Registry
+The user should be able to express simple controls without learning model names:
 
-The MVP can use manually declared target metadata.
+* Use stronger target for this.
+* Prefer cheaper unless quality is at risk.
+* Stay on this target for now.
+* Return to auto.
+* Explain the route.
 
-Each target should declare:
+## 10. MVP Acceptance Criteria
 
-* ID.
-* User-facing label.
-* Internal target class.
-* Provider or client surface.
-* Available capabilities.
-* Privacy tier.
-* Approximate cost tier.
-* Latency tier.
-* Availability status.
+The MVP is acceptable when:
 
-The router should not assume that a model name implies tool access. Capabilities belong to the execution target, not the abstract model.
+1. A user can start or resume Claude Code through `switchboard`.
+2. Switchboard routes before execution to the selected Claude model/effort.
+3. The route explanation is visible and compact.
+4. The user can override routing at a coarse label level.
+5. Session continuity is good enough for normal multi-turn coding work.
+6. Hook evidence correlates with wrapper route decisions.
+7. Logs distinguish user input, Switchboard context, route decisions, model/effort selection, and tool decisions.
+8. Failure modes are clear and fail closed where routing or hook setup cannot be trusted.
 
-Target metadata should stay coarse enough that users can maintain it by hand.
+## 11. Relationship To Other Docs
 
-Initial capability vocabulary:
+[PoC](POC.md) describes the original risk-reduction plan.
 
-* `chat`
-* `reasoning`
-* `repo_context`
-* `file_read`
-* `file_edit`
-* `shell_execution`
-* `test_execution`
-* `structured_output`
+[PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed.
 
-Example:
-
-```yaml
-id: codex-high
-label: best coder
-target_class: strong_coding
-provider: openai
-surface: codex
-capabilities:
-  - chat
-  - reasoning
-  - repo_context
-  - file_read
-  - file_edit
-  - shell_execution
-  - test_execution
-privacy_tier: external
-cost_tier: high
-latency_tier: medium
-availability: available
-```
-
-## 11. Integration Direction
-
-The first vendor ecosystem and integration surface are not yet chosen.
-
-The MVP should choose one vendor ecosystem and route among that vendor's available targets before attempting universal cross-vendor routing.
-
-The product should be designed toward a vendor-scoped pre-execution entrypoint, hook, extension, or wrapper. The user should eventually send prompts through the router before the chosen vendor model or agent processes the prompt.
-
-Advisory mode is still acceptable for MVP validation, but it should not be mistaken for the final product shape.
-
-Selection criteria:
-
-* Can the integration observe enough session state to make routing useful?
-* Can the integration receive the user's prompt before a model or agent processes it?
-* Can it expose or simulate multiple targets within one vendor ecosystem?
-* Can it select or influence the model/profile/reasoning tier before execution?
-* Can it support route explanation and override?
-* Can it preserve enough context when switching?
-* Can it be built without depending on unstable vendor internals?
-
-Candidate paths:
-
-* OpenAI/Codex-scoped router.
-* Anthropic/Claude-scoped router.
-* Vendor-owned CLI/workbench wrapper.
-* Vendor hook or extension if it can influence pre-execution target choice.
-* Advisory sidecar for vendor feasibility testing.
-
-The first implementation should choose the vendor path that best supports pre-execution routing with the least brittle implementation, not the path that sounds most universal.
-
-A repo-local advisory CLI may be useful as a lab bench for routing fixtures, explanations, target metadata, and logs. It should be treated as proof scaffolding, not the intended end-user workflow.
-
-## 12. Acceptance Criteria
-
-The MVP is acceptable when it can:
-
-1. Load a configured target registry.
-2. Classify a turn into one of the MVP modes.
-3. Apply deterministic routing policy.
-4. Refuse targets that lack required capabilities.
-5. Choose a cheaper target for low-risk summary or acknowledgement work.
-6. Escalate to a stronger target for implementation, debugging, or high-risk work.
-7. Explain the route in user-facing language.
-8. Let the user manually escalate or return to auto.
-9. Log the route decision and any override.
-10. Generate a manual handoff summary.
-11. Support global cost posture with optional session override.
-12. Preserve continuity when switching would be more disruptive than useful.
-
-## 13. Example Acceptance Tests
-
-Route behavior should be covered by fixture-style regression tests before the router becomes more automated. Fixtures should use realistic user turns and expected route decisions.
-
-Suggested fixture shape:
-
-```yaml
-- name: debugging_requires_best_coder
-  session:
-    mode: plan
-    cost_posture: balanced
-  input: "The test suite is failing after the refactor. Fix it."
-  expected:
-    mode: debug
-    label: best coder
-    required_capabilities:
-      - repo_context
-      - file_read
-      - shell_execution
-      - test_execution
-    explanation_contains:
-      - tests
-      - repo tools
-```
-
-### Low-Value Turn
-
-Input:
-
-```text
-Thanks, that makes sense.
-```
-
-Expected:
-
-* Mode remains unchanged or moves to `summarize` if the client asks for a response.
-* Router chooses `cheap_fast` if a response is needed.
-* Explanation says the turn does not require repo tools or deep reasoning.
-
-### Architecture Discussion
-
-Input:
-
-```text
-Compare the tradeoffs between a proxy integration and a CLI wrapper.
-```
-
-Expected:
-
-* Mode is `plan`.
-* Router chooses `medium_reasoning` or `strong_reasoning` depending on configured quality posture.
-* Router does not require repo edit tools.
-
-### Implementation
-
-Input:
-
-```text
-Implement the plan.
-```
-
-Expected:
-
-* MVP does not infer file-edit approval unless the integration has explicit approval semantics.
-* If approval is explicit, mode becomes `implement`.
-* Router requires repo context and file-edit capability.
-* Router chooses `strong_coding` if eligible.
-
-### Debugging
-
-Input:
-
-```text
-The test suite is failing after the refactor. Fix it.
-```
-
-Expected:
-
-* Mode becomes `debug`.
-* Router requires shell/test capability if execution is expected.
-* Router chooses `strong_coding`.
-
-### Privacy Constraint
-
-Input:
-
-```text
-Review this auth change.
-```
-
-Expected:
-
-* Router applies declared path or project sensitivity metadata if available.
-* Router excludes targets that violate the configured privacy posture.
-* If no eligible target exists, router refuses clearly.
-
-Additional regression fixtures should cover:
-
-* Simple explanation.
-* Planning.
-* Ambiguous implementation approval.
-* High-risk paths.
-* User correction.
-* Cheap target blocked by missing capabilities.
-* Current expensive target receiving a trivial turn.
-
-## 14. Manual Handoff Format
-
-The first manual handoff format should be Markdown.
-
-Markdown is human-readable, easy to edit, and portable across clients. A structured JSON form can be added later if machine-readability becomes important.
-
-Suggested format:
-
-```markdown
-# Handoff
-
-## Current Goal
-
-## Current Mode
-
-## User Intent / Approval
-
-## Decisions Made
-
-## Constraints
-
-## Files Or Areas In Scope
-
-## Known Failures
-
-## Recommended Next Step
-```
-
-The handoff does not need to preserve all conversation history. It should preserve enough context for the receiving target to continue without asking the user to repeat settled intent, constraints, or known failures.
-
-## 15. MVP Decisions
-
-1. The long-term product requires pre-execution routing.
-2. Advisory mode is acceptable only as MVP validation scaffolding.
-3. Automatic target execution is deferred until a suitable pre-execution integration is chosen.
-4. User-facing labels are global and outcome-oriented: `quick`, `balanced`, `deep reasoning`, and `best coder`.
-5. Privacy is a constraint/filter, not usually a primary route label.
-6. Cost posture has three values: `prefer_cost`, `balanced`, and `prefer_quality`.
-7. Cost-preference precedence is session override, then project preference, then global default.
-8. Main route explanations show qualitative cost posture, not exact cost by default.
-9. Target metadata is manually configured and coarse.
-10. The router avoids twitchy switching and preserves continuity when the current target is capable enough.
-11. Manual handoff is Markdown first.
-12. Advisory validation uses recommendation plus action.
-13. Route explanations are compact by default and expandable on request.
-14. Compact UI shows the selected outcome label plus at most two supporting badges.
-15. Route behavior should be covered by YAML-style regression fixtures.
-16. The MVP should be vendor-scoped at the product surface.
-17. Cross-vendor routing is deferred until one vendor-scoped router proves the core value.
-
-## 16. Remaining Open Questions
-
-1. Which vendor ecosystem can support pre-execution routing with the least brittle implementation?
-2. Within that vendor ecosystem, which integration surface can select or influence target choice before execution?
-
-## 17. Relationship to Architecture Document
-
-This MVP PRD defines the first product slice. The broader architecture, contracts, and future design options live in [Architecture and Design Document](PRD.md).
-
-The MVP should not begin until the [PoC](POC.md) validates that at least one vendor ecosystem can support useful pre-execution routing without brittle integration.
-
-The architecture document should not be treated as MVP scope unless this PRD explicitly includes the feature.
+[Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
