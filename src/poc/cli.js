@@ -15,6 +15,7 @@ import { executeProductionHookTurn } from "./production_hook.js";
 import { validateMappings } from "./model_mappings.js";
 import { executeGatewayTurn } from "./gateway_surface.js";
 import { loadThreadSession, saveThreadSession } from "./thread_session_store.js";
+import { executeClaudeCliLaunch, planClaudeCliLaunch } from "./claude_cli_launcher.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -699,6 +700,43 @@ function runProductionHook() {
   if (result.status === "failed") process.exitCode = 1;
 }
 
+function runClaudeCliRoute() {
+  const input = getArg("--input") || "Implement the plan.";
+  const targets = loadTargets("anthropic");
+  const session = {
+    mode: getArg("--mode") || "plan",
+    cost_posture: getArg("--cost-posture") || "balanced",
+    currentTargetId: getArg("--current-target-id") || targets[1]?.id || null
+  };
+  const options = {
+    input,
+    targets,
+    session,
+    cwd: REPO_ROOT,
+    claudeBin: getArg("--claude-bin") || "claude",
+    sessionId: getArg("--session-id") || undefined,
+    outputFormat: getArg("--output-format") || "json",
+    noTools: getArg("--no-tools") === "true"
+  };
+
+  const live = getArg("--live") === "true";
+  const result = live ? executeClaudeCliLaunch(options) : planClaudeCliLaunch(options);
+
+  appendRouteLog({
+    ts: new Date().toISOString(),
+    source: live ? "claude_cli_live_route" : "claude_cli_route_plan",
+    input,
+    session,
+    result: {
+      ...result,
+      stdout: result.stdout ? result.stdout.slice(0, 2000) : undefined,
+      stderr: result.stderr ? result.stderr.slice(0, 2000) : undefined
+    }
+  });
+  printResult(result);
+  if (result.status === "failed" || result.status === "refused") process.exitCode = 1;
+}
+
 const cmd = process.argv[2];
 if (cmd === "route") runRoute();
 else if (cmd === "fixtures") runFixtures();
@@ -814,6 +852,7 @@ else if (cmd === "release-gate") {
     process.exitCode = 1;
   });
 }
+else if (cmd === "claude-cli-route") runClaudeCliRoute();
 else if (cmd === "production-hook") runProductionHook();
 else {
   console.log("Usage:");
@@ -835,6 +874,8 @@ else {
   console.log("  node src/poc/cli.js gateway-surface --vendor openai --input \"Implement the plan.\" --tool-action safe_file_edit");
   console.log("  node src/poc/cli.js gateway-thread-turn --vendor openai --thread-id poc-thread-1 --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js release-gate");
+  console.log("  node src/poc/cli.js claude-cli-route --input \"Implement the plan.\"");
+  console.log("  node src/poc/cli.js claude-cli-route --live true --input \"Implement the plan.\"");
   console.log("  node src/poc/cli.js production-hook --vendor openai --input \"Implement the plan.\" --tool-action read_file");
   process.exitCode = 1;
 }
