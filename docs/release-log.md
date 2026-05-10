@@ -6,7 +6,7 @@
 - Why it matters: Makes routing behavior less implicit and easier to audit by showing why a stronger target was selected.
 - Who is affected: Switchboard users and maintainers reviewing route decisions.
 - Action needed: None.
-- PR: pending
+- PR: https://github.com/hannasdev/model-switchboard/pull/16
 
 ### 2026-05-10 — Harden CI security defaults and supply-chain hygiene
 
