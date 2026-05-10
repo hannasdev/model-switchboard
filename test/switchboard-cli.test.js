@@ -82,7 +82,7 @@ test("switchboard explain summarizes latest route context and hook events", () =
       paths.logPath,
       "--route-context-path",
       paths.routeContextPath,
-      "Implement the plan."
+      "That is a wrong assumption. Compare alternatives again."
     ],
     turnIo
   );
@@ -124,6 +124,7 @@ test("switchboard explain summarizes latest route context and hook events", () =
 
   assert.equal(exitCode, 0);
   assert.match(explainIo.stdoutText, /Route: best coder/);
+  assert.match(explainIo.stdoutText, /Escalation: .*user_correction/);
   assert.match(explainIo.stdoutText, /Route context: matched/);
   assert.match(explainIo.stdoutText, /Hook events: 1/);
   assert.match(explainIo.stdoutText, /PreToolUse correlation=matched allow/);

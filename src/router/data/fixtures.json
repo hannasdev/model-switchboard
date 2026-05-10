@@ -103,7 +103,7 @@
     "session": { "mode": "plan", "cost_posture": "balanced" },
     "expected": {
       "mode": "plan",
-      "label": "balanced",
+      "label": "best coder",
       "requiredCapabilities": ["chat", "reasoning", "structured_output"],
       "explanationIncludes": ["planning/tradeoff analysis"],
       "classificationReason": "user_correction_signal"

@@ -85,6 +85,7 @@ function routeDecisionSummary(plan) {
     routingOverride: route.routingOverride || null,
     modeResolution: route.modeResolution || null,
     policyInputs: route.policyInputs || null,
+    escalationPolicy: route.escalationPolicy || null,
     explanation: route.explanation || null
   };
 }

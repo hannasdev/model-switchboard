@@ -277,3 +277,105 @@ test("stay override reports hard constraint blockers for ineligible current targ
   assert.equal(result.routingOverride.applied, false);
   assert.equal(result.routingOverride.reason, "current_target_blocked_by_hard_constraints");
 });
+
+test("low confidence escalates review routing", () => {
+  const result = routePrompt({
+    input: "Could you sanity check this?",
+    session: {
+      mode: "review"
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.mode, "review");
+  assert.equal(result.escalationPolicy.applied, true);
+  assert.equal(result.escalationPolicy.reasons.includes("low_confidence"), true);
+  assert.equal(result.selectedTarget?.label, "best coder");
+});
+
+test("repeated failures trigger escalation", () => {
+  const result = routePrompt({
+    input: "Plan the rollout in phases with tradeoffs.",
+    session: {
+      mode: "plan",
+      failureSignals: {
+        recentToolFailures: 1,
+        recentTestFailures: 2
+      }
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.escalationPolicy.applied, true);
+  assert.equal(result.escalationPolicy.reasons.includes("repeated_failures"), true);
+  assert.equal(result.selectedTarget?.label, "best coder");
+});
+
+test("user correction trigger is explicit in escalation policy", () => {
+  const result = routePrompt({
+    input: "That is a wrong assumption. Compare alternatives again.",
+    session: {
+      mode: "plan"
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.escalationPolicy.applied, true);
+  assert.equal(result.escalationPolicy.reasons.includes("user_correction"), true);
+  assert.equal(result.escalationPolicy.reasons.includes("classification_escalation"), false);
+  assert.equal(result.selectedTarget?.label, "best coder");
+});
+
+test("high-risk implementation is explicitly escalated", () => {
+  const result = routePrompt({
+    input: "Implement the plan.",
+    session: {
+      mode: "plan",
+      riskLevel: "high"
+    },
+    targets: openaiTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.mode, "implement");
+  assert.equal(result.escalationPolicy.applied, true);
+  assert.equal(result.escalationPolicy.reasons.includes("high_risk_implementation"), true);
+  assert.equal(result.selectedTarget?.label, "best coder");
+});
+
+test("project override custom forceLabel is prioritized before fallback labels", () => {
+  const balancedTarget = openaiTargets.find((target) => target.label === "balanced");
+  assert.ok(balancedTarget, "expected balanced target fixture");
+
+  const targets = [
+    {
+      ...balancedTarget,
+      id: "custom-team-default",
+      label: "team-default"
+    },
+    ...openaiTargets
+  ];
+
+  const result = routePrompt({
+    input: "Plan the rollout in phases with tradeoffs.",
+    session: {
+      mode: "plan",
+      projectOverride: {
+        forceLabel: "team-default"
+      }
+    },
+    targets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.selectedTarget?.id, "custom-team-default");
+  assert.equal(result.selectedTarget?.label, "team-default");
+});

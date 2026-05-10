@@ -43,6 +43,7 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(result.routeDecision.continuityCost, "low");
   assert.equal(result.routeDecision.modeResolution.resolvedMode, "implement");
   assert.equal(result.routeDecision.policyInputs.hardConstraints.privacy, "off");
+  assert.deepEqual(result.routeDecision.escalationPolicy?.reasons, []);
   assert.equal(result.selectedClaude.model, "sonnet");
   assert.equal(result.selectedClaude.effort, "high");
   assert.equal(result.selectedClaude.sessionId, "claude-session-1");
@@ -55,6 +56,7 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(entry.userPrompt, "Implement the plan.");
   assert.equal(entry.wrapperContext.kind, "switchboard_context");
   assert.equal(entry.routeDecision.label, "best coder");
+  assert.deepEqual(entry.routeDecision.escalationPolicy?.reasons, []);
   assert.equal(entry.selectedClaude.effort, "high");
   assert.equal(entry.session.claudeSessionId, "claude-session-1");
 
@@ -62,6 +64,28 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(routeContext["claude-session-1"].latest.threadId, "thread-1");
   assert.equal(routeContext["claude-session-1"].latest.routeLabel, "best coder");
   assert.equal(routeContext["claude-session-1"].latest.model, "sonnet");
+});
+
+test("Switchboard logs escalation policy details for escalated turns", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  const result = planSwitchboardTurn({
+    input: "That is a wrong assumption. Compare alternatives again.",
+    threadId: "thread-escalation",
+    sessionId: "claude-session-escalation",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+
+  assert.equal(result.status, "planned");
+  assert.equal(result.routeDecision.label, "best coder");
+  assert.equal(result.routeDecision.escalationPolicy?.applied, true);
+  assert.equal(result.routeDecision.escalationPolicy?.reasons.includes("user_correction"), true);
+
+  const [entry] = readLog(logPath);
+  assert.equal(entry.routeDecision.escalationPolicy?.applied, true);
+  assert.equal(entry.routeDecision.escalationPolicy?.reasons.includes("user_correction"), true);
 });
 
 test("Switchboard continuity probe preserves Claude session while route changes", () => {
