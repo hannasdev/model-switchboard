@@ -172,7 +172,7 @@ Notes:
       "privacy": "enforced|advisory|off",
       "availability": "enforced|advisory|off",
       "clientCompatibility": "enforced|advisory|off",
-      "requiredPrivacyTier": "local|standard|restricted|unknown|null",
+      "requiredPrivacyTier": "external|local|standard|restricted|unknown|null",
       "clientSurface": "string|null"
     },
     "softConstraints": {

@@ -276,10 +276,55 @@ function buildConstraintInputs(session = {}) {
   };
 }
 
-function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }) {
-  const currentTarget = session.currentTargetId
-    ? eligible.find((target) => target.id === session.currentTargetId)
-    : null;
+function describeCurrentTargetStatus({ session, targets = [], eligible = [], blocked = [] }) {
+  const currentTargetId = session.currentTargetId || null;
+  if (!currentTargetId) {
+    return {
+      currentTarget: null,
+      eligibleCurrentTarget: null,
+      status: "missing_current_target"
+    };
+  }
+
+  const currentTarget = targets.find((target) => target.id === currentTargetId) || null;
+  const eligibleCurrentTarget = eligible.find((target) => target.id === currentTargetId) || null;
+  const blockedCurrentTarget = blocked.find((target) => target.id === currentTargetId) || null;
+
+  if (!currentTarget) {
+    return {
+      currentTarget: null,
+      eligibleCurrentTarget: null,
+      status: "missing_current_target"
+    };
+  }
+
+  if (eligibleCurrentTarget) {
+    return {
+      currentTarget,
+      eligibleCurrentTarget,
+      status: "eligible_current_target"
+    };
+  }
+
+  if (blockedCurrentTarget) {
+    return {
+      currentTarget,
+      eligibleCurrentTarget: null,
+      status: "ineligible_current_target",
+      blockedCurrentTarget
+    };
+  }
+
+  return {
+    currentTarget,
+    eligibleCurrentTarget: null,
+    status: "missing_current_target"
+  };
+}
+
+function applyContinuitySwitchPolicy({ selectedTarget, session, targets, eligible, blocked, mode }) {
+  const currentTargetInfo = describeCurrentTargetStatus({ session, targets, eligible, blocked });
+  const currentTarget = currentTargetInfo.eligibleCurrentTarget;
 
   const turnCount = Number(session.turnCount || 0);
   const continuityCost = turnCount >= 8 ? "high" : turnCount >= 3 ? "medium" : "low";
@@ -297,7 +342,9 @@ function applyContinuitySwitchPolicy({ selectedTarget, session, eligible, mode }
         ? "no_selected_target"
         : currentTarget
           ? "same_target"
-          : "no_current_target"
+          : currentTargetInfo.status === "ineligible_current_target"
+            ? "current_target_ineligible"
+            : "no_current_target"
     };
   }
 
@@ -330,11 +377,15 @@ function selectByLabelPriority(eligible, preferredLabelOrder) {
   return eligible[0] || null;
 }
 
-function applyRoutingOverride({ eligible, desiredLabel, session }) {
+function applyRoutingOverride({ eligible, desiredLabel, session, targets = [], blocked = [] }) {
   const override = session.routingOverride || "auto";
-  const currentTarget = session.currentTargetId
-    ? eligible.find((target) => target.id === session.currentTargetId)
-    : null;
+  const currentTargetInfo = describeCurrentTargetStatus({
+    session,
+    targets,
+    eligible,
+    blocked
+  });
+  const currentTarget = currentTargetInfo.eligibleCurrentTarget;
 
   if (override === "stronger") {
     const target = selectByLabelPriority(eligible, ["best coder", "deep reasoning", desiredLabel, "balanced", "quick"]);
@@ -365,7 +416,9 @@ function applyRoutingOverride({ eligible, desiredLabel, session }) {
       overrideApplied: Boolean(currentTarget),
       overrideReason: currentTarget
         ? "user_requested_stay_on_current_target"
-        : "current_target_lacks_required_capabilities"
+        : currentTargetInfo.status === "ineligible_current_target"
+          ? "current_target_blocked_by_hard_constraints"
+          : "current_target_lacks_required_capabilities"
     };
   }
 
@@ -407,13 +460,15 @@ export function routePrompt({
     eligible.push(target);
   }
 
-  const overrideSelection = applyRoutingOverride({ eligible, desiredLabel, session });
+  const overrideSelection = applyRoutingOverride({ eligible, desiredLabel, session, targets, blocked });
   const preferredOrder = [desiredLabel, "balanced", "deep reasoning", "best coder", "quick"];
   const preferredTarget = overrideSelection.target || selectByLabelPriority(eligible, preferredOrder);
   const continuitySelection = applyContinuitySwitchPolicy({
     selectedTarget: preferredTarget,
     session,
+    targets,
     eligible,
+    blocked,
     mode
   });
   const selectedTarget = continuitySelection.selectedTarget;
@@ -436,6 +491,11 @@ export function routePrompt({
       classification,
       modeResolution,
       policyInputs: constraintInputs,
+      routingOverride: {
+        requested: overrideSelection.override,
+        applied: overrideSelection.overrideApplied,
+        reason: overrideSelection.overrideReason
+      },
       explanation: refusalExplanation
     };
   }

@@ -170,6 +170,33 @@ test("continuity metadata distinguishes missing current target from staying", ()
   assert.equal(result.continuityReason, "no_current_target");
 });
 
+test("continuity metadata distinguishes ineligible current target from missing current target", () => {
+  const degradedTargets = openaiTargets.map((target) =>
+    target.id === "openai-coder"
+      ? { ...target, availability: "unavailable" }
+      : target
+  );
+
+  const result = routePrompt({
+    input: "Plan the rollout in phases with tradeoffs.",
+    session: {
+      mode: "plan",
+      currentTargetId: "openai-coder",
+      policyInputs: {
+        hardConstraints: {
+          availability: "enforced"
+        }
+      }
+    },
+    targets: degradedTargets,
+    executionSupported: false
+  });
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.continuityDecision, "select_target_without_current_context");
+  assert.equal(result.continuityReason, "current_target_ineligible");
+});
+
 test("privacy hard constraint can refuse targets below required tier", () => {
   const result = routePrompt({
     input: "Implement the plan.",
@@ -220,4 +247,33 @@ test("client compatibility hard constraint can refuse incompatible client surfac
     true
   );
   assert.match(result.explanation, /hard constraints/);
+});
+
+test("stay override reports hard constraint blockers for ineligible current target", () => {
+  const degradedTargets = openaiTargets.map((target) =>
+    target.id === "openai-coder"
+      ? { ...target, availability: "unavailable" }
+      : target
+  );
+
+  const result = routePrompt({
+    input: "Implement the plan.",
+    session: {
+      mode: "plan",
+      currentTargetId: "openai-coder",
+      routingOverride: "stay",
+      policyInputs: {
+        hardConstraints: {
+          availability: "enforced"
+        }
+      }
+    },
+    targets: degradedTargets,
+    executionSupported: true
+  });
+
+  assert.equal(result.status, "refused");
+  assert.equal(result.routingOverride.requested, "stay");
+  assert.equal(result.routingOverride.applied, false);
+  assert.equal(result.routingOverride.reason, "current_target_blocked_by_hard_constraints");
 });
