@@ -192,7 +192,19 @@ Verification:
 * The second turn retains enough project/session context to feel coherent.
 * The user does not need to manually reconstruct settled context.
 
-Status: verified for two non-interactive CLI turns using `--session-id` on the first turn and `--resume <session-id>` on the second turn. Interactive continuity is not yet verified.
+Status: fully verified for both non-interactive and interactive CLI turns.
+
+Non-interactive: verified using `--session-id` on the first turn and `--resume <session-id>` on the second turn.
+
+Interactive: verified in a live environment on 2026-05-10 using `switchboard --interactive`. Evidence:
+
+* Same `claudeSessionId` (`83719220-d3cd-4d24-a658-220670e59d62`) across both turns.
+* Turn one launched with `--session-id`, turn two resumed with `--resume`.
+* `turnCount` advanced from 1 to 2 for the same thread.
+* Route context matched. Hook events correlated: `UserPromptSubmit` and `PreToolUse` both matched the session.
+* Chat history from turn one was visible in turn two inside Claude.
+
+A first-class probe command (`switchboard probe continuity-interactive`) exists for ongoing verification with automated checks for session reuse, resume semantics, and turn count advancement. Stale-resume recovery is also implemented: if Claude no longer holds the session id, the wrapper automatically retries with a fresh `--session-id`.
 
 Falsification:
 
@@ -229,7 +241,7 @@ Verification:
 * The user sees a short route explanation such as `Switchboard: best coder - repo edits - higher effort`.
 * Detailed route state is available in logs or an explain command.
 
-Interactive no-prompt usage should be treated as a follow-up validation or stretch goal. The verified MVP wedge is prompt-driven routed turns.
+Interactive no-prompt usage is now implemented as a first-class command path (`switchboard --interactive`) and probe (`switchboard probe continuity-interactive`). Prompt-driven routed turns remain the core verified MVP wedge; interactive behavior should be confirmed in live environments via the probe.
 
 Falsification:
 

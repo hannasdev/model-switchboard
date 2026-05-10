@@ -3,6 +3,7 @@ import {
   DEFAULT_SWITCHBOARD_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH,
   executeSwitchboardContinuityProbe,
+  executeSwitchboardInteractiveContinuityProbe,
   executeSwitchboardTurn,
   explainLatestSwitchboardTurn,
   planSwitchboardTurn
@@ -79,11 +80,14 @@ function printUsage(stdout) {
   stdout.write("Usage:\n");
   stdout.write("  switchboard \"Implement the plan.\"\n");
   stdout.write("  switchboard --dry-run \"Implement the plan.\"\n");
+  stdout.write("  switchboard --interactive\n");
+  stdout.write("  switchboard --dry-run --interactive\n");
   stdout.write("  switchboard --stronger \"Thanks\"\n");
   stdout.write("  switchboard --cheaper \"Summarize this\"\n");
   stdout.write("  switchboard --stay \"Thanks\"\n");
   stdout.write("  switchboard explain [--thread-id <id>]\n");
   stdout.write("  switchboard probe continuity [--no-tools] [--inter-turn-delay-ms <ms>]\n");
+  stdout.write("  switchboard probe continuity-interactive [--inter-turn-delay-ms <ms>]\n");
 }
 
 export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
@@ -100,6 +104,7 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     threadId: getArg(argv, "--thread-id") || "default",
     claudeBin: getArg(argv, "--claude-bin") || "claude",
     outputFormat: getArg(argv, "--output-format") || "json",
+    interactive: hasFlag(argv, "--interactive"),
     noTools: hasFlag(argv, "--no-tools"),
     routingOverride: getRoutingOverride(argv),
     timeoutMs: Number(getArg(argv, "--timeout-ms") || "180000"),
@@ -111,22 +116,28 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
 
   if (command === "probe") {
     const probe = argv[1];
-    if (probe !== "continuity") {
-      stderr.write(`switchboard probe: unknown probe '${probe || ""}'.\nAvailable: continuity\n`);
+    if (probe !== "continuity" && probe !== "continuity-interactive") {
+      stderr.write(`switchboard probe: unknown probe '${probe || ""}'.\nAvailable: continuity, continuity-interactive\n`);
       return 1;
     }
-    const probeResult = executeSwitchboardContinuityProbe({
-      threadId: getArg(argv, "--thread-id") || `probe-continuity-${Date.now()}`,
+    const sharedProbeOptions = {
+      threadId: getArg(argv, "--thread-id") || `probe-${probe}-${Date.now()}`,
+      claudeBin: getArg(argv, "--claude-bin") || "claude",
+      outputFormat: getArg(argv, "--output-format") || "json",
       noTools: hasFlag(argv, "--no-tools"),
       interTurnDelayMs: Number(getArg(argv, "--inter-turn-delay-ms") || "1000"),
       storePath: getArg(argv, "--store-path") || DEFAULT_SWITCHBOARD_STORE_PATH,
       logPath: getArg(argv, "--log-path") || DEFAULT_SWITCHBOARD_LOG_PATH,
-      routeContextPath: getArg(argv, "--route-context-path") || DEFAULT_ROUTE_CONTEXT_PATH
-    });
+      routeContextPath: getArg(argv, "--route-context-path") || DEFAULT_ROUTE_CONTEXT_PATH,
+      timeoutMs: Number(getArg(argv, "--timeout-ms") || "180000")
+    };
+    const probeResult = probe === "continuity"
+      ? executeSwitchboardContinuityProbe(sharedProbeOptions)
+      : executeSwitchboardInteractiveContinuityProbe(sharedProbeOptions);
     if (hasFlag(argv, "--json")) {
       stdout.write(`${JSON.stringify(probeResult, null, 2)}\n`);
     } else {
-      stdout.write(`Probe: continuity\n`);
+      stdout.write(`Probe: ${probe}\n`);
       stdout.write(`Status: ${probeResult.status}\n`);
       stdout.write(`Thread: ${probeResult.threadId}\n`);
       for (const [check, passed] of Object.entries(probeResult.verified || {})) {
@@ -161,10 +172,19 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
       "--hook-log-path",
       "--override"
     ]),
-    new Set(["--dry-run", "--json", "--no-tools", "--stronger", "--cheaper", "--stay", "--auto"])
+    new Set([
+      "--dry-run",
+      "--json",
+      "--interactive",
+      "--no-tools",
+      "--stronger",
+      "--cheaper",
+      "--stay",
+      "--auto"
+    ])
   );
   const input = promptArgs.join(" ").trim();
-  if (!input) {
+  if (!input && !options.interactive) {
     stderr.write("switchboard requires a prompt. Use `switchboard \"Implement the plan.\"`.\n");
     return 1;
   }

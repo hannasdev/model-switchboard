@@ -96,10 +96,18 @@ function selectedClaudeSummary(plan) {
 }
 
 function defaultCommandRunner(plan, timeoutMs) {
+  const interactiveOptions = plan.interactive
+    ? {
+        stdio: "inherit"
+      }
+    : {
+        encoding: "utf8",
+        timeout: timeoutMs
+      };
+
   return spawnSync(plan.claudeBin, plan.args, {
     cwd: plan.cwd,
-    encoding: "utf8",
-    timeout: timeoutMs
+    ...interactiveOptions
   });
 }
 
@@ -113,6 +121,13 @@ function executionSummary(execution) {
     stderrPreview: execution.stderr ? execution.stderr.slice(0, 2000) : "",
     error: execution.error ? execution.error.message : null
   };
+}
+
+function replaceResumeWithSessionId(args = []) {
+  const nextArgs = [...args];
+  const resumeIdx = nextArgs.indexOf("--resume");
+  if (resumeIdx !== -1) nextArgs[resumeIdx] = "--session-id";
+  return nextArgs;
 }
 
 function sleepSync(ms) {
@@ -150,6 +165,7 @@ function persistRouteContext({
 
 function buildSwitchboardTurn({
   input,
+  interactive = false,
   threadId = "default",
   targets = readJson(ANTHROPIC_TARGETS_PATH).targets,
   storePath = DEFAULT_SWITCHBOARD_STORE_PATH,
@@ -187,11 +203,14 @@ function buildSwitchboardTurn({
     sessionId: claudeSessionId,
     outputFormat,
     noTools,
-    resume: resumeClaudeSession
+    resume: resumeClaudeSession,
+    interactive
   });
+  let effectivePlan = plan;
+  let recoveredFromResumeRetry = false;
   const wrapperContext = buildWrapperContext(plan);
   const routeDecision = routeDecisionSummary(plan);
-  const selectedClaude = selectedClaudeSummary(plan);
+  const persistedSelectedClaude = selectedClaudeSummary(plan);
   const plannedTurnCount =
     plan.status === "planned" ? Number(routeSession.turnCount || 0) + 1 : Number(routeSession.turnCount || 0);
   persistRouteContext({
@@ -200,23 +219,41 @@ function buildSwitchboardTurn({
     claudeSessionId,
     turnCount: plannedTurnCount,
     routeDecision,
-    selectedClaude,
+    selectedClaude: persistedSelectedClaude,
     executionMode: execute ? "live" : "planned",
     wrapperContext
   });
-  const execution =
+
+  let execution =
     execute && plan.status === "planned"
       ? commandRunner(plan, timeoutMs)
       : null;
+
+  if (execute && plan.status === "planned" && plan.interactive && plan.resume && execution?.status !== 0) {
+    effectivePlan = {
+      ...plan,
+      args: replaceResumeWithSessionId(plan.args),
+      resume: false
+    };
+    effectivePlan.commandPreview = [effectivePlan.claudeBin, ...effectivePlan.args];
+    const retryExecution = commandRunner(effectivePlan, timeoutMs);
+    if (retryExecution?.status === 0) {
+      execution = retryExecution;
+      recoveredFromResumeRetry = true;
+    }
+  }
+
+  const selectedClaude = selectedClaudeSummary(effectivePlan);
+
   const executionResult = executionSummary(execution);
   const turnStatus = executionResult?.status || plan.status;
 
   const nextSession =
-    plan.status === "planned" && (!execute || executionResult?.status === "executed")
+    effectivePlan.status === "planned" && (!execute || executionResult?.status === "executed")
       ? {
           ...routeSession,
-          currentTargetId: plan.selectedTarget.targetId,
-          currentLabel: plan.selectedTarget.label,
+          currentTargetId: effectivePlan.selectedTarget.targetId,
+          currentLabel: effectivePlan.selectedTarget.label,
           turnCount: Number(routeSession.turnCount || 0) + 1,
           lastRoute: routeDecision,
           claudeSessionId,
@@ -225,7 +262,7 @@ function buildSwitchboardTurn({
       : routeSession;
 
   const savedSession =
-    persist && plan.status === "planned"
+    persist && effectivePlan.status === "planned"
       ? saveThreadSession({ storePath, threadId, session: nextSession })
       : null;
 
@@ -239,6 +276,9 @@ function buildSwitchboardTurn({
     routeDecision,
     selectedClaude,
     execution: executionResult,
+    recovery: {
+      recoveredFromResumeRetry
+    },
     session: {
       threadId,
       claudeSessionId,
@@ -258,7 +298,10 @@ function buildSwitchboardTurn({
     routeDecision,
     selectedClaude,
     execution: executionResult,
-    claudePlan: plan,
+    claudePlan: effectivePlan,
+    recovery: {
+      recoveredFromResumeRetry
+    },
     previousSession: persistedSession,
     nextSession: savedSession || nextSession,
     evidence
@@ -342,6 +385,46 @@ export function executeSwitchboardContinuityProbe({
     turnCountAdvanced:
       firstTurn.nextSession.turnCount === 1 && secondTurn.nextSession.turnCount === 2,
     secondTurnHasFirstTurnContext: secondOutput.includes("switchboard-continuity-2718")
+  };
+
+  return {
+    status: Object.values(verified).every(Boolean) ? "verified" : "needs_review",
+    threadId,
+    verified,
+    turns: [firstTurn, secondTurn]
+  };
+}
+
+export function executeSwitchboardInteractiveContinuityProbe({
+  threadId = "poc2-continuity-interactive-live",
+  interTurnDelayMs = 0,
+  ...options
+} = {}) {
+  const firstTurn = executeSwitchboardTurn({
+    ...options,
+    threadId,
+    input: "",
+    interactive: true
+  });
+  sleepSync(interTurnDelayMs);
+  const secondTurn = executeSwitchboardTurn({
+    ...options,
+    threadId,
+    input: "",
+    interactive: true
+  });
+
+  const verified = {
+    bothExecuted: firstTurn.status === "executed" && secondTurn.status === "executed",
+    sameClaudeSession:
+      firstTurn.selectedClaude?.sessionId &&
+      firstTurn.selectedClaude.sessionId === secondTurn.selectedClaude?.sessionId,
+    secondTurnUsesResume: secondTurn.claudePlan?.resume === true,
+    interactiveArgsOmitPrompt:
+      !firstTurn.claudePlan?.args?.includes("--print") &&
+      !secondTurn.claudePlan?.args?.includes("--print"),
+    turnCountAdvanced:
+      firstTurn.nextSession.turnCount === 1 && secondTurn.nextSession.turnCount === 2
   };
 
   return {
