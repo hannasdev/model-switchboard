@@ -63,6 +63,14 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 
 ## Paths
 
+### Product Slice
+
+* Switchboard bin entrypoint: `bin/switchboard.js`
+* Switchboard CLI: `src/switchboard/cli.js`
+* Switchboard CLI tests: `test/switchboard-cli.test.js`
+
+### PoC / Shared Implementation
+
 * Router core: `src/poc/router.js`
 * CLI harness: `src/poc/cli.js`
 * Claude CLI launcher: `src/poc/claude_cli_launcher.js`
@@ -134,3 +142,4 @@ npm run poc:production-hook -- --input "Implement the plan." --tool-action read_
 * Release-gate requires valid API credentials and network access to the configured vendors.
 * The PoC 2 outcome has been summarized in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md); keep that decision record current as new live evidence lands.
 * The router remains in the PoC source tree; extraction into a package boundary is a future productization step.
+* Product-facing Switchboard code still depends on `src/poc/*` modules and default runtime state under `src/poc/logs`; the proposed cleanup is documented in [Switchboard MVP Refactor Plan](SWITCHBOARD-MVP-REFACTOR.md).

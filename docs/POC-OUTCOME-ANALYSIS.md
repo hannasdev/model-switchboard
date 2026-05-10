@@ -110,11 +110,13 @@ The latest evidence also narrows the original product idea:
 
 The unresolved risks are now narrower:
 
-* The product surface is still a PoC harness, not a polished `switchboard` command.
+* The product surface is an initial prompt-driven `switchboard` command, not yet a polished workflow.
 * Interactive no-prompt Claude UX is not validated.
-* Production tool-governance policy is not hardened.
-* Failure behavior around auth, hook setup, resume, and route-context correlation needs to be explicit and fail closed.
+* Production tool-governance policy beyond route-context trust is not hardened.
+* Failure behavior around auth, hook setup, and resume can be made clearer.
 * Live runs depend on Claude CLI authentication and local environment state.
+* Product code still imports several modules from `src/poc/*`; cleanup is needed before treating the structure as product-shaped.
+* Runtime state still defaults to `src/poc/logs`; app-state path cleanup is needed before broader use.
 * Router extraction into `@model-switchboard/router` is still future productization work.
 
 ## What The PoC Did Not Prove
@@ -145,9 +147,13 @@ The remaining risk is the end-user workflow shape. A prompt-driven wrapper has e
 
 ### Production Logging And Explainability
 
-The PoC has enough evidence for local route and hook logs, but it has not yet defined the stable user-facing explain path.
+The MVP now has a first stable user-facing explain path:
 
-The MVP needs a durable way to answer:
+```bash
+switchboard explain
+```
+
+It answers:
 
 * What prompt did Switchboard route?
 * Which route label and Claude flags were selected?
@@ -155,6 +161,8 @@ The MVP needs a durable way to answer:
 * Which Switchboard context was injected?
 * Which hook events matched the wrapper route?
 * Which tool decisions were logged or denied?
+
+The remaining cleanup is structural: move logs and route context out of PoC paths and make hook/wrapper path configuration more explicit.
 
 ## Product Interpretation
 
@@ -192,17 +200,17 @@ The practical implication is that MVP implementation should productize the Claud
 
 Build a Claude Code-scoped MVP with:
 
-1. A `switchboard` command that wraps Claude Code.
-2. Prompt-driven routed turns as the first supported workflow.
-3. A persistent local session record.
-4. Pre-launch and pre-resume routing to Claude model/effort flags.
-5. Verified Claude continuity semantics: first turn uses `--session-id`, later turns use `--resume <session-id>`.
-6. Route-context persistence before launch so hooks can correlate wrapper and Claude events.
-7. Claude Code hooks for route explanation and tool policy.
-8. Simple override controls.
-9. Route and tool-decision logs plus an explain path.
-10. Explicit fail-closed behavior for untrusted route/hook state.
-11. A small security policy for wrapper behavior.
+1. A `switchboard` command that wraps Claude Code. Status: implemented.
+2. Prompt-driven routed turns as the first supported workflow. Status: implemented and live-verified.
+3. A persistent local session record. Status: implemented in the current workflow store.
+4. Pre-launch and pre-resume routing to Claude model/effort flags. Status: implemented and live-verified.
+5. Verified Claude continuity semantics: first turn uses `--session-id`, later turns use `--resume <session-id>`. Status: implemented and live-verified.
+6. Route-context persistence before launch so hooks can correlate wrapper and Claude events. Status: implemented.
+7. Claude Code hooks for route explanation and tool policy. Status: implemented for `UserPromptSubmit` and `PreToolUse`.
+8. Simple override controls. Status: implemented for `--stronger`, `--cheaper`, and `--stay`; auto is the implicit default.
+9. Route and tool-decision logs plus an explain path. Status: implemented through `switchboard explain`.
+10. Explicit fail-closed behavior for untrusted route/hook state. Status: implemented for pre-launch route-context failures and uncorrelated `PreToolUse`.
+11. A small security policy for wrapper behavior. Status: documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
 
 ### Defer From MVP
 
@@ -278,53 +286,43 @@ Switchboard: best coder · repo edits · higher effort
 
 Detailed route state belongs in logs or an explicit explain command.
 
-## Recommended Next Experiments
+## Delivered Since This Analysis
 
-### 1. Productized CLI Wrapper
+The first MVP implementation slice now includes:
 
-Replace PoC npm commands with a first-class local command:
+* `bin/switchboard.js` as the package bin entrypoint.
+* Prompt-driven routed turns:
 
 ```bash
 switchboard "prompt"
 ```
 
-The prototype should hide PoC wiring while preserving auditable output and logs.
-
-### 2. Explain And Audit Path
-
-Add a stable way to inspect the most recent routed turn:
+* Dry-run planning:
 
 ```bash
-switchboard explain
+switchboard --dry-run "prompt"
 ```
 
-It should show the route label, selected Claude flags, session id, correlation state, hook events, and any tool decisions without dumping raw transcripts by default.
+* `switchboard explain`.
+* Coarse overrides: `--stronger`, `--cheaper`, and `--stay`; auto is the implicit default.
+* Fail-closed route-context write handling before Claude launch.
+* Fail-closed `PreToolUse` behavior when hook events lack matched route context.
+* A wrapper threat model.
+* Live Claude CLI verification of prompt-driven launch, resume continuity, and explain correlation.
 
-### 3. Fail-Closed Harness
+## Recommended Next Work
 
-Exercise failure cases before widening authority:
+### 1. Product Structure Refactor
 
-* Missing Claude auth.
-* Hook setup missing or unreadable.
-* Route context write failure.
-* Resume failure.
-* Hook event without matching wrapper context.
-* Tool event with no trusted route context.
+Move product code and runtime state out of PoC-shaped paths. The proposed scope is documented in [Switchboard MVP Refactor Plan](SWITCHBOARD-MVP-REFACTOR.md).
 
-### 4. Interactive UX Probe
+### 2. Setup And Hook Configuration
+
+Document and/or automate how Claude hooks point at the same route-context path used by the wrapper.
+
+### 3. Interactive UX Probe
 
 Validate whether a no-prompt `switchboard` mode can feel like normal Claude Code usage without weakening route explainability or resume semantics.
-
-### 5. Wrapper Threat Model
-
-Write a short threat model before expanding the wrapper:
-
-* What can the wrapper read?
-* What can the wrapper write?
-* What can it inject?
-* What can repo content influence?
-* What is logged?
-* What requires explicit user approval?
 
 ## Decision
 

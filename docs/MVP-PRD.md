@@ -173,7 +173,7 @@ Verification:
 * `best coder` routes to the intended stronger/higher-effort Claude target.
 * The evidence log records the selected route and the actual model/effort used.
 
-Status: verified for the PoC harness and live Claude CLI launch path; productization still needs a first-class command.
+Status: verified through PoC harnesses and the MVP `switchboard` command live path. Remaining productization work is structural cleanup, setup ergonomics, and broader UX polish.
 
 Falsification:
 
@@ -277,17 +277,17 @@ Falsification:
 
 The MVP should include:
 
-1. A `switchboard` command that wraps Claude Code.
+1. A `switchboard` command that wraps Claude Code. Status: implemented.
 2. Claude-scoped target labels: `quick`, `balanced`, and `best coder`.
-3. Pre-launch or pre-resume routing to Claude model/effort flags.
-4. Correct Claude continuity semantics: create the first turn with `--session-id`, resume later turns with `--resume <session-id>`.
-5. Route-context writes before Claude launch so hooks can correlate against wrapper decisions.
-6. Minimal persistent local session state.
-7. Compact route explanations.
-8. Basic override controls: stronger, cheaper, stay, auto, explain.
-9. Claude hooks for route context, tool-decision logging, and conservative governance.
-10. Local route and hook logs plus an explain path.
-11. A documented wrapper threat model before production hardening: [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
+3. Pre-launch or pre-resume routing to Claude model/effort flags. Status: implemented and live-verified.
+4. Correct Claude continuity semantics: create the first turn with `--session-id`, resume later turns with `--resume <session-id>`. Status: implemented and live-verified.
+5. Route-context writes before Claude launch so hooks can correlate against wrapper decisions. Status: implemented.
+6. Minimal persistent local session state. Status: implemented.
+7. Compact route explanations. Status: implemented.
+8. Basic override controls: stronger, cheaper, stay, auto, explain. Status: implemented; auto is the implicit default.
+9. Claude hooks for route context, tool-decision logging, and conservative governance. Status: implemented for `UserPromptSubmit` and `PreToolUse`.
+10. Local route and hook logs plus an explain path. Status: implemented with `switchboard explain`.
+11. A documented wrapper threat model before production hardening: [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md). Status: implemented.
 
 The MVP should defer:
 
@@ -396,3 +396,5 @@ The MVP is acceptable when:
 [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](POC-IMPLEMENTATION.md) currently contains the freshest PoC 2 execution evidence until a dedicated PoC 2 outcome summary is written.
 
 [Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
+
+[Switchboard MVP Refactor Plan](SWITCHBOARD-MVP-REFACTOR.md) captures the proposed cleanup to move product code and runtime paths out of the PoC structure.
