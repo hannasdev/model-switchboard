@@ -287,7 +287,7 @@ The MVP should include:
 8. Basic override controls: stronger, cheaper, stay, auto, explain.
 9. Claude hooks for route context, tool-decision logging, and conservative governance.
 10. Local route and hook logs plus an explain path.
-11. A documented wrapper threat model before production hardening.
+11. A documented wrapper threat model before production hardening: [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
 
 The MVP should defer:
 

@@ -43,6 +43,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * MVP CLI reports pre-launch failures cleanly so route-context write failures stop before Claude launch.
 * MVP hook policy now fails closed for `PreToolUse` events without matched Switchboard route context, including otherwise safe tools.
 * MVP coarse overrides are wired through generic routing and exposed by the CLI: `--stronger`, `--cheaper`, and `--stay`.
+* MVP wrapper threat model is documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
 
 ## What Is Not Yet Proven
 
