@@ -7,10 +7,6 @@ on:
   push:
     branches:
       - main
-      - test/**
-      - chore/**
-      - feat/**
-      - fix/**
 
 permissions:
   contents: read
