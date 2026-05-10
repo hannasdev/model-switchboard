@@ -39,6 +39,10 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
 
   assert.equal(result.status, "planned");
   assert.equal(result.routeDecision.label, "best coder");
+  assert.equal(result.routeDecision.taskType, "multi_file_refactor");
+  assert.equal(result.routeDecision.continuityCost, "low");
+  assert.equal(result.routeDecision.modeResolution.resolvedMode, "implement");
+  assert.equal(result.routeDecision.policyInputs.hardConstraints.privacy, "off");
   assert.equal(result.selectedClaude.model, "sonnet");
   assert.equal(result.selectedClaude.effort, "high");
   assert.equal(result.selectedClaude.sessionId, "claude-session-1");

@@ -146,3 +146,54 @@ test("high continuity cost avoids low-gain switching", () => {
   assert.equal(result.selectedTarget?.id, "openai-coder");
   assert.equal(result.shouldSwitch, false);
 });
+
+test("privacy hard constraint can refuse targets below required tier", () => {
+  const result = routePrompt({
+    input: "Implement the plan.",
+    session: {
+      mode: "plan",
+      policyInputs: {
+        hardConstraints: {
+          privacy: "enforced",
+          requiredPrivacyTier: "local"
+        }
+      }
+    },
+    targets: openaiTargets,
+    executionSupported: true
+  });
+
+  assert.equal(result.status, "refused");
+  assert.equal(
+    result.blocked.some((b) => b.id === "openai-coder" && b.constraintReasons.includes("privacy_tier_below_required")),
+    true
+  );
+});
+
+test("client compatibility hard constraint can refuse incompatible client surfaces", () => {
+  const surfaceScopedTargets = openaiTargets.map((target) => ({
+    ...target,
+    client_surfaces: ["claude-code-cli"]
+  }));
+
+  const result = routePrompt({
+    input: "Implement the plan.",
+    session: {
+      mode: "plan",
+      clientSurface: "copilot-chat",
+      policyInputs: {
+        hardConstraints: {
+          clientCompatibility: "enforced"
+        }
+      }
+    },
+    targets: surfaceScopedTargets,
+    executionSupported: true
+  });
+
+  assert.equal(result.status, "refused");
+  assert.equal(
+    result.blocked.some((b) => b.id === "openai-coder" && b.constraintReasons.includes("client_surface_incompatible")),
+    true
+  );
+});
