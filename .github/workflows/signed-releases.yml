@@ -32,6 +32,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Ensure artifact directory exists
+        run: mkdir -p dist
+
       - name: Build npm package tarball
         run: npm pack --pack-destination dist
 
