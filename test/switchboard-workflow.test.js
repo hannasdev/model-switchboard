@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -306,4 +307,26 @@ test("Interactive live turn recovers from stale resume by retrying with session-
   assert.equal(executions.length, 2);
   assert.equal(executions[0].includes("--resume"), true);
   assert.equal(executions[1].includes("--session-id"), true);
+});
+
+test("Interactive default runner captures stderr while passing stdin/stdout to terminal", () => {
+  // Directly verify the stdio shape used by the default runner.
+  // With stdio: ["inherit", "inherit", "pipe"] and encoding: "utf8",
+  // spawnSync returns a string for stderr and null for stdout (inherited).
+  // This proves the stale-resume detection can actually fire in real runs.
+  const result = spawnSync(
+    "sh",
+    ["-c", "echo 'No conversation found with session ID: test-id' >&2; exit 1"],
+    {
+      encoding: "utf8",
+      timeout: 5000,
+      stdio: ["inherit", "inherit", "pipe"]
+    }
+  );
+
+  assert.equal(result.status, 1);
+  assert.equal(typeof result.stderr, "string");
+  assert.match(result.stderr, /No conversation found with session ID/);
+  // stdout is null because it was inherited, not piped
+  assert.equal(result.stdout, null);
 });

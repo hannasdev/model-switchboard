@@ -96,12 +96,16 @@ function selectedClaudeSummary(plan) {
 }
 
 function defaultCommandRunner(plan, timeoutMs) {
+  // Interactive turns inherit stdin and stdout so Claude's TTY session works
+  // normally, but pipe stderr so we can capture it for stale-resume detection
+  // and evidence logging. Non-interactive turns pipe all three for full capture.
   const interactiveOptions = plan.interactive
-    ? { stdio: "inherit" }
-    : { encoding: "utf8" };
+    ? { stdio: ["inherit", "inherit", "pipe"] }
+    : {};
 
   return spawnSync(plan.claudeBin, plan.args, {
     cwd: plan.cwd,
+    encoding: "utf8",
     timeout: timeoutMs,
     ...interactiveOptions
   });
