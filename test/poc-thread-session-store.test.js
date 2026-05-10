@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadThreadSession, saveThreadSession, clearThreadSession } from "../src/switchboard/session_store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const storePath = path.join(__dirname, "..", "src", "poc", "logs", "thread-sessions.test.json");
+const storePath = path.join(os.tmpdir(), "model-switchboard-thread-sessions.test.json");
 
 test("thread session store saves and loads continuity state", () => {
   if (fs.existsSync(storePath)) fs.unlinkSync(storePath);
