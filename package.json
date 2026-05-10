@@ -1,6 +1,6 @@
 {
   "name": "model-switchboard",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Session-aware routing layer for AI-assisted software delivery workflows",
   "type": "module",
   "bin": {
