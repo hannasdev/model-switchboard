@@ -1,14 +1,14 @@
-import { getTargetProfileMap } from "../model_mappings.js";
+import { getTargetProfileMap } from "./model_mappings.js";
 
-export const OPENAI_CODEX_TARGET_TO_PROFILE = getTargetProfileMap("openai-codex");
+export const ANTHROPIC_CLAUDE_TARGET_TO_PROFILE = getTargetProfileMap("anthropic-claude");
 
-export function createOpenAICodexAdapter(client) {
+export function createAnthropicClaudeAdapter(client) {
   if (!client || typeof client.execute !== "function") {
-    throw new Error("openai_codex_adapter_requires_execute_client");
+    throw new Error("anthropic_claude_adapter_requires_execute_client");
   }
 
   return {
-    vendor: "openai-codex",
+    vendor: "anthropic-claude",
 
     async executeRoutedTurn({ input, routeResult, session = {} }) {
       if (!routeResult || routeResult.status !== "ok") {
@@ -20,7 +20,7 @@ export function createOpenAICodexAdapter(client) {
       }
 
       const targetId = routeResult.selectedTarget?.id;
-      const profile = OPENAI_CODEX_TARGET_TO_PROFILE[targetId];
+      const profile = ANTHROPIC_CLAUDE_TARGET_TO_PROFILE[targetId];
 
       if (!profile) {
         return {
@@ -52,7 +52,7 @@ export function createOpenAICodexAdapter(client) {
 
       return {
         status: "executed",
-        adapter: "openai-codex",
+        adapter: "anthropic-claude",
         targetId,
         profile,
         response
@@ -61,12 +61,12 @@ export function createOpenAICodexAdapter(client) {
   };
 }
 
-export function createMockOpenAIClient() {
+export function createMockAnthropicClient() {
   return {
     execute(request) {
       return {
         result: "ok",
-        provider: "openai-codex",
+        provider: "anthropic-claude",
         profile: request.profile,
         echoMode: request.mode,
         trace: "simulated_adapter_spike"

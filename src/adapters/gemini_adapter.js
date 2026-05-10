@@ -1,14 +1,14 @@
-import { getTargetProfileMap } from "../model_mappings.js";
+import { getTargetProfileMap } from "./model_mappings.js";
 
-export const ANTHROPIC_CLAUDE_TARGET_TO_PROFILE = getTargetProfileMap("anthropic-claude");
+export const GEMINI_TARGET_TO_PROFILE = getTargetProfileMap("google-gemini");
 
-export function createAnthropicClaudeAdapter(client) {
+export function createGeminiAdapter(client) {
   if (!client || typeof client.execute !== "function") {
-    throw new Error("anthropic_claude_adapter_requires_execute_client");
+    throw new Error("gemini_adapter_requires_execute_client");
   }
 
   return {
-    vendor: "anthropic-claude",
+    vendor: "google-gemini",
 
     async executeRoutedTurn({ input, routeResult, session = {} }) {
       if (!routeResult || routeResult.status !== "ok") {
@@ -20,7 +20,7 @@ export function createAnthropicClaudeAdapter(client) {
       }
 
       const targetId = routeResult.selectedTarget?.id;
-      const profile = ANTHROPIC_CLAUDE_TARGET_TO_PROFILE[targetId];
+      const profile = GEMINI_TARGET_TO_PROFILE[targetId];
 
       if (!profile) {
         return {
@@ -52,7 +52,7 @@ export function createAnthropicClaudeAdapter(client) {
 
       return {
         status: "executed",
-        adapter: "anthropic-claude",
+        adapter: "google-gemini",
         targetId,
         profile,
         response
@@ -61,12 +61,12 @@ export function createAnthropicClaudeAdapter(client) {
   };
 }
 
-export function createMockAnthropicClient() {
+export function createMockGeminiClient() {
   return {
-    execute(request) {
+    async execute(request) {
       return {
         result: "ok",
-        provider: "anthropic-claude",
+        provider: "google-gemini",
         profile: request.profile,
         echoMode: request.mode,
         trace: "simulated_adapter_spike"

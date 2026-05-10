@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { handleClaudeHookInput } from "../src/poc/claude_hook_bridge.js";
-import { saveRouteContext } from "../src/poc/switchboard_route_context.js";
+import { handleClaudeHookInput } from "../src/switchboard/claude_hook_bridge.js";
+import { saveRouteContext } from "../src/switchboard/route_context.js";
 
 function tempPaths() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "claude-hook-test-"));

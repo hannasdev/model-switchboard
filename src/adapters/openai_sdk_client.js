@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { getProfileModelMap } from "../model_mappings.js";
+import { getProfileModelMap } from "./model_mappings.js";
 
 const PROFILE_TO_MODEL = getProfileModelMap("openai-codex");
 

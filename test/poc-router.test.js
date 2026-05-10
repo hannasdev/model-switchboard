@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { routePrompt } from "../src/poc/router.js";
+import { routePrompt } from "../src/router/router.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +13,7 @@ function readJson(relPath) {
 }
 
 const openaiTargets = readJson("../src/router/data/targets.openai.json").targets;
-const fixtures = readJson("../src/poc/data/fixtures.json");
+const fixtures = readJson("../src/router/data/fixtures.json");
 
 test("fixtures map to expected route decisions", () => {
   for (const fx of fixtures) {

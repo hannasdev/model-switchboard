@@ -7,7 +7,7 @@ import {
   executeSwitchboardContinuityProbe,
   planSwitchboardContinuityProbe,
   planSwitchboardTurn
-} from "../src/poc/switchboard_workflow.js";
+} from "../src/switchboard/workflow.js";
 
 function tempPaths() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "switchboard-workflow-test-"));

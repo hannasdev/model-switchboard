@@ -2,9 +2,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createAnthropicSDKClient } from "../src/poc/adapters/anthropic_sdk_client.js";
-import { createGeminiSDKClient } from "../src/poc/adapters/gemini_sdk_client.js";
-import { createOpenAISDKClient } from "../src/poc/adapters/openai_sdk_client.js";
+import { createAnthropicSDKClient } from "../src/adapters/anthropic_sdk_client.js";
+import { createGeminiSDKClient } from "../src/adapters/gemini_sdk_client.js";
+import { createOpenAISDKClient } from "../src/adapters/openai_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

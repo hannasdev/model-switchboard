@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { getProfileModelMap } from "../model_mappings.js";
+import { getProfileModelMap } from "./model_mappings.js";
 
 const PROFILE_TO_MODEL = getProfileModelMap("google-gemini");
 

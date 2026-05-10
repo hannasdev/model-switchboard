@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getClaudeCliTargetSelection, planClaudeCliLaunch } from "../src/poc/claude_cli_launcher.js";
+import { getClaudeCliTargetSelection, planClaudeCliLaunch } from "../src/switchboard/claude_cli_launcher.js";
 
 test("Claude CLI launcher maps quick route to haiku", () => {
   const plan = planClaudeCliLaunch({

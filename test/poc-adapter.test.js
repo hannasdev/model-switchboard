@@ -3,19 +3,19 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { routePrompt } from "../src/poc/router.js";
+import { routePrompt } from "../src/router/router.js";
 import {
   createMockOpenAIClient,
   createOpenAICodexAdapter
-} from "../src/poc/adapters/openai_codex_adapter.js";
-import { createOpenAISDKClient } from "../src/poc/adapters/openai_sdk_client.js";
+} from "../src/adapters/openai_codex_adapter.js";
+import { createOpenAISDKClient } from "../src/adapters/openai_sdk_client.js";
 import {
   createMockAnthropicClient,
   createAnthropicClaudeAdapter
-} from "../src/poc/adapters/anthropic_claude_adapter.js";
-import { createAnthropicSDKClient } from "../src/poc/adapters/anthropic_sdk_client.js";
-import { createMockGeminiClient, createGeminiAdapter } from "../src/poc/adapters/gemini_adapter.js";
-import { createGeminiSDKClient } from "../src/poc/adapters/gemini_sdk_client.js";
+} from "../src/adapters/anthropic_claude_adapter.js";
+import { createAnthropicSDKClient } from "../src/adapters/anthropic_sdk_client.js";
+import { createMockGeminiClient, createGeminiAdapter } from "../src/adapters/gemini_adapter.js";
+import { createGeminiSDKClient } from "../src/adapters/gemini_sdk_client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

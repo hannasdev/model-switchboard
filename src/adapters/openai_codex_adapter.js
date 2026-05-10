@@ -1,14 +1,14 @@
-import { getTargetProfileMap } from "../model_mappings.js";
+import { getTargetProfileMap } from "./model_mappings.js";
 
-export const GEMINI_TARGET_TO_PROFILE = getTargetProfileMap("google-gemini");
+export const OPENAI_CODEX_TARGET_TO_PROFILE = getTargetProfileMap("openai-codex");
 
-export function createGeminiAdapter(client) {
+export function createOpenAICodexAdapter(client) {
   if (!client || typeof client.execute !== "function") {
-    throw new Error("gemini_adapter_requires_execute_client");
+    throw new Error("openai_codex_adapter_requires_execute_client");
   }
 
   return {
-    vendor: "google-gemini",
+    vendor: "openai-codex",
 
     async executeRoutedTurn({ input, routeResult, session = {} }) {
       if (!routeResult || routeResult.status !== "ok") {
@@ -20,7 +20,7 @@ export function createGeminiAdapter(client) {
       }
 
       const targetId = routeResult.selectedTarget?.id;
-      const profile = GEMINI_TARGET_TO_PROFILE[targetId];
+      const profile = OPENAI_CODEX_TARGET_TO_PROFILE[targetId];
 
       if (!profile) {
         return {
@@ -52,7 +52,7 @@ export function createGeminiAdapter(client) {
 
       return {
         status: "executed",
-        adapter: "google-gemini",
+        adapter: "openai-codex",
         targetId,
         profile,
         response
@@ -61,12 +61,12 @@ export function createGeminiAdapter(client) {
   };
 }
 
-export function createMockGeminiClient() {
+export function createMockOpenAIClient() {
   return {
-    async execute(request) {
+    execute(request) {
       return {
         result: "ok",
-        provider: "google-gemini",
+        provider: "openai-codex",
         profile: request.profile,
         echoMode: request.mode,
         trace: "simulated_adapter_spike"
