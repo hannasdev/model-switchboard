@@ -10,6 +10,19 @@ The MVP now works, but the implementation still carries PoC-shaped paths:
 
 This refactor should make the MVP structure match the product boundary without changing behavior.
 
+## Status
+
+Completed in the current pass:
+
+* Added `src/switchboard/paths.js` with shared product defaults under `~/.model-switchboard`.
+* Moved Switchboard workflow, route-context, session-store, and Claude hook implementation into `src/switchboard`.
+* Moved router implementation into `src/router/router.js`.
+* Moved `claude_cli_launcher.js` into `src/switchboard/claude_cli_launcher.js`.
+* Moved target registry data into `src/router/data/`.
+* Kept `src/poc/*` compatibility wrappers so existing PoC commands still resolve their legacy `src/poc/logs` defaults.
+
+All planned refactor steps are complete.
+
 ## Goals
 
 1. Move product-facing Switchboard modules out of `src/poc`.

@@ -5,9 +5,9 @@ import {
   executeSwitchboardTurn,
   explainLatestSwitchboardTurn,
   planSwitchboardTurn
-} from "../poc/switchboard_workflow.js";
-import { DEFAULT_CLAUDE_HOOK_LOG_PATH } from "../poc/claude_hook_bridge.js";
-import { DEFAULT_ROUTE_CONTEXT_PATH } from "../poc/switchboard_route_context.js";
+} from "./workflow.js";
+import { DEFAULT_CLAUDE_HOOK_LOG_PATH } from "./claude_hook_bridge.js";
+import { DEFAULT_ROUTE_CONTEXT_PATH } from "./route_context.js";
 
 function getArg(args, flag) {
   const idx = args.lastIndexOf(flag);

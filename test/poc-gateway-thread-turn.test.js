@@ -13,7 +13,7 @@ function readJson(relPath) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, relPath), "utf8"));
 }
 
-const openaiTargets = readJson("../src/poc/data/targets.openai.json").targets;
+const openaiTargets = readJson("../src/router/data/targets.openai.json").targets;
 const storePath = path.join(__dirname, "..", "src", "poc", "logs", "thread-sessions.thread-test.json");
 
 test("gateway threaded turns persist and advance session continuity", async () => {

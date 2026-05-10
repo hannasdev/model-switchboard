@@ -24,9 +24,9 @@ function readJson(relPath) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, relPath), "utf8"));
 }
 
-const openaiTargets = readJson("../src/poc/data/targets.openai.json").targets;
-const anthropicTargets = readJson("../src/poc/data/targets.anthropic.json").targets;
-const geminiTargets = readJson("../src/poc/data/targets.gemini.json").targets;
+const openaiTargets = readJson("../src/router/data/targets.openai.json").targets;
+const anthropicTargets = readJson("../src/router/data/targets.anthropic.json").targets;
+const geminiTargets = readJson("../src/router/data/targets.gemini.json").targets;
 
 test("openai adapter maps routed target to codex profile and executes", async () => {
   const routeResult = routePrompt({

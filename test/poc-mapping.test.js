@@ -13,21 +13,21 @@ function readJson(relPath) {
 }
 
 test("openai mapping definitions are complete for all targets", () => {
-  const targets = readJson("../src/poc/data/targets.openai.json").targets;
+  const targets = readJson("../src/router/data/targets.openai.json").targets;
   const check = validateMappings({ vendor: "openai-codex", targets });
   assert.equal(check.ok, true);
   assert.equal(check.errors.length, 0);
 });
 
 test("anthropic mapping definitions are complete for all targets", () => {
-  const targets = readJson("../src/poc/data/targets.anthropic.json").targets;
+  const targets = readJson("../src/router/data/targets.anthropic.json").targets;
   const check = validateMappings({ vendor: "anthropic-claude", targets });
   assert.equal(check.ok, true);
   assert.equal(check.errors.length, 0);
 });
 
 test("gemini mapping definitions are complete for all targets", () => {
-  const targets = readJson("../src/poc/data/targets.gemini.json").targets;
+  const targets = readJson("../src/router/data/targets.gemini.json").targets;
   const check = validateMappings({ vendor: "google-gemini", targets });
   assert.equal(check.ok, true);
   assert.equal(check.errors.length, 0);

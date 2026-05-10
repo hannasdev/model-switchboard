@@ -51,9 +51,9 @@ function loadEnvFile(configPath) {
 }
 
 function loadTargets(vendorKey) {
-  if (vendorKey === "gemini") return readJson("./data/targets.gemini.json").targets;
-  if (vendorKey === "anthropic") return readJson("./data/targets.anthropic.json").targets;
-  return readJson("./data/targets.openai.json").targets;
+  if (vendorKey === "gemini") return readJson("../router/data/targets.gemini.json").targets;
+  if (vendorKey === "anthropic") return readJson("../router/data/targets.anthropic.json").targets;
+  return readJson("../router/data/targets.openai.json").targets;
 }
 
 function printResult(result) {

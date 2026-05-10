@@ -12,7 +12,7 @@ function readJson(relPath) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, relPath), "utf8"));
 }
 
-const openaiTargets = readJson("../src/poc/data/targets.openai.json").targets;
+const openaiTargets = readJson("../src/router/data/targets.openai.json").targets;
 const repoRoot = path.join(__dirname, "..");
 
 test("production hook intercepts implement turn and executes safe repo action", () => {

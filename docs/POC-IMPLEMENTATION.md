@@ -67,34 +67,42 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 
 * Switchboard bin entrypoint: `bin/switchboard.js`
 * Switchboard CLI: `src/switchboard/cli.js`
+* Shared product paths: `src/switchboard/paths.js`
+* Switchboard workflow: `src/switchboard/workflow.js`
+* Switchboard route-context store: `src/switchboard/route_context.js`
+* Switchboard session store: `src/switchboard/session_store.js`
+* Claude hook bridge: `src/switchboard/claude_hook_bridge.js`
+* Router core: `src/router/router.js`
 * Switchboard CLI tests: `test/switchboard-cli.test.js`
+* Switchboard path tests: `test/switchboard-paths.test.js`
 
-### PoC / Shared Implementation
+### PoC / Compatibility Surface
 
-* Router core: `src/poc/router.js`
-* CLI harness: `src/poc/cli.js`
+* PoC CLI harness: `src/poc/cli.js`
+* PoC router compatibility wrapper: `src/poc/router.js`
 * Claude CLI launcher: `src/poc/claude_cli_launcher.js`
-* Claude hook bridge: `src/poc/claude_hook_bridge.js`
+* PoC Claude hook compatibility wrapper: `src/poc/claude_hook_bridge.js`
 * Production hook simulator: `src/poc/production_hook.js`
 * Gateway surface entrypoint: `src/poc/gateway_surface.js`
-* PoC 2 Switchboard workflow: `src/poc/switchboard_workflow.js`
-* PoC 2 Switchboard CLI harness: `src/poc/switchboard_cli.js`
-* PoC 2 route context store: `src/poc/switchboard_route_context.js`
+* PoC Switchboard workflow compatibility wrapper: `src/poc/switchboard_workflow.js`
+* PoC Switchboard CLI harness: `src/poc/switchboard_cli.js`
+* PoC route-context compatibility wrapper: `src/poc/switchboard_route_context.js`
+* PoC path defaults: `src/poc/paths.js`
 * Capability action runner: `src/poc/capability_actions.js`
-* Thread session store: `src/poc/thread_session_store.js`
+* PoC thread session wrapper: `src/poc/thread_session_store.js`
 * OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`
 * OpenAI SDK client: `src/poc/adapters/openai_sdk_client.js`
 * Anthropic/Claude adapter: `src/poc/adapters/anthropic_claude_adapter.js`
 * Anthropic SDK client: `src/poc/adapters/anthropic_sdk_client.js`
 * Google/Gemini adapter: `src/poc/adapters/gemini_adapter.js`
 * Gemini SDK client: `src/poc/adapters/gemini_sdk_client.js`
-* OpenAI target registry: `src/poc/data/targets.openai.json`
-* Anthropic target registry: `src/poc/data/targets.anthropic.json`
-* Gemini target registry: `src/poc/data/targets.gemini.json`
+* OpenAI target registry: `src/router/data/targets.openai.json`
+* Anthropic target registry: `src/router/data/targets.anthropic.json`
+* Gemini target registry: `src/router/data/targets.gemini.json`
 * Fixtures: `src/poc/data/fixtures.json`
 * Route logs: `src/poc/logs/route-decisions.ndjson`
 * Vendor matrix scaffold: `src/poc/vendor_matrix.json`
-* Tests: `test/poc-router.test.js`
+* Router tests: `test/poc-router.test.js`
 * Adapter tests: `test/poc-adapter.test.js`
 * Claude CLI launcher tests: `test/poc-claude-cli-launcher.test.js`
 * Claude hook bridge tests: `test/poc-claude-hook-bridge.test.js`
@@ -103,7 +111,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * Capability action tests: `test/poc-capability-actions.test.js`
 * Thread session tests: `test/poc-thread-session-store.test.js`
 * Gateway thread continuity tests: `test/poc-gateway-thread-turn.test.js`
-* PoC 2 Switchboard workflow tests: `test/poc-switchboard-workflow.test.js`
+* PoC Switchboard workflow tests: `test/poc-switchboard-workflow.test.js`
 
 ## Commands
 
@@ -141,5 +149,5 @@ npm run poc:production-hook -- --input "Implement the plan." --tool-action read_
 
 * Release-gate requires valid API credentials and network access to the configured vendors.
 * The PoC 2 outcome has been summarized in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md); keep that decision record current as new live evidence lands.
-* The router remains in the PoC source tree; extraction into a package boundary is a future productization step.
-* Product-facing Switchboard code still depends on `src/poc/*` modules and default runtime state under `src/poc/logs`; the proposed cleanup is documented in [Switchboard MVP Refactor Plan](SWITCHBOARD-MVP-REFACTOR.md).
+* Target registry data and the Claude CLI launcher still live under `src/poc/`; deeper extraction is still a future productization step.
+* Product-facing Switchboard code now lives under `src/switchboard` and `src/router`, while PoC entrypoints remain as compatibility wrappers with legacy `src/poc/logs` defaults.
