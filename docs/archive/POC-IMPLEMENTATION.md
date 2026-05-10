@@ -45,7 +45,7 @@ Note: the old `src/poc/*` harnesses, gateway/prod-hook simulators, and `npm run 
 * MVP CLI reports pre-launch failures cleanly so route-context write failures stop before Claude launch.
 * MVP hook policy now fails closed for `PreToolUse` events without matched Switchboard route context, including otherwise safe tools.
 * MVP coarse overrides are wired through generic routing and exposed by the CLI: `--stronger`, `--cheaper`, and `--stay`.
-* MVP wrapper threat model is documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
+* MVP wrapper threat model is documented in [Switchboard Wrapper Threat Model](../WRAPPER-THREAT-MODEL.md).
 * MVP live verification completed through `node bin/switchboard.js` with `--no-tools`: first turn executed via Claude CLI and returned `SWITCHBOARD_OK`; second turn reused the same Claude session id and recovered the previous-turn token; `switchboard explain` showed matched route context and correlated `UserPromptSubmit` hook events.
 
 ## What Is Not Yet Proven
@@ -102,7 +102,7 @@ Note: the old `src/poc/*` harnesses, gateway/prod-hook simulators, and `npm run 
 
 ```bash
 npm test
-npm run check
+npm test
 node bin/switchboard.js --dry-run --thread-id smoke-mvp "Implement the plan."
 node bin/switchboard.js explain --thread-id smoke-mvp
 npm run check:openai

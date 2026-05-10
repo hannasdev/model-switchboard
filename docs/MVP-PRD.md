@@ -1,6 +1,6 @@
 # Session-Aware AI Router MVP PRD
 
-The latest PoC learning is captured in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) and the executable evidence summarized in [PoC Implementation Notes](POC-IMPLEMENTATION.md). Those documents supersede the earlier generic vendor-router direction.
+The latest PoC learning is captured in [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) and the executable evidence summarized in [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md). Those documents supersede the earlier generic vendor-router direction.
 
 This PRD is intentionally scoped to the first product slice. PoC 2 has now verified enough of the Claude Code wrapper and hook architecture to proceed toward an MVP, with one important boundary: the verified path is prompt-driven non-interactive Claude CLI launch/resume, not a fully polished interactive Claude replacement.
 
@@ -391,10 +391,10 @@ The MVP is acceptable when:
 
 ## 12. Relationship To Other Docs
 
-[PoC](POC.md) describes the original risk-reduction plan.
+[PoC](archive/POC.md) describes the original risk-reduction plan.
 
-[PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](POC-IMPLEMENTATION.md) currently contains the freshest PoC 2 execution evidence until a dedicated PoC 2 outcome summary is written.
+[PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed. [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md) currently contains the freshest PoC 2 execution evidence until a dedicated PoC 2 outcome summary is written.
 
 [Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
 
-[Switchboard MVP Refactor Plan](SWITCHBOARD-MVP-REFACTOR.md) captures the proposed cleanup to move product code and runtime paths out of the PoC structure.
+[Switchboard MVP Refactor Plan](archive/SWITCHBOARD-MVP-REFACTOR.md) captures the proposed cleanup to move product code and runtime paths out of the PoC structure.

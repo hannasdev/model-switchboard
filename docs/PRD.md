@@ -2,7 +2,7 @@
 
 ## Architecture and Design Document
 
-This document is the broader architecture and design reference for the router. The first milestone is the [PoC](POC.md), and the first-release product scope is intentionally smaller and defined separately in [MVP PRD](MVP-PRD.md).
+This document is the broader architecture and design reference for the router. The first milestone is the [PoC](archive/POC.md), and the first-release product scope is intentionally smaller and defined separately in [MVP PRD](MVP-PRD.md).
 
 ## 1. Executive Summary
 

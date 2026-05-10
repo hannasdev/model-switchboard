@@ -210,7 +210,7 @@ Build a Claude Code-scoped MVP with:
 8. Simple override controls. Status: implemented for `--stronger`, `--cheaper`, and `--stay`; auto is the implicit default.
 9. Route and tool-decision logs plus an explain path. Status: implemented through `switchboard explain`.
 10. Explicit fail-closed behavior for untrusted route/hook state. Status: implemented for pre-launch route-context failures and uncorrelated `PreToolUse`.
-11. A small security policy for wrapper behavior. Status: documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
+11. A small security policy for wrapper behavior. Status: documented in [Switchboard Wrapper Threat Model](../WRAPPER-THREAT-MODEL.md).
 
 ### Defer From MVP
 
