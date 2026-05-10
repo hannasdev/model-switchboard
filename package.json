@@ -27,8 +27,9 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "release": "release-it",
+    "test:fuzz": "node --test test/router.fuzz.js",
     "check:anthropic": "node bin/check.js --vendor anthropic",
     "check:openai": "node bin/check.js --vendor openai",
     "check:gemini": "node bin/check.js --vendor gemini",
@@ -51,6 +52,7 @@
   },
   "devDependencies": {
     "auto-changelog": "^2.5.1",
+    "fast-check": "^4.7.0",
     "release-it": "^20.0.1"
   }
 }
