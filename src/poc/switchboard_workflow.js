@@ -9,17 +9,27 @@ import { loadThreadSession, saveThreadSession } from "./thread_session_store.js"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DEFAULT_LOG_PATH = path.join(__dirname, "logs", "switchboard-turns.ndjson");
-const DEFAULT_STORE_PATH = path.join(__dirname, "logs", "switchboard-sessions.json");
+export const DEFAULT_SWITCHBOARD_LOG_PATH = path.join(__dirname, "logs", "switchboard-turns.ndjson");
+export const DEFAULT_SWITCHBOARD_STORE_PATH = path.join(__dirname, "logs", "switchboard-sessions.json");
 const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "data", "targets.anthropic.json");
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function appendLog(entry, logPath = DEFAULT_LOG_PATH) {
+function appendLog(entry, logPath = DEFAULT_SWITCHBOARD_LOG_PATH) {
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, "utf8");
+}
+
+function readNdjson(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return fs.readFileSync(filePath, "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
+}
+
+function readJsonIfExists(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
 function defaultSession(targets) {
@@ -134,8 +144,8 @@ function buildSwitchboardTurn({
   input,
   threadId = "default",
   targets = readJson(ANTHROPIC_TARGETS_PATH).targets,
-  storePath = DEFAULT_STORE_PATH,
-  logPath = DEFAULT_LOG_PATH,
+  storePath = DEFAULT_SWITCHBOARD_STORE_PATH,
+  logPath = DEFAULT_SWITCHBOARD_LOG_PATH,
   routeContextPath,
   cwd = process.cwd(),
   claudeBin = "claude",
@@ -328,5 +338,63 @@ export function executeSwitchboardContinuityProbe({
     threadId,
     verified,
     turns: [firstTurn, secondTurn]
+  };
+}
+
+export function explainLatestSwitchboardTurn({
+  logPath = DEFAULT_SWITCHBOARD_LOG_PATH,
+  routeContextPath,
+  hookLogPath,
+  threadId
+} = {}) {
+  const entries = readNdjson(logPath);
+  const candidates = threadId
+    ? entries.filter((entry) => entry.threadId === threadId)
+    : entries;
+  const latest = candidates[candidates.length - 1] || null;
+
+  if (!latest) {
+    return {
+      status: "missing",
+      reason: threadId ? "no_switchboard_turn_for_thread" : "no_switchboard_turns",
+      threadId: threadId || null
+    };
+  }
+
+  const claudeSessionId = latest.session?.claudeSessionId || latest.selectedClaude?.sessionId || null;
+  const routeContextStore = readJsonIfExists(routeContextPath);
+  const routeContext = claudeSessionId && routeContextStore
+    ? routeContextStore[claudeSessionId] || null
+    : null;
+  const hookEvents = hookLogPath
+    ? readNdjson(hookLogPath).filter((entry) => entry.sessionId === claudeSessionId)
+    : [];
+
+  return {
+    status: "found",
+    threadId: latest.threadId || null,
+    userPrompt: latest.userPrompt || null,
+    wrapperContext: latest.wrapperContext || null,
+    routeDecision: latest.routeDecision || null,
+    selectedClaude: latest.selectedClaude || null,
+    execution: latest.execution || null,
+    session: latest.session || null,
+    routeContext: routeContext
+      ? {
+          status: "matched",
+          latest: routeContext.latest || null,
+          turnCount: routeContext.turns?.length || 0
+        }
+      : {
+          status: "missing",
+          reason: claudeSessionId ? "no_route_context_for_session" : "missing_claude_session_id"
+        },
+    hookEvents: hookEvents.map((event) => ({
+      ts: event.ts || null,
+      event: event.event || null,
+      correlationStatus: event.correlation?.status || null,
+      toolName: event.toolName || null,
+      permissionDecision: event.output?.hookSpecificOutput?.permissionDecision || null
+    }))
   };
 }

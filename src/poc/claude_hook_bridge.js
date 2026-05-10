@@ -6,7 +6,7 @@ import { loadRouteContext } from "./switchboard_route_context.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DEFAULT_LOG_PATH = path.join(__dirname, "logs", "claude-hook-events.ndjson");
+export const DEFAULT_CLAUDE_HOOK_LOG_PATH = path.join(__dirname, "logs", "claude-hook-events.ndjson");
 const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "data", "targets.anthropic.json");
 
 function readStdin() {
@@ -25,7 +25,7 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function appendLog(entry, logPath = DEFAULT_LOG_PATH) {
+function appendLog(entry, logPath = DEFAULT_CLAUDE_HOOK_LOG_PATH) {
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, "utf8");
 }

@@ -38,10 +38,13 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * Hook correlation tests verify `UserPromptSubmit` can inject matched Switchboard route context and `PreToolUse` can log route-aware tool decision evidence.
 * Live hook-correlation run `live-poc2-hooks-001` verified real `UserPromptSubmit` hook events matched wrapper route context for both routed turns.
 * Live tool-correlation run `live-poc2-toolhook-001` verified a real `PreToolUse` hook event matched wrapper route context and logged an allowed `Read` decision.
+* MVP `switchboard` bin entrypoint now supports prompt-driven routed turns, with `--dry-run` for deterministic route planning and default live execution for real use.
+* MVP `switchboard explain` summarizes the latest route decision, Claude flags, session id, route-context match, hook events, and tool decisions from local evidence logs.
+* MVP CLI reports pre-launch failures cleanly so route-context write failures stop before Claude launch.
 
 ## What Is Not Yet Proven
 
-* The current product surface is still a PoC harness, not a polished end-user `switchboard` command.
+* The current product surface is an initial prompt-driven `switchboard` command, not yet a fully polished end-user workflow.
 * Live Claude continuity has been verified for non-interactive Claude CLI turns using `--session-id` for the first turn and `--resume <session-id>` for later turns; the interactive Claude session UX is not yet validated.
 * Hook correlation is verified by Claude session id for live `UserPromptSubmit` and `PreToolUse` events, but broader production tool-governance policy is not hardened.
 * PoC 2 live runs depend on Claude CLI authentication and may need to run outside sandboxed environments when Claude auth is stored in the local keychain/session.
@@ -108,6 +111,8 @@ npm run poc:switchboard-turn -- --input "Implement the plan."
 npm run poc:switchboard-turn -- --live true --thread-id poc2-toolhook --input "Review package.json by using the Read tool to inspect it, then reply with only the package name."
 npm run poc:switchboard-continuity -- --thread-id poc2-continuity
 npm run poc:switchboard-continuity-live -- --thread-id poc2-continuity-live
+node bin/switchboard.js --dry-run --thread-id smoke-mvp "Implement the plan."
+node bin/switchboard.js explain --thread-id smoke-mvp
 npm run poc:openai-adapter-spike -- --input "Implement the plan."
 npm run poc:openai-adapter-live -- --input "Implement the plan."
 npm run poc:openai-connection-check
