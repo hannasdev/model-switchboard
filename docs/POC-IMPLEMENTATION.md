@@ -2,6 +2,8 @@
 
 This document tracks the executable PoC harness that supports [POC](POC.md) and the follow-up PoC 2 Claude Code wrapper/hook validation.
 
+Note: the old `src/poc/*` harnesses, gateway/prod-hook simulators, and `npm run poc:*` commands were intentionally removed after the MVP surface moved to the product `switchboard` command. The historical bullets below describe validation evidence from the PoC phase; the active paths and commands are listed in the later sections.
+
 ## What Is Implemented
 
 * Deterministic prompt classification and routing core.
@@ -28,7 +30,7 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * Router-owned gateway entrypoint validates pre-execution interception contract, routing, and adapter dispatch boundaries (`gateway_entrypoint` evidence in NDJSON logs).
 * `best coder` capability actions are now validated in the gateway path under explicit controls: safe file read, safe file edit to scoped probe log, and shell test execution (`npm test`).
 * Threaded gateway turns now persist and reload continuity state by `threadId`, proving repeated-turn routing continuity beyond per-request in-memory session fields.
-* Release-gate command now runs mapping consistency checks and vendor connection checks in one pass with structured per-vendor pass/fail output (`poc:release-gate`).
+* Historical PoC release-gate command ran mapping consistency checks and vendor connection checks in one pass with structured per-vendor pass/fail output (`poc:release-gate`).
 * PoC 2 Switchboard workflow slice plans Claude Code launch/resume turns through a separable workflow layer while keeping router policy independent of Claude mechanics.
 * PoC 2 continuity probe verifies two planned routed turns can share one Claude session id while changing route labels and model/effort flags.
 * PoC 2 live continuity harness can execute planned Claude CLI turns, capture stdout/stderr previews, and verify whether the second turn sees first-turn context.
@@ -76,78 +78,41 @@ This document tracks the executable PoC harness that supports [POC](POC.md) and 
 * Switchboard CLI tests: `test/switchboard-cli.test.js`
 * Switchboard path tests: `test/switchboard-paths.test.js`
 
-### PoC / Compatibility Surface
+### Router and Adapter Surface
 
-* PoC CLI harness: `src/poc/cli.js`
-* PoC router compatibility wrapper: `src/poc/router.js`
-* Claude CLI launcher: `src/poc/claude_cli_launcher.js`
-* PoC Claude hook compatibility wrapper: `src/poc/claude_hook_bridge.js`
-* Production hook simulator: `src/poc/production_hook.js`
-* Gateway surface entrypoint: `src/poc/gateway_surface.js`
-* PoC Switchboard workflow compatibility wrapper: `src/poc/switchboard_workflow.js`
-* PoC Switchboard CLI harness: `src/poc/switchboard_cli.js`
-* PoC route-context compatibility wrapper: `src/poc/switchboard_route_context.js`
-* PoC path defaults: `src/poc/paths.js`
-* Capability action runner: `src/poc/capability_actions.js`
-* PoC thread session wrapper: `src/poc/thread_session_store.js`
-* OpenAI/Codex adapter: `src/poc/adapters/openai_codex_adapter.js`
-* OpenAI SDK client: `src/poc/adapters/openai_sdk_client.js`
-* Anthropic/Claude adapter: `src/poc/adapters/anthropic_claude_adapter.js`
-* Anthropic SDK client: `src/poc/adapters/anthropic_sdk_client.js`
-* Google/Gemini adapter: `src/poc/adapters/gemini_adapter.js`
-* Gemini SDK client: `src/poc/adapters/gemini_sdk_client.js`
+* OpenAI/Codex adapter: `src/adapters/openai_codex_adapter.js`
+* OpenAI SDK client: `src/adapters/openai_sdk_client.js`
+* Anthropic/Claude adapter: `src/adapters/anthropic_claude_adapter.js`
+* Anthropic SDK client: `src/adapters/anthropic_sdk_client.js`
+* Google/Gemini adapter: `src/adapters/gemini_adapter.js`
+* Gemini SDK client: `src/adapters/gemini_sdk_client.js`
+* Mapping registry: `src/adapters/model_mappings.js`
 * OpenAI target registry: `src/router/data/targets.openai.json`
 * Anthropic target registry: `src/router/data/targets.anthropic.json`
 * Gemini target registry: `src/router/data/targets.gemini.json`
-* Fixtures: `src/poc/data/fixtures.json`
-* Route logs: `src/poc/logs/route-decisions.ndjson`
-* Vendor matrix scaffold: `src/poc/vendor_matrix.json`
-* Router tests: `test/poc-router.test.js`
-* Adapter tests: `test/poc-adapter.test.js`
-* Claude CLI launcher tests: `test/poc-claude-cli-launcher.test.js`
-* Claude hook bridge tests: `test/poc-claude-hook-bridge.test.js`
-* Production hook tests: `test/poc-production-hook.test.js`
-* Gateway surface tests: `test/poc-gateway-surface.test.js`
-* Capability action tests: `test/poc-capability-actions.test.js`
-* Thread session tests: `test/poc-thread-session-store.test.js`
-* Gateway thread continuity tests: `test/poc-gateway-thread-turn.test.js`
-* PoC Switchboard workflow tests: `test/poc-switchboard-workflow.test.js`
+* Fixtures: `src/router/data/fixtures.json`
+* Router tests: `test/router.test.js`
+* Adapter tests: `test/adapters.test.js`
+* Claude CLI launcher tests: `test/claude-cli-launcher.test.js`
+* Claude hook bridge tests: `test/claude-hook-bridge.test.js`
+* Thread session tests: `test/thread-session-store.test.js`
+* Switchboard workflow tests: `test/switchboard-workflow.test.js`
 
 ## Commands
 
 ```bash
 npm test
-npm run poc:fixtures
-npm run poc:route -- --vendor openai --input "Implement the plan."
-npm run poc:vendor-matrix
-npm run poc:mapping-check
-npm run poc:gateway-surface
-npm run poc:gateway-surface -- --tool-action run_tests
-npm run poc:gateway-thread-turn -- --thread-id poc-thread-1 --input "Implement the plan."
-npm run poc:release-gate
-npm run poc:claude-cli-route -- --input "Implement the plan."
-npm run poc:claude-cli-live -- --input "Implement the plan."
-npm run poc:switchboard-turn -- --input "Implement the plan."
-npm run poc:switchboard-turn -- --live true --thread-id poc2-toolhook --input "Review package.json by using the Read tool to inspect it, then reply with only the package name."
-npm run poc:switchboard-continuity -- --thread-id poc2-continuity
-npm run poc:switchboard-continuity-live -- --thread-id poc2-continuity-live
+npm run check
 node bin/switchboard.js --dry-run --thread-id smoke-mvp "Implement the plan."
 node bin/switchboard.js explain --thread-id smoke-mvp
-npm run poc:openai-adapter-spike -- --input "Implement the plan."
-npm run poc:openai-adapter-live -- --input "Implement the plan."
-npm run poc:openai-connection-check
-npm run poc:anthropic-adapter-spike -- --input "Implement the plan."
-npm run poc:anthropic-adapter-live -- --input "Implement the plan."
-npm run poc:anthropic-connection-check
-npm run poc:gemini-adapter-spike -- --input "Implement the plan."
-npm run poc:gemini-adapter-live -- --input "Implement the plan."
-npm run poc:gemini-connection-check
-npm run poc:production-hook -- --input "Implement the plan." --tool-action read_file
+npm run check:openai
+npm run check:anthropic
+npm run check:gemini
 ```
 
 ## Current Gaps
 
-* Release-gate requires valid API credentials and network access to the configured vendors.
+* Vendor live checks require valid API credentials and network access to the configured vendors.
 * The PoC 2 outcome has been summarized in [PoC Outcome Analysis](POC-OUTCOME-ANALYSIS.md); keep that decision record current as new live evidence lands.
-* Target registry data and the Claude CLI launcher still live under `src/poc/`; deeper extraction is still a future productization step.
-* Product-facing Switchboard code now lives under `src/switchboard` and `src/router`, while PoC entrypoints remain as compatibility wrappers with legacy `src/poc/logs` defaults.
+* Router extraction into a standalone package is still future productization work.
+* Product-facing Switchboard code now lives under `src/switchboard`, router data under `src/router`, and adapter code under `src/adapters`.

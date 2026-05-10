@@ -43,7 +43,7 @@ test("openai adapter maps routed target to codex profile and executes", async ()
   const execution = await adapter.executeRoutedTurn({
     input: "Implement the plan.",
     routeResult,
-    session: { threadId: "poc-thread-1" }
+    session: { threadId: "adapter-thread-1" }
   });
 
   assert.equal(execution.status, "executed");
@@ -113,7 +113,7 @@ test("anthropic adapter maps routed target to claude profile and executes", asyn
   const execution = await adapter.executeRoutedTurn({
     input: "Implement the plan.",
     routeResult,
-    session: { threadId: "poc-thread-2" }
+    session: { threadId: "adapter-thread-2" }
   });
 
   assert.equal(execution.status, "executed");
@@ -183,7 +183,7 @@ test("gemini adapter maps routed target to gemini profile and executes", async (
   const execution = await adapter.executeRoutedTurn({
     input: "Implement the plan.",
     routeResult,
-    session: { threadId: "poc-thread-3" }
+    session: { threadId: "adapter-thread-3" }
   });
 
   assert.equal(execution.status, "executed");

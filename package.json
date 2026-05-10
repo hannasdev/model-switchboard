@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node bin/check.js --vendor",
+    "check": "npm test",
     "check:anthropic": "node bin/check.js --vendor anthropic",
     "check:openai": "node bin/check.js --vendor openai",
     "check:gemini": "node bin/check.js --vendor gemini",

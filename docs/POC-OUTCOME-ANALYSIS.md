@@ -115,8 +115,8 @@ The unresolved risks are now narrower:
 * Production tool-governance policy beyond route-context trust is not hardened.
 * Failure behavior around auth, hook setup, and resume can be made clearer.
 * Live runs depend on Claude CLI authentication and local environment state.
-* Product code still imports several modules from `src/poc/*`; cleanup is needed before treating the structure as product-shaped.
-* Runtime state still defaults to `src/poc/logs`; app-state path cleanup is needed before broader use.
+* Product code has since been moved out of `src/poc/*`; the active MVP implementation now lives under `src/switchboard`, `src/router`, and `src/adapters`.
+* Runtime state now defaults to `~/.model-switchboard` instead of source-tree PoC logs.
 * Router extraction into `@model-switchboard/router` is still future productization work.
 
 ## What The PoC Did Not Prove

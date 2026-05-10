@@ -30,4 +30,3 @@ test("product switchboard defaults resolve under the shared home-state directory
   assert.equal(PRODUCT_ROUTE_CONTEXT_PATH, DEFAULT_ROUTE_CONTEXT_PATH);
   assert.equal(PRODUCT_HOOK_LOG_PATH, DEFAULT_CLAUDE_HOOK_LOG_PATH);
 });
-

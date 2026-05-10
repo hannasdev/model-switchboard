@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The MVP now works, but the implementation still carries PoC-shaped paths:
+Before this refactor, the MVP worked but still carried PoC-shaped paths:
 
-* Product CLI code lives in `src/switchboard/`, but imports core workflow modules from `src/poc/`.
-* Runtime state defaults to `src/poc/logs`.
-* Claude hook, route-context, session-store, and workflow modules are product-relevant but named and located as PoC code.
+* Product CLI code lived in `src/switchboard/`, but imported core workflow modules from `src/poc/`.
+* Runtime state defaulted to `src/poc/logs`.
+* Claude hook, route-context, session-store, and workflow modules were product-relevant but named and located as PoC code.
 
 This refactor should make the MVP structure match the product boundary without changing behavior.
 
@@ -19,17 +19,18 @@ Completed in the current pass:
 * Moved router implementation into `src/router/router.js`.
 * Moved `claude_cli_launcher.js` into `src/switchboard/claude_cli_launcher.js`.
 * Moved target registry data into `src/router/data/`.
-* Kept `src/poc/*` compatibility wrappers so existing PoC commands still resolve their legacy `src/poc/logs` defaults.
+* Removed the old `src/poc/*` harnesses and compatibility wrappers intentionally; the MVP surface is now the product `switchboard` command plus focused tests.
+* Updated Claude hook settings to call `src/switchboard/claude_hook_bridge.js`.
 
 All planned refactor steps are complete.
 
 ## Goals
 
 1. Move product-facing Switchboard modules out of `src/poc`.
-2. Keep PoC commands working by making them call the product modules.
+2. Remove old PoC commands and wrappers once their validation role is superseded.
 3. Move default runtime state out of source-tree PoC logs.
 4. Keep wrapper, hooks, and explain using one shared path/config model.
-5. Preserve all existing behavior and tests.
+5. Preserve MVP behavior and focused tests.
 
 ## Non-Goals
 
@@ -60,23 +61,16 @@ src/
     route_context.js
     session_store.js
     paths.js
-  poc/
-    cli.js
-    switchboard_cli.js
-    ...
 ```
 
 The exact filenames can change, but the boundary should be:
 
 * `src/router`: vendor-neutral or target-registry routing logic.
 * `src/switchboard`: Claude Code wrapper workflow, CLI, hook bridge, route-context/session evidence.
-* `src/poc`: old harnesses, compatibility commands, and experiments.
 
 ## Runtime State Paths
 
-The current defaults write to `src/poc/logs`. The product path should move to a local app-state directory.
-
-Suggested default:
+Product defaults now write to a local app-state directory:
 
 ```text
 ~/.model-switchboard/
@@ -86,7 +80,7 @@ Suggested default:
   claude-hook-events.ndjson
 ```
 
-Tests should continue to inject temp paths. PoC commands may keep explicit PoC paths if useful, but `bin/switchboard.js` should use product defaults.
+Tests should continue to inject temp paths. `bin/switchboard.js` should use product defaults.
 
 ## Refactor Steps
 
@@ -95,24 +89,23 @@ Tests should continue to inject temp paths. PoC commands may keep explicit PoC p
    * Keep path overrides injectable for tests.
 
 2. Move route context and session store.
-   * Move `src/poc/switchboard_route_context.js` to `src/switchboard/route_context.js`.
-   * Move `src/poc/thread_session_store.js` to `src/switchboard/session_store.js`.
+   * Moved `src/poc/switchboard_route_context.js` to `src/switchboard/route_context.js`.
+   * Moved `src/poc/thread_session_store.js` to `src/switchboard/session_store.js`.
    * Update imports.
 
 3. Move Claude workflow modules.
-   * Move `src/poc/switchboard_workflow.js` to `src/switchboard/workflow.js`.
-   * Move `src/poc/claude_cli_launcher.js` to `src/switchboard/claude_cli_launcher.js`.
-   * Move `src/poc/claude_hook_bridge.js` to `src/switchboard/claude_hook_bridge.js`.
-   * Keep old PoC files as thin re-export wrappers if that minimizes churn.
+   * Moved `src/poc/switchboard_workflow.js` to `src/switchboard/workflow.js`.
+   * Moved `src/poc/claude_cli_launcher.js` to `src/switchboard/claude_cli_launcher.js`.
+   * Moved `src/poc/claude_hook_bridge.js` to `src/switchboard/claude_hook_bridge.js`.
+   * Updated Claude hook settings to point at the product hook bridge.
 
 4. Move or re-export router core.
-   * Prefer moving `src/poc/router.js` to `src/router/router.js`.
-   * Keep `src/poc/router.js` as a re-export wrapper for existing PoC imports.
-   * Move target data only if it does not create too much churn in one pass.
+   * Moved `src/poc/router.js` to `src/router/router.js`.
+   * Moved target data into `src/router/data/`.
 
 5. Update tests.
    * Product tests should import product paths.
-   * PoC tests can keep PoC compatibility imports if wrappers remain.
+   * Remove tests for deleted PoC-only harnesses.
    * Keep all temp-path injection.
 
 6. Update docs.
@@ -123,9 +116,10 @@ Tests should continue to inject temp paths. PoC commands may keep explicit PoC p
 
 * `bin/switchboard.js` imports only product modules under `src/switchboard`.
 * Product runtime defaults no longer point at `src/poc/logs`.
-* PoC npm scripts still work.
+* Removed PoC npm scripts are no longer documented as active commands.
 * `switchboard --dry-run "Implement the plan."` still produces compact route output.
 * `switchboard explain` still summarizes latest evidence.
+* Claude hook settings point at `src/switchboard/claude_hook_bridge.js`.
 * `npm test` passes.
 * `git diff --check` passes.
 
@@ -135,8 +129,8 @@ Tests should continue to inject temp paths. PoC commands may keep explicit PoC p
 node bin/switchboard.js --dry-run --thread-id refactor-smoke "Implement the plan."
 node bin/switchboard.js explain --thread-id refactor-smoke
 node --test test/switchboard-cli.test.js
-node --test test/poc-switchboard-workflow.test.js
-node --test test/poc-claude-hook-bridge.test.js
+node --test test/switchboard-workflow.test.js
+node --test test/claude-hook-bridge.test.js
 npm test
 ```
 
