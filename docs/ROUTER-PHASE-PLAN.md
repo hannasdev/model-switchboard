@@ -126,6 +126,10 @@ Acceptance criteria:
 
 ### Milestone 2: Session Controller And Policy Upgrade
 
+Status: complete (2026-05-11)
+
+Decision record: see `DEC-2026-05-11-milestone-2-session-controller-policy-closeout` in `docs/decision-log.md`.
+
 Move from mostly prompt-local routing to session-aware routing.
 
 Required work:
