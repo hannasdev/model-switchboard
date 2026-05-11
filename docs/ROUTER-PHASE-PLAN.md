@@ -2,7 +2,7 @@
 
 ## Status
 
-**Milestone 4: Complete (2025-01-02)** ✅
+**Milestone 4: Complete (2026-05-11)** ✅
 
 Implementation of explainability and outcome attribution foundation is complete:
 - ✅ Event normalization with RoutingLogEvent schema

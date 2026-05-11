@@ -4,6 +4,10 @@
 
 This document is the broader architecture and design reference for the router. The first milestone is the [PoC](archive/POC.md), and the first-release product scope is intentionally smaller and defined separately in [MVP PRD](MVP-PRD.md).
 
+## Status Snapshot
+
+Milestone 4 is complete and the repository now has a contract-backed explainability and outcome-attribution foundation. The execution plan, decision log, release log, and replay guide are updated to reflect that state. Milestone 5 remains conditional on the stability of the current router boundary.
+
 ## 1. Executive Summary
 
 This router is a vendor-neutral control plane for conversational software-delivery work. It does not replace coding agents, IDE extensions, model gateways, shell sandboxes, or security tooling. Its job is narrower: decide which execution target should handle the next step of a session based on conversation state, task phase, required capabilities, user preferences, privacy constraints, and continuity cost.

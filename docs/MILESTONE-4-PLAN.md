@@ -1,6 +1,6 @@
 # Milestone 4: Explainability and Outcome Attribution Foundation
 
-**Status:** Planning (not yet started)
+**Status:** Complete (2026-05-11)
 
 **Objective:** Complete the observability and replay foundation so routed decisions can be inspected, explained, and evaluated offline without reading implementation details.
 
