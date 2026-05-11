@@ -163,3 +163,43 @@ Consequences:
 Follow-up:
 - Next review milestone: Milestone 2 slice 2 planning.
 - Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/switchboard/workflow.js, test/router.test.js, test/switchboard-workflow.test.js
+
+## Milestone 2 Closeout
+
+Decision ID: DEC-2026-05-11-milestone-2-session-controller-policy-closeout
+Related deferred item: Milestone 2 staged policy depth
+Status: committed
+Date: 2026-05-11
+Owners: team
+
+Context:
+- Milestone 2 required a deterministic and testable session controller boundary, continuity-aware switching, and explicit hard/soft policy inputs in explainable router outputs.
+
+Options considered:
+- Option A: keep session mode transitions embedded in the router implementation.
+- Option B: extract session mode transition ownership into a dedicated controller module and lock behavior with direct tests.
+
+Tradeoffs:
+- Option A: lower short-term change set, weaker boundary clarity and weaker transition-focused test surface.
+- Option B: clearer boundary ownership and stronger deterministic validation, with small refactor overhead.
+
+Verification signal:
+- Expected signal from phase plan: mode transition logic deterministic and testable; policy decisions explainable with session/task/constraint/continuity context; route labels continue mapping cleanly.
+- Evidence observed:
+  - Session mode transition logic extracted to `src/router/session_controller.js` and consumed by router.
+  - Dedicated transition tests added in `test/session-controller.test.js`.
+  - Full suite passes (`npm test`) with continuity, escalation, override, and hard-constraint behavior preserved.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: Milestone 2 is formally complete as of 2026-05-11.
+- What remains intentionally deferred: numeric continuity scoring, taxonomy freeze, strict universal enforcement defaults, and cross-surface validation beyond Claude workflow.
+
+Consequences:
+- Near-term implementation impact: session-controller boundary is now explicit and reusable for Milestone 3 router-client integration work.
+- Test and replay impact: transition behavior is isolated and easier to validate independently of broader router selection logic.
+- Migration impact: low; external route output behavior remains stable.
+
+Follow-up:
+- Next review milestone: Milestone 3 plan-to-implementation checkpoint.
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/router/session_controller.js, test/session-controller.test.js, test/router.test.js, docs/ROUTER-PHASE-PLAN.md

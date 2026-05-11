@@ -1,5 +1,13 @@
 ## Unreleased
 
+### 2026-05-11 — Close Milestone 2 with explicit session-controller boundary
+
+- What changed: Extracted deterministic session mode-transition ownership into a dedicated controller module, wired router mode resolution through that boundary, and added focused transition tests while preserving existing routing behavior.
+- Why it matters: Completes Milestone 2 policy/controller acceptance criteria and reduces coupling before Milestone 3 Claude-workflow boundary refit.
+- Who is affected: Switchboard maintainers and contributors working on router-policy evolution.
+- Action needed: None.
+- PR: https://github.com/hannasdev/model-switchboard/pull/17
+
 ### 2026-05-10 — Add deterministic escalation policy and escalation evidence in explain output
 
 - What changed: Added explicit escalation policy handling for low-confidence turns, user corrections, repeated failures, and high-risk implementation; propagated escalation fields into route evidence and human explain output.
