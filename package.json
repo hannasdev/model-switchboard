@@ -28,6 +28,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
+    "hooks:install": "sh scripts/install-git-hooks.sh",
+    "hooks:doctor": "git config --get core.hooksPath",
     "release": "release-it",
     "test:fuzz": "node --test test/router.fuzz.js",
     "check:anthropic": "node bin/check.js --vendor anthropic",

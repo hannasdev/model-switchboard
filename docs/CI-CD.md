@@ -70,3 +70,22 @@ For each release:
 1. Merge a PR into `main` with conventional commit text (`feat:`, `fix:`, or `!`/`BREAKING CHANGE`).
 2. Release workflow creates a `Release x.y.z` commit and `vX.Y.Z` tag.
 3. Publish workflow runs on the new tag and publishes to npm.
+
+## Local Hook Guardrails
+
+To reduce accidental non-semantic commit messages locally, this repo includes git hooks under `.githooks`:
+
+- `commit-msg` enforces semantic commit format (`type(scope): subject`).
+- `pre-commit` blocks direct commits to `main` and reminds that semantic validation runs at commit message time.
+
+Install once per clone:
+
+```bash
+npm run hooks:install
+```
+
+Verify current hook path:
+
+```bash
+npm run hooks:doctor
+```

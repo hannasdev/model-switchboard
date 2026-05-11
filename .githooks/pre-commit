@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -eu
+
+branch_name=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+
+if [ "$branch_name" = "main" ]; then
+  echo "ERROR: Direct commits to main are blocked locally. Commit from a feature branch."
+  exit 1
+fi
+
+# Friendly reminder: semantic message validation runs in commit-msg.
+echo "pre-commit: branch check passed (semantic message will be validated by commit-msg)."
+
+exit 0
