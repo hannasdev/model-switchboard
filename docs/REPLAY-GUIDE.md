@@ -26,6 +26,7 @@ const evidence = loadSessionEvidence({
 
 console.log(`Loaded ${evidence.length} decisions from session`);
 "
+```
 
 ### 2. Replay a Single Decision
 
@@ -52,6 +53,7 @@ console.log(result);
 //   ...
 // }
 "
+```
 
 ### 3. Evaluate Policy on Full Session
 
@@ -76,10 +78,11 @@ console.log(evaluation);
 //   matchCount: 13,
 //   matchRate: '86.7%',
 //   avgConfidence: '88.2%',
-//   switchingReasons: { null: 10, continuity_cost: 3, escalation: 2 },
+//   switchingReasons: { no_switch: 10, continuity_cost: 3, escalation: 2 },
 //   ...
 // }
 "
+```
 
 ## Workflow: Test a New Policy
 
@@ -158,7 +161,7 @@ Average router confidence (0.0-1.0) in the decisions:
 ### Switching Reasons Distribution
 
 Shows which decision factors triggered target switches:
-- `null`: No switch (stayed on current)
+- `no_switch`: No switch (stayed on current)
 - `continuity_cost`: Continuity cost evaluation triggered switch
 - `capability_gap`: Hard constraint (missing capability) triggered switch
 - `user_override`: User override triggered switch

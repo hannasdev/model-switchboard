@@ -310,6 +310,37 @@ test("Replay uses recorded attribution policyVersion when decision contract lack
   assert.equal(replayed.matches, true);
 });
 
+test("Replay supports legacy nested router evidence shape", () => {
+  const replayed = replayRoutingDecision({
+    evidence: {
+      ts: "2026-05-11T00:00:00.000Z",
+      sessionId: "session-router-nested",
+      threadId: "thread-router-nested",
+      turnIndex: 2,
+      router: {
+        routingDecision: {
+          selectedTargetId: "anthropic-coder"
+        },
+        sessionState: {
+          turnCount: 2
+        }
+      },
+      attribution: {
+        decisionId: "decision-router-nested",
+        policyVersion: "0.1.0-experimental",
+        decisionConfidence: 0.88,
+        switchingReason: "no_switch"
+      }
+    },
+    policyVersion: "0.1.0-experimental"
+  });
+
+  assert.equal(replayed.status, "replayed");
+  assert.equal(replayed.originalSelectedTargetId, "anthropic-coder");
+  assert.equal(replayed.evidence.sessionState.turnCount, 2);
+  assert.equal(replayed.matches, true);
+});
+
 test("Switchboard interactive turns preserve Claude continuity without prompt args", () => {
   const { storePath, logPath, routeContextPath } = tempPaths();
   const firstTurn = planSwitchboardTurn({

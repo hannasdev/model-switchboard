@@ -254,14 +254,13 @@ function selectedClaudeSummary(plan) {
   };
 }
 
-function reconstructReasoning(routeDecision, routingDecision, wrapperContext) {
+function reconstructReasoning(routeDecision, routingDecision) {
   if (!routeDecision || !routingDecision) {
     return null;
   }
 
   const policyInputs = routeDecision.policyInputs || {};
   const hardConstraints = policyInputs.hardConstraints || {};
-  const softConstraints = policyInputs.softConstraints || {};
   const blockedEntries = routingDecision.hardConstraintResults?.blocked || [];
   const blockedTargetsByReason = (reasonMatcher) =>
     blockedEntries
@@ -933,8 +932,7 @@ export function explainLatestSwitchboardTurn({
 
   const reasoning = reconstructReasoning(
     latest.routeDecision || latest.router?.routeDecision || latest.legacy?.routeDecision || routerEvidence.routeDecision,
-    latest.routingDecision || routerEvidence.routingDecision,
-    latest.wrapperContext
+    latest.routingDecision || routerEvidence.routingDecision
   );
 
   return {
@@ -1001,7 +999,11 @@ export function replayRoutingDecision({
   evidence,
   policyVersion = POLICY_VERSION
 }) {
-  const routingDecision = evidence?.routingDecision || evidence?.legacy?.router?.routingDecision || null;
+  const routingDecision =
+    evidence?.routingDecision ||
+    evidence?.router?.routingDecision ||
+    evidence?.legacy?.router?.routingDecision ||
+    null;
   if (!evidence || !routingDecision) {
     return {
       status: "unable_to_replay",
@@ -1010,7 +1012,11 @@ export function replayRoutingDecision({
   }
 
   const originalDecision = routingDecision;
-  const sessionState = evidence.sessionState || evidence.legacy?.router?.sessionState || null;
+  const sessionState =
+    evidence.sessionState ||
+    evidence.router?.sessionState ||
+    evidence.legacy?.router?.sessionState ||
+    null;
   const originalSelectedId = originalDecision.selectedTargetId;
 
   // For now, replaying means comparing with the current policy version
