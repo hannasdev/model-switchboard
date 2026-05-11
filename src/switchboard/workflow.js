@@ -10,6 +10,13 @@ import {
 } from "./paths.js";
 import { saveRouteContext } from "./route_context.js";
 import { loadThreadSession, saveThreadSession } from "./session_store.js";
+import {
+  determineErrorSignal,
+  determineSwitchingReason,
+  generateDecisionId,
+  POLICY_VERSION,
+  EXECUTION_STATUS
+} from "../router/outcome-constants.js";
 
 export {
   DEFAULT_SWITCHBOARD_LOG_PATH,
@@ -201,6 +208,65 @@ function buildContextPackage({
   };
 }
 
+function normalizeRoutingLogEvent({
+  evidence,
+  sessionState,
+  turnCount,
+  previousTargetId,
+  startTimeMs
+}) {
+  const executionDurationMs = startTimeMs ? Date.now() - startTimeMs : null;
+  const executionStatus = evidence.executionMode === "planned"
+    ? EXECUTION_STATUS.PLANNED
+    : evidence.execution?.status === 0
+      ? EXECUTION_STATUS.EXECUTED
+      : EXECUTION_STATUS.FAILED;
+
+  const errorSignal = determineErrorSignal(executionStatus, evidence.execution);
+  const decisionId = generateDecisionId({
+    sessionId: evidence.session?.claudeSessionId,
+    threadId: evidence.threadId,
+    turnCount
+  });
+  const switchingReason = determineSwitchingReason(evidence.routingDecision, previousTargetId);
+  const decisionConfidence = evidence.routeDecision?.confidence || 0.5;
+
+  return {
+    schemaVersion: "0.1.0-experimental",
+    ts: evidence.ts,
+    source: evidence.source,
+    sessionId: evidence.session?.claudeSessionId || null,
+    threadId: evidence.threadId,
+    turnIndex: turnCount,
+    userPrompt: evidence.userPrompt || null,
+    sessionState,
+    routingDecision: evidence.routingDecision,
+    contextPackage: evidence.router?.contextPackage || null,
+    outcome: {
+      executionStatus,
+      exitCode: evidence.execution?.status ?? null,
+      errorSignal,
+      durationMs: executionDurationMs
+    },
+    attribution: {
+      decisionId,
+      decisionConfidence,
+      switchingReason,
+      escalationApplied: evidence.routeDecision?.escalationPolicy?.applied || false,
+      policyVersion: POLICY_VERSION
+    },
+    hookCorrelation: null,  // Will be populated by hook bridge if correlated
+    wrapperContext: evidence.wrapperContext || null,
+    legacy: {
+      routeDecision: evidence.routeDecision,
+      selectedClaude: evidence.selectedClaude,
+      execution: evidence.execution,
+      recovery: evidence.recovery,
+      session: evidence.session
+    }
+  };
+}
+
 function selectedClaudeSummary(plan) {
   if (plan.status !== "planned") return null;
   return {
@@ -210,6 +276,95 @@ function selectedClaudeSummary(plan) {
     effort: plan.selectedTarget.effort,
     sessionId: plan.sessionId,
     commandPreview: plan.commandPreview
+  };
+}
+
+function reconstructReasoning(routeDecision, routingDecision, wrapperContext) {
+  if (!routeDecision || !routingDecision) {
+    return null;
+  }
+
+  const policyInputs = routeDecision.policyInputs || {};
+  const hardConstraints = policyInputs.hardConstraints || {};
+  const softConstraints = policyInputs.softConstraints || {};
+
+  // Build constraint evaluation
+  const hardConstraintEvaluation = {
+    privacy: {
+      applied: hardConstraints.privacy !== "off",
+      reason: `Privacy: ${hardConstraints.privacy || "not set"}`,
+      blockedTargets:
+        routingDecision.hardConstraintResults?.blocked
+          ?.filter((b) => b.constraintReasons?.includes("privacy"))
+          ?.map((b) => b.targetId) || []
+    },
+    availability: {
+      applied: hardConstraints.availability !== "off",
+      reason: `Availability: ${hardConstraints.availability || "not set"}`,
+      blockedTargets:
+        routingDecision.hardConstraintResults?.blocked
+          ?.filter((b) => b.constraintReasons?.includes("availability"))
+          ?.map((b) => b.targetId) || []
+    },
+    clientCompatibility: {
+      applied: hardConstraints.clientCompatibility !== "off",
+      reason: `Client compatibility: ${hardConstraints.clientCompatibility || "not set"}`,
+      blockedTargets:
+        routingDecision.hardConstraintResults?.blocked
+          ?.filter((b) => b.constraintReasons?.includes("client"))
+          ?.map((b) => b.targetId) || []
+    }
+  };
+
+  // Build soft constraint evaluation
+  const userPref = routingDecision.softConstraintInputs?.userPreference || "auto";
+  const softConstraintEvaluation = {
+    userPreference: userPref,
+    projectOverride: routingDecision.softConstraintInputs?.projectOverride || null,
+    impact:
+      userPref !== "auto"
+        ? "influenced_choice"
+        : routingDecision.hardConstraintResults?.eligibleTargetIds?.length === 1
+          ? "only_eligible_target"
+          : "no_influence"
+  };
+
+  // Build continuity cost explanation
+  const continuityCost = routeDecision.continuityCost || "unknown";
+  const continuityDecision = routeDecision.continuityDecision || "unknown";
+  const continuityReason = routeDecision.continuityReason || "no continuity reason";
+
+  const continuityCostEval = {
+    calculated: continuityCost,
+    decision: continuityDecision,
+    reason: continuityReason
+  };
+
+  // Build rationale
+  const selectedLabel = routeDecision.label || "unknown";
+  const confidence = routeDecision.confidence || 0.5;
+  const taskType = routingDecision.taskType || "unknown";
+  const mode = routingDecision.mode || "unknown";
+
+  let rationale = `Selected ${selectedLabel} for ${taskType} (${mode} mode)`;
+  if (routeDecision.escalationPolicy?.applied) {
+    const reasons = routeDecision.escalationPolicy.reasons || [];
+    rationale += ` due to escalation: ${reasons.join(", ")}`;
+  } else if (continuityDecision !== "stay_on_current_target") {
+    rationale += ` (continuity cost: ${continuityCost})`;
+  } else {
+    rationale += ` (low continuity cost, staying current)`;
+  }
+
+  return {
+    taskType,
+    modeResolution: routeDecision.modeResolution || null,
+    requiredCapabilities: routingDecision.requiredCapabilities || [],
+    hardConstraintEvaluation,
+    softConstraintEvaluation,
+    continuityCost: continuityCostEval,
+    selectedTargetRationale: rationale,
+    confidence
   };
 }
 
@@ -331,6 +486,7 @@ function buildSwitchboardTurn({
   timeoutMs = 180000,
   commandRunner = defaultCommandRunner
 }) {
+  const turnStartTimeMs = Date.now();
   const persistedSession = loadThreadSession({ storePath, threadId }) || {};
   const baseSession = defaultSession(targets);
   const claudeSessionId = persistedSession.claudeSessionId || sessionId;
@@ -431,6 +587,16 @@ function buildSwitchboardTurn({
       ? saveThreadSession({ storePath, threadId, session: nextSession })
       : null;
 
+  const currentTurnCount = Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0);
+  const currentSessionState = buildSessionState({
+    threadId,
+    claudeSessionId,
+    routeSession,
+    routeDecision,
+    selectedClaude,
+    turnCount: currentTurnCount
+  });
+
   const evidence = {
     ts: new Date().toISOString(),
     source: "switchboard_wrapper",
@@ -440,18 +606,11 @@ function buildSwitchboardTurn({
     router: {
       routingDecision,
       routeDecision,
-      sessionState: buildSessionState({
-        threadId,
-        claudeSessionId,
-        routeSession,
-        routeDecision,
-        selectedClaude,
-        turnCount: Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0)
-      }),
+      sessionState: currentSessionState,
       contextPackage: buildContextPackage({
         threadId,
         claudeSessionId,
-        turnCount: Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0),
+        turnCount: currentTurnCount,
         routeDecision,
         selectedClaude,
         wrapperContext
@@ -478,6 +637,30 @@ function buildSwitchboardTurn({
       claudeSessionId,
       previousSession: persistedSession,
       nextSession: savedSession || nextSession
+    },
+    // M4 Normalization: Add normalized event fields alongside legacy structure
+    schemaVersion: "0.1.0-experimental",
+    sessionId: claudeSessionId,
+    turnIndex: currentTurnCount,
+    outcome: {
+      executionStatus: execute ? EXECUTION_STATUS.EXECUTED : EXECUTION_STATUS.PLANNED,
+      exitCode: executionResult?.status ?? null,
+      errorSignal: determineErrorSignal(
+        execute ? EXECUTION_STATUS.EXECUTED : EXECUTION_STATUS.PLANNED,
+        executionResult
+      ),
+      durationMs: Date.now() - turnStartTimeMs
+    },
+    attribution: {
+      decisionId: generateDecisionId({
+        sessionId: claudeSessionId,
+        threadId,
+        turnCount: currentTurnCount
+      }),
+      decisionConfidence: routeDecision?.confidence || 0.5,
+      switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId || null),
+      escalationApplied: routeDecision?.escalationPolicy?.applied || false,
+      policyVersion: POLICY_VERSION
     }
   };
 
@@ -708,11 +891,18 @@ export function explainLatestSwitchboardTurn({
     launch: null
   };
 
+  const reasoning = reconstructReasoning(
+    latest.routeDecision || routerEvidence.routeDecision,
+    latest.routingDecision || routerEvidence.routingDecision,
+    latest.wrapperContext
+  );
+
   return {
     status: "found",
     threadId: latest.threadId || null,
     userPrompt: latest.userPrompt || null,
     wrapperContext: latest.wrapperContext || null,
+    reasoning,
     routerEvidence,
     claudeEvidence,
     routeDecision: latest.routeDecision || null,
@@ -740,5 +930,111 @@ export function explainLatestSwitchboardTurn({
       toolName: event.toolName || null,
       permissionDecision: event.output?.hookSpecificOutput?.permissionDecision || null
     }))
+  };
+}
+
+/**
+ * Load all evidence events for a session from the log.
+ * @param {object} params
+ * @param {string} params.logPath - path to switchboard log
+ * @param {string} params.sessionId - session ID to filter by
+ * @returns {array} - normalized events for that session
+ */
+export function loadSessionEvidence({ logPath = DEFAULT_SWITCHBOARD_LOG_PATH, sessionId }) {
+  if (!sessionId) {
+    throw new Error("sessionId is required");
+  }
+
+  const allEntries = readNdjson(logPath);
+  return allEntries.filter((entry) => entry.sessionId === sessionId || entry.session?.claudeSessionId === sessionId);
+}
+
+/**
+ * Replay a routing decision with a given evidence set and policy.
+ * Useful for testing if a new policy would make different decisions.
+ * @param {object} params
+ * @param {object} params.evidence - a routing log event
+ * @param {array} params.targets - target registry
+ * @param {string} params.policyVersion - policy version identifier
+ * @returns {object} - comparison of original vs replayed decision
+ */
+export function replayRoutingDecision({
+  evidence,
+  targets = readJson(ANTHROPIC_TARGETS_PATH).targets,
+  policyVersion = POLICY_VERSION
+}) {
+  if (!evidence || !evidence.router?.routingDecision) {
+    return {
+      status: "unable_to_replay",
+      reason: "missing_routing_decision_in_evidence"
+    };
+  }
+
+  const originalDecision = evidence.router.routingDecision;
+  const sessionState = evidence.router.sessionState || evidence.sessionState;
+  const originalSelectedId = originalDecision.selectedTargetId;
+
+  // For now, replaying means comparing with the current policy version
+  // In a full implementation, this would accept alternative policy configs
+  const matches = originalDecision.policyVersion === policyVersion;
+
+  return {
+    status: "replayed",
+    originalSelectedTargetId: originalSelectedId,
+    originalDecisionId: evidence.attribution?.decisionId || null,
+    currentPolicyVersion: policyVersion,
+    originalPolicyVersion: originalDecision.policyVersion,
+    matches,
+    confidence: evidence.attribution?.decisionConfidence || 0.5,
+    switchingReason: evidence.attribution?.switchingReason || null,
+    evidence: {
+      ts: evidence.ts,
+      sessionId: evidence.sessionId,
+      threadId: evidence.threadId,
+      turnIndex: evidence.turnIndex
+    }
+  };
+}
+
+/**
+ * Evaluate how a policy performed on a set of historical decisions.
+ * @param {object} params
+ * @param {array} params.evidenceSet - array of evidence events
+ * @param {string} params.policyVersion - policy version to compare against
+ * @returns {object} - evaluation summary
+ */
+export function evaluatePolicyOnEvidence({ evidenceSet = [], policyVersion = POLICY_VERSION }) {
+  if (!Array.isArray(evidenceSet) || evidenceSet.length === 0) {
+    return {
+      status: "no_evidence",
+      totalDecisions: 0
+    };
+  }
+
+  const results = evidenceSet.map((evidence) =>
+    replayRoutingDecision({ evidence, policyVersion })
+  );
+
+  const matchCount = results.filter((r) => r.matches).length;
+  const matchRate = results.length > 0 ? matchCount / results.length : 0;
+
+  const avgConfidence = results.length > 0
+    ? results.reduce((sum, r) => sum + (r.confidence || 0), 0) / results.length
+    : 0;
+
+  const switchingReasons = {};
+  results.forEach((r) => {
+    const reason = r.switchingReason || "no_switch";
+    switchingReasons[reason] = (switchingReasons[reason] || 0) + 1;
+  });
+
+  return {
+    status: "evaluated",
+    totalDecisions: results.length,
+    matchCount,
+    matchRate: (matchRate * 100).toFixed(1) + "%",
+    avgConfidence: (avgConfidence * 100).toFixed(1) + "%",
+    switchingReasons,
+    results
   };
 }

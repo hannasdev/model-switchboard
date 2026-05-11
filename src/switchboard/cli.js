@@ -67,6 +67,7 @@ function printHumanExplain(explanation, stdout) {
   const routingDecision = explanation.routerEvidence?.routingDecision || explanation.routingDecision;
   const claudeSelected = explanation.claudeEvidence?.selectedClaude || explanation.selectedClaude;
   const claudeExecution = explanation.claudeEvidence?.execution || explanation.execution;
+  const reasoning = explanation.reasoning;
 
   stdout.write(`${explanation.wrapperContext?.text || "Switchboard: no wrapper context"}\n`);
   stdout.write(`Thread: ${explanation.threadId || "unknown"}\n`);
@@ -81,7 +82,40 @@ function printHumanExplain(explanation, stdout) {
   if (claudeExecution?.status) {
     stdout.write(`Claude execution: ${claudeExecution.status}\n`);
   }
-  stdout.write(`Route context: ${explanation.routeContext.status}\n`);
+
+  // NEW: Decision Reasoning Section
+  if (reasoning) {
+    stdout.write(`\nDecision Reasoning:\n`);
+    stdout.write(`  Task: ${reasoning.taskType || "unknown"}\n`);
+    if (reasoning.requiredCapabilities && reasoning.requiredCapabilities.length > 0) {
+      stdout.write(`  Required: ${reasoning.requiredCapabilities.join(", ")}\n`);
+    }
+    
+    // Constraint evaluation
+    const hardConstraints = reasoning.hardConstraintEvaluation || {};
+    if (Object.keys(hardConstraints).length > 0) {
+      stdout.write(`  Constraints:\n`);
+      for (const [name, constraint] of Object.entries(hardConstraints)) {
+        if (constraint.applied) {
+          const blocks = constraint.blockedTargets?.length > 0 
+            ? ` (blocked: ${constraint.blockedTargets.join(", ")})` 
+            : "";
+          stdout.write(`    - ${name}${blocks}\n`);
+        }
+      }
+    }
+
+    // Continuity
+    if (reasoning.continuityCost) {
+      stdout.write(`  Continuity: ${reasoning.continuityCost.calculated} cost - ${reasoning.continuityCost.reason}\n`);
+    }
+
+    // Confidence and rationale
+    stdout.write(`  Confidence: ${(reasoning.confidence * 100).toFixed(0)}%\n`);
+    stdout.write(`  Rationale: ${reasoning.selectedTargetRationale}\n`);
+  }
+
+  stdout.write(`\nRoute context: ${explanation.routeContext.status}\n`);
   stdout.write(`Hook events: ${explanation.hookEvents.length}\n`);
   for (const event of explanation.hookEvents) {
     const decision = event.permissionDecision ? ` ${event.permissionDecision}` : "";
