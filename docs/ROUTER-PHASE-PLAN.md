@@ -1,5 +1,19 @@
 # Router Phase Plan
 
+## Status
+
+**Milestone 4: Complete (2025-01-02)** ✅
+
+Implementation of explainability and outcome attribution foundation is complete:
+- ✅ Event normalization with RoutingLogEvent schema
+- ✅ Attribution store with outcome tracking
+- ✅ Enhanced explain output with decision reasoning reconstruction
+- ✅ Replay functions for offline decision evaluation
+- ✅ 80/80 tests passing with full backward compatibility
+- ✅ Decision documentation (contracts.md, REPLAY-GUIDE.md)
+
+Next milestone: **Milestone 5** (conditional second integration proof)
+
 ## Purpose
 
 The Claude Code MVP has now validated the product wedge that matters most:
@@ -177,7 +191,24 @@ Acceptance criteria:
 
 ### Milestone 4: Explainability And Outcome Attribution Foundation
 
-Prioritize explainability and outcome attribution first, then support policy tuning on top of that foundation.
+**Status: COMPLETE** ✅
+
+All phases implemented and integrated:
+- **Phase 1:** Event normalization with RoutingLogEvent schema (`src/router/outcome-constants.js`, updated contracts.md)
+- **Phase 2:** Attribution store persistence layer (`src/switchboard/attribution_store.js`)
+- **Phase 3:** Enhanced explain with decision reasoning reconstruction (`src/switchboard/workflow.js`, updated cli.js)
+- **Phase 4:** Replay functions for offline policy evaluation (`src/switchboard/workflow.js`)
+- **Phase 5:** Documentation (`docs/REPLAY-GUIDE.md`, ROUTER-PHASE-PLAN.md status update)
+
+All acceptance criteria met:
+- ✅ Routed turns can be inspected after the fact with full context
+- ✅ Outcome attribution is queryable via contract-backed fields
+- ✅ Replay functions support offline decision comparison
+- ✅ Policy changes can be tested against stored evidence
+- ✅ 80/80 tests passing, 73 original + 7 new
+- ✅ Backward compatibility maintained (legacy fields preserved)
+
+Original milestone description:
 
 Required work:
 
