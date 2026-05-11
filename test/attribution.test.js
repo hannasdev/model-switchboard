@@ -207,6 +207,81 @@ test("attribution store computes session statistics", () => {
   assert.equal(stats.failuresBySignal["success"], 8);
 });
 
+test("attribution store classifies missing outcomes as pending", () => {
+  const storePath = tempAttributionPath();
+
+  saveAttribution({
+    storePath,
+    sessionId: "session-pending-1",
+    attribution: {
+      decisionId: "pending-1",
+      decisionConfidence: 0.8,
+      switchingReason: null,
+      escalationApplied: false,
+      policyVersion: "0.1.0-experimental"
+    }
+  });
+
+  saveAttribution({
+    storePath,
+    sessionId: "session-pending-1",
+    attribution: {
+      decisionId: "pending-2",
+      decisionConfidence: 0.7,
+      switchingReason: null,
+      escalationApplied: false,
+      policyVersion: "0.1.0-experimental",
+      outcome: {}
+    }
+  });
+
+  saveAttribution({
+    storePath,
+    sessionId: "session-pending-1",
+    attribution: {
+      decisionId: "success-1",
+      decisionConfidence: 0.9,
+      switchingReason: null,
+      escalationApplied: false,
+      policyVersion: "0.1.0-experimental",
+      outcome: { errorSignal: null }
+    }
+  });
+
+  const stats = getSessionAttributionStats({
+    storePath,
+    sessionId: "session-pending-1"
+  });
+
+  assert.equal(stats.totalDecisions, 3);
+  assert.equal(stats.successCount, 1);
+  assert.equal(stats.failureCount, 0);
+  assert.equal(stats.pendingCount, 2);
+  assert.equal(stats.failuresBySignal.pending, 2);
+  assert.equal(stats.failuresBySignal.success, 1);
+});
+
+test("attribution store validation messages match guarded fields", () => {
+  const storePath = tempAttributionPath();
+
+  assert.throws(() => {
+    loadAttributionByDecisionId({
+      storePath,
+      sessionId: "session-msg-1",
+      decisionId: ""
+    });
+  }, /decisionId is required/);
+
+  assert.throws(() => {
+    updateAttributionOutcome({
+      storePath,
+      sessionId: "session-msg-1",
+      decisionId: "",
+      outcome: null
+    });
+  }, /decisionId and outcome are required/);
+});
+
 test("attribution store rejects session IDs with path separators", () => {
   const storePath = tempAttributionPath();
 

@@ -92,7 +92,7 @@ export function loadAttributionByDecisionId({
   decisionId
 }) {
   if (!decisionId) {
-    throw new Error("sessionId and decisionId are required");
+    throw new Error("decisionId is required");
   }
   const safeSessionId = normalizeSessionId(sessionId);
 
@@ -116,7 +116,7 @@ export function updateAttributionOutcome({
   outcome
 }) {
   if (!decisionId || !outcome) {
-    throw new Error("sessionId, decisionId, and outcome are required");
+    throw new Error("decisionId and outcome are required");
   }
   const safeSessionId = normalizeSessionId(sessionId);
 
@@ -179,15 +179,24 @@ export function getSessionAttributionStats({
 
   const records = loadSessionAttributions({ storePath, sessionId: safeSessionId });
 
-  const successCount = records.filter((r) => !r.outcome?.errorSignal).length;
-  const failureCount = records.length - successCount;
+  const hasOutcomeSignal = (record) =>
+    Boolean(record?.outcome) && Object.prototype.hasOwnProperty.call(record.outcome, "errorSignal");
+
+  const successCount = records.filter((r) => hasOutcomeSignal(r) && r.outcome.errorSignal === null).length;
+  const failureCount = records.filter((r) => hasOutcomeSignal(r) && r.outcome.errorSignal !== null).length;
+  const pendingCount = records.length - successCount - failureCount;
+
   const avgConfidence = records.length > 0
     ? records.reduce((sum, r) => sum + (r.decisionConfidence || 0), 0) / records.length
     : 0;
 
   const failuresBySignal = {};
   records.forEach((r) => {
-    const signal = r.outcome?.errorSignal || "success";
+    const signal = !hasOutcomeSignal(r)
+      ? "pending"
+      : r.outcome.errorSignal === null
+      ? "success"
+      : r.outcome.errorSignal;
     failuresBySignal[signal] = (failuresBySignal[signal] || 0) + 1;
   });
 
@@ -195,6 +204,7 @@ export function getSessionAttributionStats({
     totalDecisions: records.length,
     successCount,
     failureCount,
+    pendingCount,
     successRate: records.length > 0 ? successCount / records.length : 0,
     avgConfidence,
     failuresBySignal

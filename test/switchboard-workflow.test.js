@@ -10,7 +10,8 @@ import {
   executeSwitchboardTurn,
   explainLatestSwitchboardTurn,
   planSwitchboardContinuityProbe,
-  planSwitchboardTurn
+  planSwitchboardTurn,
+  replayRoutingDecision
 } from "../src/switchboard/workflow.js";
 
 function tempPaths() {
@@ -255,6 +256,58 @@ test("Live Switchboard continuity probe captures execution evidence", () => {
   assert.equal(entries[0].executionMode, "live");
   assert.equal(entries[0].execution.status, "executed");
   assert.equal(entries[1].execution.stdoutPreview, "{\"result\":\"switchboard-continuity-2718\"}");
+});
+
+test("Switchboard live failure keeps normalized turn fields internally consistent", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+
+  executeSwitchboardTurn({
+    input: "Fail this run to test attempted turn indexing.",
+    threadId: "thread-turn-consistency",
+    sessionId: "claude-session-turn-consistency",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner() {
+      return {
+        status: 1,
+        signal: null,
+        stdout: "",
+        stderr: "simulated failure",
+        error: { message: "simulated failure" }
+      };
+    }
+  });
+
+  const [entry] = readLog(logPath);
+  assert.equal(entry.turnIndex, 1);
+  assert.equal(entry.sessionState.turnCount, entry.turnIndex);
+  assert.equal(entry.contextPackage.turnIndex, entry.turnIndex);
+});
+
+test("Replay uses recorded attribution policyVersion when decision contract lacks policyVersion", () => {
+  const replayed = replayRoutingDecision({
+    evidence: {
+      ts: "2026-05-11T00:00:00.000Z",
+      sessionId: "session-policy-version",
+      threadId: "thread-policy-version",
+      turnIndex: 3,
+      routingDecision: {
+        selectedTargetId: "anthropic-coder"
+      },
+      attribution: {
+        decisionId: "decision-policy-version",
+        policyVersion: "0.1.0-experimental",
+        decisionConfidence: 0.9,
+        switchingReason: null
+      }
+    },
+    policyVersion: "0.1.0-experimental"
+  });
+
+  assert.equal(replayed.originalPolicyVersion, "0.1.0-experimental");
+  assert.equal(replayed.matches, true);
 });
 
 test("Switchboard interactive turns preserve Claude continuity without prompt args", () => {

@@ -564,19 +564,23 @@ function buildSwitchboardTurn({
       ? saveThreadSession({ storePath, threadId, session: nextSession })
       : null;
 
-  const currentTurnCount = Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0);
+  const attemptedTurnCount =
+    effectivePlan.status === "planned"
+      ? Number(routeSession.turnCount || 0) + 1
+      : Number(routeSession.turnCount || 0);
+
   const currentSessionState = buildSessionState({
     threadId,
     claudeSessionId,
     routeSession,
     routeDecision,
     selectedClaude,
-    turnCount: currentTurnCount
+    turnCount: attemptedTurnCount
   });
   const currentContextPackage = buildContextPackage({
     threadId,
     claudeSessionId,
-    turnCount: currentTurnCount,
+    turnCount: attemptedTurnCount,
     routeDecision,
     selectedClaude,
     wrapperContext
@@ -589,11 +593,6 @@ function buildSwitchboardTurn({
       : executionResult?.exitCode === 0
       ? EXECUTION_STATUS.EXECUTED
       : EXECUTION_STATUS.FAILED;
-
-  const attemptedTurnCount =
-    effectivePlan.status === "planned"
-      ? Number(routeSession.turnCount || 0) + 1
-      : Number(routeSession.turnCount || 0);
 
   const normalizedEvent = normalizeRoutingLogEvent({
     ts: new Date().toISOString(),
@@ -995,13 +994,11 @@ export function loadSessionEvidence({ logPath = DEFAULT_SWITCHBOARD_LOG_PATH, se
  * Useful for testing if a new policy would make different decisions.
  * @param {object} params
  * @param {object} params.evidence - a routing log event
- * @param {array} params.targets - target registry
  * @param {string} params.policyVersion - policy version identifier
  * @returns {object} - comparison of original vs replayed decision
  */
 export function replayRoutingDecision({
   evidence,
-  targets = readJson(ANTHROPIC_TARGETS_PATH).targets,
   policyVersion = POLICY_VERSION
 }) {
   const routingDecision = evidence?.routingDecision || evidence?.legacy?.router?.routingDecision || null;
@@ -1025,7 +1022,7 @@ export function replayRoutingDecision({
     originalSelectedTargetId: originalSelectedId,
     originalDecisionId: evidence.attribution?.decisionId || null,
     currentPolicyVersion: policyVersion,
-    originalPolicyVersion: originalDecision.policyVersion,
+    originalPolicyVersion: evidence.attribution?.policyVersion ?? originalDecision.policyVersion ?? null,
     matches,
     confidence: evidence.attribution?.decisionConfidence ?? 0.5,
     switchingReason: evidence.attribution?.switchingReason || null,
