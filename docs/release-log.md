@@ -6,7 +6,7 @@
 - Why it matters: Completes the Milestone 3 control-plane boundary by making Claude a cleaner consumer of router outputs and by preserving stable fields for explain, replay, and hook correlation.
 - Who is affected: Switchboard maintainers and contributors working on explainability, replay, and future non-Claude integrations.
 - Action needed: None.
-- PR: pending
+- PR: https://github.com/hannasdev/model-switchboard/pull/18
 
 ### 2026-05-11 — Close Milestone 2 with explicit session-controller boundary
 
