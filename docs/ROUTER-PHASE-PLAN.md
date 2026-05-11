@@ -154,6 +154,10 @@ Acceptance criteria:
 
 ### Milestone 3: Claude Workflow On Router Boundary
 
+Status: complete (2026-05-11)
+
+Decision record: see `DEC-2026-05-11-milestone-3-claude-workflow-boundary-closeout` in `docs/decision-log.md`.
+
 Refit the existing Claude workflow so it consumes the router as a client integration rather than embedding router assumptions directly.
 
 Required work:

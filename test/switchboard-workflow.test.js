@@ -8,6 +8,7 @@ import {
   executeSwitchboardContinuityProbe,
   executeSwitchboardInteractiveContinuityProbe,
   executeSwitchboardTurn,
+  explainLatestSwitchboardTurn,
   planSwitchboardContinuityProbe,
   planSwitchboardTurn
 } from "../src/switchboard/workflow.js";
@@ -44,6 +45,8 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(result.routeDecision.modeResolution.resolvedMode, "implement");
   assert.equal(result.routeDecision.policyInputs.hardConstraints.privacy, "off");
   assert.deepEqual(result.routeDecision.escalationPolicy?.reasons, []);
+  assert.equal(result.routingDecision.status, "ok");
+  assert.equal(result.routingDecision.selectedTargetId, "anthropic-coder");
   assert.equal(result.selectedClaude.model, "sonnet");
   assert.equal(result.selectedClaude.effort, "high");
   assert.equal(result.selectedClaude.sessionId, "claude-session-1");
@@ -54,6 +57,11 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   const [entry] = readLog(logPath);
   assert.equal(entry.source, "switchboard_wrapper");
   assert.equal(entry.userPrompt, "Implement the plan.");
+  assert.equal(entry.router.routingDecision.status, "ok");
+  assert.equal(entry.router.routeDecision.label, "best coder");
+  assert.equal(entry.router.sessionState.sessionId, "claude-session-1");
+  assert.equal(entry.router.contextPackage.routeLabel, "best coder");
+  assert.equal(entry.claude.selectedClaude.model, "sonnet");
   assert.equal(entry.wrapperContext.kind, "switchboard_context");
   assert.equal(entry.routeDecision.label, "best coder");
   assert.deepEqual(entry.routeDecision.escalationPolicy?.reasons, []);
@@ -64,6 +72,37 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(routeContext["claude-session-1"].latest.threadId, "thread-1");
   assert.equal(routeContext["claude-session-1"].latest.routeLabel, "best coder");
   assert.equal(routeContext["claude-session-1"].latest.model, "sonnet");
+  assert.equal(routeContext["claude-session-1"].latest.sessionState.sessionId, "claude-session-1");
+  assert.equal(routeContext["claude-session-1"].latest.routingDecision.status, "ok");
+  assert.equal(routeContext["claude-session-1"].latest.contextPackage.routeLabel, "best coder");
+  assert.equal(routeContext["claude-session-1"].latest.claudeExecution.model, "sonnet");
+});
+
+test("Switchboard explain returns contract-backed router and Claude evidence", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+  planSwitchboardTurn({
+    input: "Implement the plan.",
+    threadId: "thread-explain-contract",
+    sessionId: "claude-session-explain-contract",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath
+  });
+
+  const explanation = explainLatestSwitchboardTurn({
+    logPath,
+    routeContextPath,
+    threadId: "thread-explain-contract"
+  });
+
+  assert.equal(explanation.status, "found");
+  assert.equal(explanation.routerEvidence.routingDecision.status, "ok");
+  assert.equal(explanation.routerEvidence.routeDecision.label, "best coder");
+  assert.equal(explanation.claudeEvidence.selectedClaude.model, "sonnet");
+  assert.equal(explanation.routeContext.status, "matched");
+  assert.equal(explanation.routeContext.sessionState.sessionId, "claude-session-explain-contract");
+  assert.equal(explanation.routeContext.contextPackage.routeLabel, "best coder");
 });
 
 test("Switchboard logs escalation policy details for escalated turns", () => {

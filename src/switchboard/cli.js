@@ -63,14 +63,23 @@ function printHumanExplain(explanation, stdout) {
     return;
   }
 
+  const routerDecision = explanation.routerEvidence?.routeDecision || explanation.routeDecision;
+  const routingDecision = explanation.routerEvidence?.routingDecision || explanation.routingDecision;
+  const claudeSelected = explanation.claudeEvidence?.selectedClaude || explanation.selectedClaude;
+  const claudeExecution = explanation.claudeEvidence?.execution || explanation.execution;
+
   stdout.write(`${explanation.wrapperContext?.text || "Switchboard: no wrapper context"}\n`);
   stdout.write(`Thread: ${explanation.threadId || "unknown"}\n`);
-  stdout.write(`Claude session: ${explanation.selectedClaude?.sessionId || "unknown"}\n`);
-  stdout.write(`Claude target: ${explanation.selectedClaude?.model || "unknown"}/${explanation.selectedClaude?.effort || "unknown"}\n`);
-  stdout.write(`Route: ${explanation.routeDecision?.label || "unknown"} (${explanation.routeDecision?.mode || "unknown"})\n`);
-  const escalation = explanation.routeDecision?.escalationPolicy;
+  stdout.write(`Claude session: ${claudeSelected?.sessionId || "unknown"}\n`);
+  stdout.write(`Claude target: ${claudeSelected?.model || "unknown"}/${claudeSelected?.effort || "unknown"}\n`);
+  stdout.write(`Router route: ${routerDecision?.label || "unknown"} (${routerDecision?.mode || "unknown"})\n`);
+  stdout.write(`Router status: ${routingDecision?.status || routerDecision?.status || "unknown"}\n`);
+  const escalation = routerDecision?.escalationPolicy;
   if (escalation?.applied && Array.isArray(escalation.reasons) && escalation.reasons.length > 0) {
     stdout.write(`Escalation: ${escalation.reasons.join(",")}\n`);
+  }
+  if (claudeExecution?.status) {
+    stdout.write(`Claude execution: ${claudeExecution.status}\n`);
   }
   stdout.write(`Route context: ${explanation.routeContext.status}\n`);
   stdout.write(`Hook events: ${explanation.hookEvents.length}\n`);

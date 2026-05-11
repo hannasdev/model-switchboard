@@ -19,6 +19,59 @@ function writeStore(storePath, store) {
 	fs.writeFileSync(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
 
+function deriveLegacyTurnFields(context = {}) {
+	const sessionState = context.sessionState || null;
+	const routingDecision = context.routingDecision || null;
+	const contextPackage = context.contextPackage || null;
+	const claudeExecution = context.claudeExecution || null;
+
+	return {
+		threadId:
+			context.threadId ||
+			sessionState?.threadId ||
+			contextPackage?.threadId ||
+			null,
+		turnCount:
+			context.turnCount ??
+			sessionState?.turnCount ??
+			contextPackage?.turnIndex ??
+			null,
+		routeLabel:
+			context.routeLabel ||
+			contextPackage?.routeLabel ||
+			routingDecision?.selectedTarget?.label ||
+			null,
+		targetId:
+			context.targetId ||
+			contextPackage?.targetId ||
+			routingDecision?.selectedTarget?.id ||
+			sessionState?.currentTargetId ||
+			null,
+		model:
+			context.model ||
+			claudeExecution?.model ||
+			null,
+		effort:
+			context.effort ||
+			claudeExecution?.effort ||
+			null,
+		mode:
+			context.mode ||
+			routingDecision?.mode ||
+			sessionState?.mode ||
+			contextPackage?.mode ||
+			null,
+		executionMode:
+			context.executionMode ||
+			claudeExecution?.executionMode ||
+			null,
+		wrapperContext:
+			context.wrapperContext ||
+			contextPackage?.wrapperContext ||
+			null
+	};
+}
+
 export function saveRouteContext({
 	storePath = DEFAULT_ROUTE_CONTEXT_PATH,
 	context
@@ -30,17 +83,22 @@ export function saveRouteContext({
 
 	const store = readStore(storePath);
 	const existing = store[sessionId] || { turns: [] };
+	const legacy = deriveLegacyTurnFields(context);
 	const turn = {
-		threadId: context.threadId || null,
+		threadId: legacy.threadId,
 		claudeSessionId: sessionId,
-		turnCount: context.turnCount ?? null,
-		routeLabel: context.routeLabel || null,
-		targetId: context.targetId || null,
-		model: context.model || null,
-		effort: context.effort || null,
-		mode: context.mode || null,
-		executionMode: context.executionMode || null,
-		wrapperContext: context.wrapperContext || null,
+		turnCount: legacy.turnCount,
+		routeLabel: legacy.routeLabel,
+		targetId: legacy.targetId,
+		model: legacy.model,
+		effort: legacy.effort,
+		mode: legacy.mode,
+		executionMode: legacy.executionMode,
+		wrapperContext: legacy.wrapperContext,
+		sessionState: context.sessionState || null,
+		routingDecision: context.routingDecision || null,
+		contextPackage: context.contextPackage || null,
+		claudeExecution: context.claudeExecution || null,
 		updatedAt: new Date().toISOString()
 	};
 

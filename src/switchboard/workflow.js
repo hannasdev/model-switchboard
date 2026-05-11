@@ -90,6 +90,72 @@ function routeDecisionSummary(plan) {
   };
 }
 
+function routingDecisionContract(plan) {
+  if (!plan?.route) {
+    return {
+      status: plan?.status || "failed",
+      refusalReason: plan?.reason || null
+    };
+  }
+
+  return {
+    ...plan.route,
+    selectedTargetId: plan.route.selectedTarget?.id || null,
+    hardConstraintResults: {
+      eligibleTargetIds: [],
+      blocked: plan.route.blocked || []
+    },
+    refusalReason: plan.route.status === "refused" ? plan.route.reason || plan.route.explanation || null : null
+  };
+}
+
+function buildSessionState({
+  threadId,
+  claudeSessionId,
+  routeSession,
+  routeDecision,
+  selectedClaude,
+  turnCount
+}) {
+  return {
+    schemaVersion: "0.1.0-experimental",
+    sessionId: claudeSessionId,
+    threadId,
+    mode: routeDecision?.mode || routeSession?.mode || "plan",
+    currentTargetId: selectedClaude?.targetId || routeSession?.currentTargetId || null,
+    turnCount,
+    routingOverride: routeSession?.routingOverride || "auto",
+    riskLevel: routeSession?.riskLevel || null,
+    failureSignals: {
+      recentToolFailures: Number(routeSession?.failureSignals?.recentToolFailures || 0),
+      recentTestFailures: Number(routeSession?.failureSignals?.recentTestFailures || 0)
+    },
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function buildContextPackage({
+  threadId,
+  claudeSessionId,
+  turnCount,
+  routeDecision,
+  selectedClaude,
+  wrapperContext
+}) {
+  return {
+    schemaVersion: "0.1.0-experimental",
+    sessionId: claudeSessionId,
+    threadId,
+    turnIndex: turnCount,
+    routeLabel: routeDecision?.label || selectedClaude?.label || null,
+    targetId: selectedClaude?.targetId || routeDecision?.targetId || null,
+    mode: routeDecision?.mode || null,
+    wrapperContext: wrapperContext || null,
+    handoffSummary: null,
+    createdAt: new Date().toISOString()
+  };
+}
+
 function selectedClaudeSummary(plan) {
   if (plan.status !== "planned") return null;
   return {
@@ -146,13 +212,33 @@ function persistRouteContext({
   routeContextPath,
   threadId,
   claudeSessionId,
+  routeSession,
   turnCount,
   routeDecision,
+  routingDecision,
   selectedClaude,
   executionMode,
   wrapperContext
 }) {
   if (!selectedClaude) return null;
+
+  const sessionState = buildSessionState({
+    threadId,
+    claudeSessionId,
+    routeSession,
+    routeDecision,
+    selectedClaude,
+    turnCount
+  });
+  const contextPackage = buildContextPackage({
+    threadId,
+    claudeSessionId,
+    turnCount,
+    routeDecision,
+    selectedClaude,
+    wrapperContext
+  });
+
   return saveRouteContext({
     storePath: routeContextPath,
     context: {
@@ -165,7 +251,18 @@ function persistRouteContext({
       effort: selectedClaude.effort,
       mode: routeDecision.mode,
       executionMode,
-      wrapperContext
+      wrapperContext,
+      sessionState,
+      routingDecision,
+      contextPackage,
+      claudeExecution: {
+        executionMode,
+        model: selectedClaude.model,
+        effort: selectedClaude.effort,
+        targetId: selectedClaude.targetId,
+        sessionId: selectedClaude.sessionId,
+        commandPreview: selectedClaude.commandPreview
+      }
     }
   });
 }
@@ -217,6 +314,7 @@ function buildSwitchboardTurn({
   let recoveredFromResumeRetry = false;
   const wrapperContext = buildWrapperContext(plan);
   const routeDecision = routeDecisionSummary(plan);
+  const routingDecision = routingDecisionContract(plan);
   // plannedSelectedClaude reflects the pre-execution plan (before any stale-resume retry).
   // It is used for route-context persistence so the context always records what was planned,
   // while selectedClaude (computed after retry resolution) reflects what actually ran.
@@ -227,8 +325,10 @@ function buildSwitchboardTurn({
     routeContextPath,
     threadId,
     claudeSessionId,
+    routeSession,
     turnCount: plannedTurnCount,
     routeDecision,
+    routingDecision,
     selectedClaude: plannedSelectedClaude,
     executionMode: execute ? "live" : "planned",
     wrapperContext
@@ -292,6 +392,35 @@ function buildSwitchboardTurn({
     threadId,
     executionMode: execute ? "live" : "planned",
     userPrompt: input,
+    router: {
+      routingDecision,
+      routeDecision,
+      sessionState: buildSessionState({
+        threadId,
+        claudeSessionId,
+        routeSession,
+        routeDecision,
+        selectedClaude,
+        turnCount: Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0)
+      }),
+      contextPackage: buildContextPackage({
+        threadId,
+        claudeSessionId,
+        turnCount: Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0),
+        routeDecision,
+        selectedClaude,
+        wrapperContext
+      })
+    },
+    claude: {
+      selectedClaude,
+      execution: executionResult,
+      launch: {
+        resume: Boolean(effectivePlan.resume),
+        interactive: Boolean(effectivePlan.interactive),
+        commandPreview: effectivePlan.commandPreview || null
+      }
+    },
     wrapperContext,
     routeDecision,
     selectedClaude,
@@ -316,6 +445,7 @@ function buildSwitchboardTurn({
     userPrompt: input,
     wrapperContext,
     routeDecision,
+    routingDecision,
     selectedClaude,
     execution: executionResult,
     claudePlan: effectivePlan,
@@ -521,12 +651,27 @@ export function explainLatestSwitchboardTurn({
     ? readNdjson(hookLogPath).filter((entry) => entry.sessionId === claudeSessionId)
     : [];
 
+  const routerEvidence = latest.router || {
+    routingDecision: latest.routingDecision || latest.routeDecision || null,
+    routeDecision: latest.routeDecision || null,
+    sessionState: null,
+    contextPackage: null
+  };
+  const claudeEvidence = latest.claude || {
+    selectedClaude: latest.selectedClaude || null,
+    execution: latest.execution || null,
+    launch: null
+  };
+
   return {
     status: "found",
     threadId: latest.threadId || null,
     userPrompt: latest.userPrompt || null,
     wrapperContext: latest.wrapperContext || null,
+    routerEvidence,
+    claudeEvidence,
     routeDecision: latest.routeDecision || null,
+    routingDecision: routerEvidence.routingDecision || null,
     selectedClaude: latest.selectedClaude || null,
     execution: latest.execution || null,
     session: latest.session || null,
@@ -534,6 +679,9 @@ export function explainLatestSwitchboardTurn({
       ? {
           status: "matched",
           latest: routeContext.latest || null,
+          sessionState: routeContext.latest?.sessionState || null,
+          routingDecision: routeContext.latest?.routingDecision || null,
+          contextPackage: routeContext.latest?.contextPackage || null,
           turnCount: routeContext.turns?.length || 0
         }
       : {

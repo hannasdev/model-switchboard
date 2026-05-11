@@ -1,5 +1,13 @@
 ## Unreleased
 
+### 2026-05-11 — Close Milestone 3 with contract-backed Claude workflow evidence
+
+- What changed: Refit the Claude workflow so route-context persistence and explain output now carry contract-backed router decision, session state, and context-package evidence while separating router and Claude execution data.
+- Why it matters: Completes the Milestone 3 control-plane boundary by making Claude a cleaner consumer of router outputs and by preserving stable fields for explain, replay, and hook correlation.
+- Who is affected: Switchboard maintainers and contributors working on explainability, replay, and future non-Claude integrations.
+- Action needed: None.
+- PR: pending
+
 ### 2026-05-11 — Close Milestone 2 with explicit session-controller boundary
 
 - What changed: Extracted deterministic session mode-transition ownership into a dedicated controller module, wired router mode resolution through that boundary, and added focused transition tests while preserving existing routing behavior.

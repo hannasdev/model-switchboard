@@ -48,12 +48,16 @@ function routeContextText(routeResult) {
 function correlatedRouteContextText(correlation) {
 	const latest = correlation.context?.latest;
 	if (!latest) return null;
+	const contextPackage = latest.contextPackage || null;
+	const claudeExecution = latest.claudeExecution || null;
 	return [
 		"Switchboard wrapper route for this Claude Code session:",
-		`Thread: ${latest.threadId || "unknown"}`,
-		`Target label: ${latest.routeLabel || "unknown"}`,
-		`Claude model/effort: ${latest.model || "unknown"}/${latest.effort || "unknown"}`,
-		latest.wrapperContext?.text ? `Summary: ${latest.wrapperContext.text}` : null
+		`Thread: ${latest.threadId || contextPackage?.threadId || "unknown"}`,
+		`Target label: ${latest.routeLabel || contextPackage?.routeLabel || "unknown"}`,
+		`Claude model/effort: ${latest.model || claudeExecution?.model || "unknown"}/${latest.effort || claudeExecution?.effort || "unknown"}`,
+		(latest.wrapperContext?.text || contextPackage?.wrapperContext?.text)
+			? `Summary: ${latest.wrapperContext?.text || contextPackage?.wrapperContext?.text}`
+			: null
 	].filter(Boolean).join("\n");
 }
 

@@ -326,6 +326,8 @@ Current workflow signals in the switchboard implementation map as follows:
 * current route mode -> `SessionState.mode`
 * `routingOverride` -> `SessionState.routingOverride`
 
+Current workflow persistence now records a contract-backed `sessionState` object alongside compatibility fields in route-context storage.
+
 ### A.2 Target Mapping
 
 Current route labels map to target classes in the Claude integration:
@@ -346,6 +348,8 @@ Current continuity semantics are:
 
 These semantics belong to workflow execution behavior, not router decision semantics.
 
+Current workflow evidence now separates router-decision data from Claude execution data in wrapper logs while preserving continuity semantics and stale-resume recovery behavior.
+
 ### A.4 Hook Correlation Mapping
 
 Current hook evidence maps to `RoutingLogEvent.correlation`:
@@ -355,6 +359,8 @@ Current hook evidence maps to `RoutingLogEvent.correlation`:
 * hook event identity -> `hookEventId`
 
 Hook timing and correlation quality remain surface-specific and should not be treated as universal across clients.
+
+Current route-context persistence also records a contract-backed `ContextPackage` and `claudeExecution` block so hook correlation can consume stable handoff fields without depending only on legacy flat fields.
 
 ## Appendix B: Open Questions
 
