@@ -138,7 +138,7 @@ enum SuccessSignal {
 
 **Storage:**
 - New file: `src/switchboard/attribution_store.js`
-- One NDJSON file per session in `~/.switchboard/attributions/{sessionId}.ndjson`
+- One NDJSON file per session in `~/.model-switchboard/attributions/{sessionId}.ndjson`
 - Key by `decisionId` for post-hoc updates
 
 **Implementation:**

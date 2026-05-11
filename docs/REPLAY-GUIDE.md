@@ -15,20 +15,22 @@ The replay system allows you to:
 
 ### 1. Collect Session Evidence
 
-```javascript
+```bash
+node --input-type=module -e "
 import { loadSessionEvidence } from './src/switchboard/workflow.js';
 
 const evidence = loadSessionEvidence({
-  logPath: '/home/user/.switchboard/switchboard.log',
+  logPath: process.env.HOME + '/.model-switchboard/switchboard-turns.ndjson',
   sessionId: 'my-session-123'
 });
 
 console.log(`Loaded ${evidence.length} decisions from session`);
-```
+"
 
 ### 2. Replay a Single Decision
 
-```javascript
+```bash
+node --input-type=module -e "
 import { replayRoutingDecision } from './src/switchboard/workflow.js';
 
 const result = replayRoutingDecision({
@@ -44,11 +46,12 @@ console.log(result);
 //   confidence: 0.92,
 //   ...
 // }
-```
+"
 
 ### 3. Evaluate Policy on Full Session
 
-```javascript
+```bash
+node --input-type=module -e "
 import { evaluatePolicyOnEvidence } from './src/switchboard/workflow.js';
 
 const evaluation = evaluatePolicyOnEvidence({
@@ -66,7 +69,7 @@ console.log(evaluation);
 //   switchingReasons: { null: 10, continuity_cost: 3, escalation: 2 },
 //   ...
 // }
-```
+"
 
 ## Workflow: Test a New Policy
 
@@ -80,10 +83,10 @@ You want to make a routing policy change:
 #### 1. Run current policy on stored evidence
 
 ```bash
-node -e "
-const { loadSessionEvidence, evaluatePolicyOnEvidence } = require('./src/switchboard/workflow.js');
+node --input-type=module -e "
+import { loadSessionEvidence, evaluatePolicyOnEvidence } from './src/switchboard/workflow.js';
 const evidence = loadSessionEvidence({ 
-  logPath: process.env.HOME + '/.switchboard/switchboard.log',
+  logPath: process.env.HOME + '/.model-switchboard/switchboard-turns.ndjson',
   sessionId: 'my-session-123'
 });
 const baseline = evaluatePolicyOnEvidence({
@@ -101,10 +104,10 @@ Edit `src/router/router.js` or `src/router/session_controller.js` to change the 
 #### 3. Re-evaluate with new policy
 
 ```bash
-node -e "
-const { loadSessionEvidence, replayRoutingDecision } = require('./src/switchboard/workflow.js');
+node --input-type=module -e "
+import { loadSessionEvidence, replayRoutingDecision } from './src/switchboard/workflow.js';
 const evidence = loadSessionEvidence({ 
-  logPath: process.env.HOME + '/.switchboard/switchboard.log',
+  logPath: process.env.HOME + '/.model-switchboard/switchboard-turns.ndjson',
   sessionId: 'my-session-123'
 });
 const newPolicyResults = evidence.map(e => replayRoutingDecision({ evidence: e, policyVersion: '0.2.0' }));
@@ -228,7 +231,7 @@ Future enhancements:
 ### No evidence found for session ID
 
 - Verify the session ID matches what's in your logs
-- Check log file path is correct: `ls -la ~/.switchboard/switchboard.log`
+- Check log file path is correct: `ls -la ~/.model-switchboard/switchboard-turns.ndjson`
 - Ensure the session has run at least one turn
 
 ### All decisions marked as mismatch

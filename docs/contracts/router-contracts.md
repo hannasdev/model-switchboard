@@ -400,8 +400,8 @@ Routed decisions are tracked with minimal outcome signals to support policy eval
 The normalized event structure enables offline policy evaluation against stored evidence.
 
 **Storage:**
-- `~/.switchboard/logs/{sessionId}.ndjson` — normalized RoutingLogEvent records
-- `~/.switchboard/attributions/{sessionId}.ndjson` — outcome attribution records (keyed by `decisionId`)
+- `~/.model-switchboard/switchboard-turns.ndjson` — normalized RoutingLogEvent records
+- `~/.model-switchboard/attributions/{sessionId}.ndjson` — outcome attribution records (keyed by `decisionId`)
 - `test/fixtures/sessions/` — recorded evidence sets for regression testing
 - `test/fixtures/policies/` — named policy configurations for comparison
 

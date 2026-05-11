@@ -14,7 +14,7 @@
   - New replay functions (loadSessionEvidence, replayRoutingDecision, evaluatePolicyOnEvidence) support offline decision evaluation.
   - Backward compatible: all new fields coexist with legacy evidence shape.
 - Tests: 80/80 passing (73 original + 7 new attribution tests, 0 regressions).
-- PR: https://github.com/hannasdev/model-switchboard/pull/TBD
+- PR: https://github.com/hannasdev/model-switchboard/pull/19
 
 ### 2026-05-11 — Close Milestone 3 with contract-backed Claude workflow evidence
 

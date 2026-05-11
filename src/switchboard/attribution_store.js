@@ -7,21 +7,9 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
+import { DEFAULT_SWITCHBOARD_STATE_DIR } from "./paths.js";
 
-export const DEFAULT_ATTRIBUTIONS_PATH = path.join(os.homedir(), ".switchboard", "attributions");
-
-function readStore(storePath) {
-  if (!fs.existsSync(storePath)) {
-    return {};
-  }
-  return JSON.parse(fs.readFileSync(storePath, "utf8"));
-}
-
-function writeStore(storePath, store) {
-  fs.mkdirSync(path.dirname(storePath), { recursive: true });
-  fs.writeFileSync(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
-}
+export const DEFAULT_ATTRIBUTIONS_PATH = path.join(DEFAULT_SWITCHBOARD_STATE_DIR, "attributions");
 
 function readNdjson(filePath) {
   if (!fs.existsSync(filePath)) return [];

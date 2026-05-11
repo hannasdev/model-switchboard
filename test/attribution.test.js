@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { randomUUID } from "node:crypto";
 import {
   saveAttribution,
   loadSessionAttributions,
@@ -14,7 +15,7 @@ import {
 import { planSwitchboardTurn } from "../src/switchboard/workflow.js";
 
 function tempAttributionPath() {
-  return path.join(os.tmpdir(), `switchboard-attribution-test-${Date.now()}`);
+  return path.join(os.tmpdir(), `switchboard-attribution-test-${process.pid}-${randomUUID()}`);
 }
 
 test("attribution store saves and loads attributions by sessionId", () => {
