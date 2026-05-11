@@ -125,6 +125,7 @@ test("switchboard explain summarizes latest route context and hook events", () =
   assert.equal(exitCode, 0);
   assert.match(explainIo.stdoutText, /Router route: best coder/);
   assert.match(explainIo.stdoutText, /Router status: ok/);
+  assert.match(explainIo.stdoutText, /Decision Reasoning:/);
   assert.match(explainIo.stdoutText, /Escalation: .*user_correction/);
   assert.match(explainIo.stdoutText, /Route context: matched/);
   assert.match(explainIo.stdoutText, /Hook events: 1/);
