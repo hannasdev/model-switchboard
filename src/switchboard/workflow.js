@@ -262,32 +262,34 @@ function reconstructReasoning(routeDecision, routingDecision, wrapperContext) {
   const policyInputs = routeDecision.policyInputs || {};
   const hardConstraints = policyInputs.hardConstraints || {};
   const softConstraints = policyInputs.softConstraints || {};
+  const blockedEntries = routingDecision.hardConstraintResults?.blocked || [];
+  const blockedTargetsByReason = (reasonMatcher) =>
+    blockedEntries
+      .filter((blockedEntry) =>
+        (blockedEntry.constraintReasons || []).some((reasonCode) => reasonMatcher(reasonCode))
+      )
+      .map((blockedEntry) => blockedEntry.targetId);
 
   // Build constraint evaluation
   const hardConstraintEvaluation = {
     privacy: {
       applied: hardConstraints.privacy !== "off",
       reason: `Privacy: ${hardConstraints.privacy || "not set"}`,
-      blockedTargets:
-        routingDecision.hardConstraintResults?.blocked
-          ?.filter((b) => b.constraintReasons?.includes("privacy"))
-          ?.map((b) => b.targetId) || []
+      blockedTargets: blockedTargetsByReason((reasonCode) => reasonCode.startsWith("privacy_"))
     },
     availability: {
       applied: hardConstraints.availability !== "off",
       reason: `Availability: ${hardConstraints.availability || "not set"}`,
-      blockedTargets:
-        routingDecision.hardConstraintResults?.blocked
-          ?.filter((b) => b.constraintReasons?.includes("availability"))
-          ?.map((b) => b.targetId) || []
+      blockedTargets: blockedTargetsByReason(
+        (reasonCode) => reasonCode === "target_unavailable" || reasonCode.includes("availability")
+      )
     },
     clientCompatibility: {
       applied: hardConstraints.clientCompatibility !== "off",
       reason: `Client compatibility: ${hardConstraints.clientCompatibility || "not set"}`,
-      blockedTargets:
-        routingDecision.hardConstraintResults?.blocked
-          ?.filter((b) => b.constraintReasons?.includes("client"))
-          ?.map((b) => b.targetId) || []
+      blockedTargets: blockedTargetsByReason(
+        (reasonCode) => reasonCode === "client_surface_incompatible" || reasonCode.startsWith("client_")
+      )
     }
   };
 
@@ -582,16 +584,23 @@ function buildSwitchboardTurn({
 
   const executionStatus = !execute
     ? EXECUTION_STATUS.PLANNED
-    : executionResult?.exitCode === 0
+    : effectivePlan.status !== "planned" || !executionResult
+      ? EXECUTION_STATUS.PLANNED
+      : executionResult?.exitCode === 0
       ? EXECUTION_STATUS.EXECUTED
       : EXECUTION_STATUS.FAILED;
+
+  const attemptedTurnCount =
+    effectivePlan.status === "planned"
+      ? Number(routeSession.turnCount || 0) + 1
+      : Number(routeSession.turnCount || 0);
 
   const normalizedEvent = normalizeRoutingLogEvent({
     ts: new Date().toISOString(),
     source: "switchboard_wrapper",
     sessionId: claudeSessionId,
     threadId,
-    turnIndex: currentTurnCount,
+    turnIndex: attemptedTurnCount,
     userPrompt: input,
     sessionState: currentSessionState,
     routingDecision,
@@ -606,7 +615,7 @@ function buildSwitchboardTurn({
       decisionId: generateDecisionId({
         sessionId: claudeSessionId,
         threadId,
-        turnCount: currentTurnCount
+        turnCount: attemptedTurnCount
       }),
       decisionConfidence: routeDecision?.confidence ?? 0.5,
       switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId || null),
@@ -896,19 +905,35 @@ export function explainLatestSwitchboardTurn({
     : [];
 
   const routerEvidence = {
-    routingDecision: latest.routingDecision || latest.legacy?.router?.routingDecision || null,
-    routeDecision: latest.routeDecision || latest.legacy?.routeDecision || null,
-    sessionState: latest.sessionState || latest.legacy?.router?.sessionState || null,
-    contextPackage: latest.contextPackage || latest.legacy?.router?.contextPackage || null
+    routingDecision:
+      latest.routingDecision ||
+      latest.router?.routingDecision ||
+      latest.legacy?.router?.routingDecision ||
+      null,
+    routeDecision:
+      latest.routeDecision ||
+      latest.router?.routeDecision ||
+      latest.legacy?.routeDecision ||
+      null,
+    sessionState:
+      latest.sessionState ||
+      latest.router?.sessionState ||
+      latest.legacy?.router?.sessionState ||
+      null,
+    contextPackage:
+      latest.contextPackage ||
+      latest.router?.contextPackage ||
+      latest.legacy?.router?.contextPackage ||
+      null
   };
-  const claudeEvidence = latest.legacy?.claude || {
+  const claudeEvidence = latest.claude || latest.legacy?.claude || {
     selectedClaude: latest.selectedClaude || null,
     execution: latest.execution || null,
     launch: null
   };
 
   const reasoning = reconstructReasoning(
-    latest.routeDecision || latest.legacy?.routeDecision || routerEvidence.routeDecision,
+    latest.routeDecision || latest.router?.routeDecision || latest.legacy?.routeDecision || routerEvidence.routeDecision,
     latest.routingDecision || routerEvidence.routingDecision,
     latest.wrapperContext
   );
@@ -923,8 +948,8 @@ export function explainLatestSwitchboardTurn({
     claudeEvidence,
     routeDecision: latest.routeDecision || null,
     routingDecision: routerEvidence.routingDecision || null,
-    selectedClaude: latest.selectedClaude || null,
-    execution: latest.execution || null,
+    selectedClaude: latest.selectedClaude || latest.claude?.selectedClaude || null,
+    execution: latest.execution || latest.claude?.execution || null,
     session: latest.session || null,
     routeContext: routeContext
       ? {
@@ -1002,7 +1027,7 @@ export function replayRoutingDecision({
     currentPolicyVersion: policyVersion,
     originalPolicyVersion: originalDecision.policyVersion,
     matches,
-    confidence: evidence.attribution?.decisionConfidence || 0.5,
+    confidence: evidence.attribution?.decisionConfidence ?? 0.5,
     switchingReason: evidence.attribution?.switchingReason || null,
     evidence: {
       ts: evidence.ts,

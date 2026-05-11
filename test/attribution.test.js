@@ -207,6 +207,24 @@ test("attribution store computes session statistics", () => {
   assert.equal(stats.failuresBySignal["success"], 8);
 });
 
+test("attribution store rejects session IDs with path separators", () => {
+  const storePath = tempAttributionPath();
+
+  assert.throws(() => {
+    saveAttribution({
+      storePath,
+      sessionId: "../escape-path",
+      attribution: {
+        decisionId: "decision-invalid-session",
+        decisionConfidence: 0.5,
+        switchingReason: null,
+        escalationApplied: false,
+        policyVersion: "0.1.0-experimental"
+      }
+    });
+  }, /sessionId contains invalid characters/);
+});
+
 test("Switchboard turn includes normalized attribution fields in log", () => {
   // Use a test helper like the other switchboard tests do
   const testId = `attribution-norm-${Date.now()}-${Math.random().toString(36).slice(2)}`;

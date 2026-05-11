@@ -11,6 +11,16 @@ import { DEFAULT_SWITCHBOARD_STATE_DIR } from "./paths.js";
 
 export const DEFAULT_ATTRIBUTIONS_PATH = path.join(DEFAULT_SWITCHBOARD_STATE_DIR, "attributions");
 
+function normalizeSessionId(sessionId) {
+  if (!sessionId || typeof sessionId !== "string") {
+    throw new Error("sessionId is required");
+  }
+  if (!/^[A-Za-z0-9._-]+$/.test(sessionId)) {
+    throw new Error("sessionId contains invalid characters; allowed: A-Z a-z 0-9 . _ -");
+  }
+  return sessionId;
+}
+
 function readNdjson(filePath) {
   if (!fs.existsSync(filePath)) return [];
   return fs
@@ -34,14 +44,12 @@ export function saveAttribution({
   sessionId,
   attribution
 }) {
-  if (!sessionId) {
-    throw new Error("sessionId is required for attribution storage");
-  }
+  const safeSessionId = normalizeSessionId(sessionId);
   if (!attribution?.decisionId) {
     throw new Error("attribution.decisionId is required");
   }
 
-  const sessionFilePath = path.join(storePath, `${sessionId}.ndjson`);
+  const sessionFilePath = path.join(storePath, `${safeSessionId}.ndjson`);
   const record = {
     ...attribution,
     savedAt: new Date().toISOString()
@@ -64,11 +72,9 @@ export function loadSessionAttributions({
   storePath = DEFAULT_ATTRIBUTIONS_PATH,
   sessionId
 }) {
-  if (!sessionId) {
-    throw new Error("sessionId is required");
-  }
+  const safeSessionId = normalizeSessionId(sessionId);
 
-  const sessionFilePath = path.join(storePath, `${sessionId}.ndjson`);
+  const sessionFilePath = path.join(storePath, `${safeSessionId}.ndjson`);
   return readNdjson(sessionFilePath);
 }
 
@@ -85,11 +91,12 @@ export function loadAttributionByDecisionId({
   sessionId,
   decisionId
 }) {
-  if (!sessionId || !decisionId) {
+  if (!decisionId) {
     throw new Error("sessionId and decisionId are required");
   }
+  const safeSessionId = normalizeSessionId(sessionId);
 
-  const records = loadSessionAttributions({ storePath, sessionId });
+  const records = loadSessionAttributions({ storePath, sessionId: safeSessionId });
   return records.find((r) => r.decisionId === decisionId) || null;
 }
 
@@ -108,11 +115,12 @@ export function updateAttributionOutcome({
   decisionId,
   outcome
 }) {
-  if (!sessionId || !decisionId || !outcome) {
+  if (!decisionId || !outcome) {
     throw new Error("sessionId, decisionId, and outcome are required");
   }
+  const safeSessionId = normalizeSessionId(sessionId);
 
-  const records = loadSessionAttributions({ storePath, sessionId });
+  const records = loadSessionAttributions({ storePath, sessionId: safeSessionId });
   const index = records.findIndex((r) => r.decisionId === decisionId);
 
   if (index === -1) {
@@ -125,7 +133,7 @@ export function updateAttributionOutcome({
     updatedAt: new Date().toISOString()
   };
 
-  const sessionFilePath = path.join(storePath, `${sessionId}.ndjson`);
+  const sessionFilePath = path.join(storePath, `${safeSessionId}.ndjson`);
   const ndjson = records.map((r) => JSON.stringify(r)).join("\n") + "\n";
   fs.writeFileSync(sessionFilePath, ndjson, "utf8");
 
@@ -146,11 +154,9 @@ export function queryAttributionsByErrorSignal({
   sessionId,
   errorSignal
 }) {
-  if (!sessionId) {
-    throw new Error("sessionId is required");
-  }
+  const safeSessionId = normalizeSessionId(sessionId);
 
-  const records = loadSessionAttributions({ storePath, sessionId });
+  const records = loadSessionAttributions({ storePath, sessionId: safeSessionId });
   if (!errorSignal) {
     return records;
   }
@@ -169,11 +175,9 @@ export function getSessionAttributionStats({
   storePath = DEFAULT_ATTRIBUTIONS_PATH,
   sessionId
 }) {
-  if (!sessionId) {
-    throw new Error("sessionId is required");
-  }
+  const safeSessionId = normalizeSessionId(sessionId);
 
-  const records = loadSessionAttributions({ storePath, sessionId });
+  const records = loadSessionAttributions({ storePath, sessionId: safeSessionId });
 
   const successCount = records.filter((r) => !r.outcome?.errorSignal).length;
   const failureCount = records.length - successCount;

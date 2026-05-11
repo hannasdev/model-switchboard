@@ -81,8 +81,13 @@ export function determineErrorSignal(status, executionResult) {
 
   // Failed execution
   if (status === EXECUTION_STATUS.FAILED) {
+    const errorText = [executionResult?.error, executionResult?.stderrPreview]
+      .filter((value) => typeof value === "string")
+      .join(" ")
+      .toLowerCase();
+
     // Check for specific failure modes if detailed info is available
-    if (executionResult?.error?.message?.includes("auth")) {
+    if (errorText.includes("auth")) {
       return ERROR_SIGNAL.AUTH_FAILURE;
     }
     if (executionResult?.signal === "SIGTERM") {
@@ -134,19 +139,24 @@ export function determineSwitchingReason(routingDecision, previousTargetId) {
     return SWITCHING_REASON.USER_OVERRIDE;
   }
 
+  // Check if previous target was blocked by hard constraints
+  if (routingDecision?.hardConstraintResults?.blocked?.length > 0) {
+    const previousBlockedEntry = routingDecision.hardConstraintResults.blocked.find(
+      (blockedEntry) => blockedEntry.targetId === previousTargetId
+    );
+    if (previousBlockedEntry) {
+      const hasAvailabilityReason = (previousBlockedEntry.constraintReasons || []).some(
+        (reason) => reason === "target_unavailable" || reason.includes("availability")
+      );
+      return hasAvailabilityReason
+        ? SWITCHING_REASON.AVAILABILITY
+        : SWITCHING_REASON.CAPABILITY_GAP;
+    }
+  }
+
   // Check if continuity cost drove the decision
   if (routingDecision?.continuityCost && routingDecision?.continuityCost !== "low") {
     return SWITCHING_REASON.CONTINUITY_COST;
-  }
-
-  // Check if capability gap
-  if (routingDecision?.hardConstraintResults?.blocked?.length > 0) {
-    const previousWasBlocked = routingDecision.hardConstraintResults.blocked.some(
-      (b) => b.targetId === previousTargetId
-    );
-    if (previousWasBlocked) {
-      return SWITCHING_REASON.CAPABILITY_GAP;
-    }
   }
 
   // Default: switching reason not determined
