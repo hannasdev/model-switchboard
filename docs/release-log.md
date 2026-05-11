@@ -1,6 +1,6 @@
 ## Unreleased
 
-### 2025-01-02 — Complete Milestone 4: Explainability and Outcome Attribution Foundation
+### 2026-05-11 — Complete Milestone 4: Explainability and Outcome Attribution Foundation
 
 - What changed: Added contract-backed event normalization (RoutingLogEvent schema), attribution store with outcome tracking, decision reasoning reconstruction in explain output, and replay functions for offline policy evaluation.
 - Why it matters: Establishes stable observability and policy-evaluation infrastructure so Milestone 5 (second-surface proof) can exercise the router boundary without duplicating explainability work. Enables users to test policy changes against recorded evidence without live Claude runs.

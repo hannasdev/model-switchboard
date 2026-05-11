@@ -31,7 +31,12 @@ console.log(`Loaded ${evidence.length} decisions from session`);
 
 ```bash
 node --input-type=module -e "
-import { replayRoutingDecision } from './src/switchboard/workflow.js';
+import { loadSessionEvidence, replayRoutingDecision } from './src/switchboard/workflow.js';
+
+const evidence = loadSessionEvidence({
+  logPath: process.env.HOME + '/.model-switchboard/switchboard-turns.ndjson',
+  sessionId: 'my-session-123'
+});
 
 const result = replayRoutingDecision({
   evidence: evidence[0],
@@ -196,11 +201,11 @@ const fixtures = {
   sessionId: 'test-session-123',
   threadId: 'test-thread-1',
   evidence: [
-    // ... evidence objects from test/fixtures/sessions/...
+    // ... evidence objects loaded from switchboard-turns.ndjson
   ]
 };
 
-// Test a policy against the fixture
+// Test a policy against the loaded evidence
 fixtures.evidence.forEach((e, idx) => {
   const result = replayRoutingDecision({ 
     evidence: e,

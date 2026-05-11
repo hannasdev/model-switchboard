@@ -277,7 +277,7 @@ Verification signal:
 
 Decision:
 - Chosen option: Option B.
-- Scope of commitment: Milestone 4 is formally complete as of 2025-01-02.
+- Scope of commitment: Milestone 4 is formally complete as of 2026-05-11.
 - What remains intentionally deferred: outcome feedback integration (success/failure attribution), statistical policy comparison (A/B testing), Milestone 5 second-surface validation.
 
 Consequences:

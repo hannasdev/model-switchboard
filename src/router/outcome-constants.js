@@ -114,7 +114,7 @@ export function generateDecisionId({ sessionId, threadId, turnCount }) {
 /**
  * Determine switching reason from routing decision.
  * @param {object} routingDecision - the routing decision
- * @param {object} previousTargetId - the previously selected target
+ * @param {string|null} previousTargetId - the previously selected target model ID
  * @returns {string|null} - switching reason
  */
 export function determineSwitchingReason(routingDecision, previousTargetId) {

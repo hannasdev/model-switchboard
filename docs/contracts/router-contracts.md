@@ -402,14 +402,11 @@ The normalized event structure enables offline policy evaluation against stored 
 **Storage:**
 - `~/.model-switchboard/switchboard-turns.ndjson` — normalized RoutingLogEvent records
 - `~/.model-switchboard/attributions/{sessionId}.ndjson` — outcome attribution records (keyed by `decisionId`)
-- `test/fixtures/sessions/` — recorded evidence sets for regression testing
-- `test/fixtures/policies/` — named policy configurations for comparison
 
 **Evaluation Functions:**
 - `loadSessionEvidence(sessionId)` — load all events for a session
-- `replayRoutingDecision(evidence, policy)` — re-evaluate one decision under alternate policy
-- `evaluateSessionPolicy(sessionId, policy)` — batch evaluation across all turns
-- `comparePolicies(evidence, policyA, policyB)` — comparative policy analysis
+- `replayRoutingDecision(evidence, policyVersion)` — re-evaluate one decision under alternate policy
+- `evaluatePolicyOnEvidence(evidenceSet, policyVersion)` — batch evaluation across all turns
 
 ## Appendix B: Open Questions
 
