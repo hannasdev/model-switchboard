@@ -6,57 +6,47 @@ The latest PoC learning is captured in [PoC Outcome Analysis](archive/POC-OUTCOM
 
 This document is still relevant as the scoped MVP product slice and the record of the assumptions that were validated by PoC 2 and the early Switchboard workflow. It is no longer the best source of truth for current implementation status; use [PRD.md](PRD.md), [ROUTER-PHASE-PLAN.md](ROUTER-PHASE-PLAN.md), and the milestone logs for the up-to-date state.
 
+Durable architecture content that should remain stable across milestones is now canonical in [PRD.md](PRD.md), including:
+
+* Target user profile.
+* Verified architectural assumptions.
+* Package-separation and integration-sequencing guidance.
+
+This document should primarily remain the MVP slice record and PoC evidence narrative.
+
 This PRD is intentionally scoped to the first product slice. PoC 2 has now verified enough of the Claude Code wrapper and hook architecture to proceed toward an MVP, with one important boundary: the verified path is prompt-driven non-interactive Claude CLI launch/resume, not a fully polished interactive Claude replacement.
 
 ## 1. Product Summary
 
-Software engineers have access to many capable AI models and coding surfaces, but choosing the right model or effort level for every turn is a repeated cognitive tax.
+This section is intentionally brief to avoid duplicating durable architecture direction.
 
-There are two related product layers:
+For canonical product summary and architecture boundary, use [PRD.md](PRD.md).
 
-1. `@model-switchboard/router`: a standalone routing engine for choosing among model targets.
-2. `@model-switchboard/claude-code`: a Claude Code workflow integration that uses the router.
+MVP-specific scope in this document:
 
-The MVP direction is the first applied workflow product: a Claude Code-scoped Switchboard built on a separable router core.
-
-```text
-User
-  -> switchboard wrapper
-  -> router policy
-  -> Claude CLI launch/resume with selected model/effort
-  -> Claude Code hooks for explanation, logging, and tool governance
-```
-
-The product promise is:
-
-```text
-Use Claude Code normally through Switchboard. Switchboard chooses the model/effort before the turn, explains the choice, and preserves Claude's safety posture while adding route-aware visibility.
-```
-
-The MVP should not promise in-session automatic model switching. The current evidence suggests model/effort authority belongs at the launch or resume boundary. Hooks are useful for visibility, context injection, logging, and tool governance, but should be treated as advisory inside an already-running Claude session.
-
-The router should remain reusable outside software-development workflows. The MVP should focus on Claude Code because that is the current highest-confidence integration path, but target registry, classification, policy, capability filtering, route explanation, and refusal logic should stay independent of Claude-specific launch, hook, and session mechanics.
+* What PoC and live workflow evidence proved.
+* What remained unproven at MVP decision time.
+* Which behaviors were included or deferred in the first Claude-scoped product slice.
 
 ## 2. User Problem
 
-The primary pain is model-choice fatigue:
+Canonical problem framing is maintained in [PRD.md](PRD.md).
 
-* Stronger models are valuable for implementation, debugging, high-risk review, and architectural ambiguity.
-* Faster or cheaper models are enough for acknowledgements, summaries, simple explanation, and low-risk turns.
-* Users do not want to track changing vendor model names, effort flags, and client-specific capabilities.
-* The right choice depends on task intent, continuity, tool needs, cost posture, and current session state.
-
-The secondary pain is continuity. Routing is only useful if the user still feels like they are working in one coherent coding session rather than hopping between disconnected tools.
+This document records the MVP-window validation of that problem framing for Claude-scoped workflow routing.
 
 ## 3. Target User
 
-The first user is a high-context software engineer who already uses Claude Code and is comfortable with early local tooling.
+Canonical target-user profile is maintained in [PRD.md](PRD.md).
 
-The broader audience is engineers who want good defaults, a short explanation, and an escape hatch when they care enough to override.
-
-The MVP should feel like a normal way to launch or use Claude Code, not like a bundle of PoC commands.
+MVP-specific target context: early adopters already comfortable with Claude Code and local workflow tooling.
 
 ## 4. Current Evidence
+
+Traceability to canonical assumptions in [PRD.md](PRD.md#84-verified-architectural-assumptions):
+
+* Routing authority evidence maps to [PRD assumption 1](PRD.md#84-verified-architectural-assumptions).
+* Continuity evidence maps to [PRD assumption 2](PRD.md#84-verified-architectural-assumptions).
+* Hook evidence maps to [PRD assumption 3](PRD.md#84-verified-architectural-assumptions).
 
 The first PoC supports the following:
 
@@ -92,6 +82,8 @@ PoC 2 still did not prove:
 
 ## 5. PoC 2 Result And Remaining Validation
 
+Assumption mapping reference: this section provides the MVP decision-window evidence behind [PRD Verified Architectural Assumptions](PRD.md#84-verified-architectural-assumptions).
+
 PoC 2 has shifted from an open gating experiment to implementation evidence for the MVP.
 
 Verified:
@@ -102,15 +94,7 @@ Verified:
 4. Local evidence logs that distinguish route decision, wrapper context, selected model/effort, Claude session identity, and hook events.
 5. A clean enough router/workflow boundary to continue productization without trapping policy inside Claude-specific code.
 
-Remaining validation before calling the MVP shippable:
-
-All items resolved. See Section 8 for implementation status and [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) for the PoC 2 outcome summary with MVP implications.
-
-1. ~~Replace PoC npm commands with a first-class `switchboard` command.~~ Done.
-2. ~~Decide whether the initial MVP supports prompt-driven turns only, or also supports a no-prompt interactive mode.~~ Done: both prompt-driven and `--interactive` modes are implemented and live-verified.
-3. ~~Harden failure behavior when Claude auth, hook setup, or route-context correlation is unavailable.~~ Done: CLI fails closed pre-launch; hook policy fails closed without matched route context.
-4. ~~Define the minimum production tool-governance policy.~~ Done: documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
-5. ~~Write a concise PoC 2 outcome summary with MVP implications.~~ Done: captured in [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md).
+Remaining validation before calling the MVP shippable was fully closed during the implementation window. Final implementation status is captured in Section 8. Supporting narrative is in [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md).
 
 The MVP should still not include:
 
@@ -127,47 +111,15 @@ Security is now an MVP design requirement because the wrapper can influence exec
 
 ## 6. Product Packaging Direction
 
-Longer term, the router and workflow integration may become separate packages under one namespace:
+Canonical package-separation and sequencing guidance is maintained in [PRD.md](PRD.md) under integration strategy.
 
-```text
-@model-switchboard/router
-@model-switchboard/claude-code
-@model-switchboard/cli
-```
-
-`@model-switchboard/router` should solve the limited routing problem well:
-
-* target registry schema
-* task/mode classification interface
-* deterministic routing policy
-* capability filtering
-* cost, privacy, latency, and availability constraints
-* route explanations
-* refusal reasons
-* fixture-based policy tests
-
-It should not know about Claude Code hooks, CLI launch flags, terminal workflow, local transcript paths, or software-development-specific UI.
-
-`@model-switchboard/claude-code` should solve the workflow integration problem:
-
-* `switchboard` command
-* Claude model/effort mapping
-* launch and resume behavior
-* hook setup and correlation
-* session continuity
-* route display
-* override UX
-* local route and hook logs
-* Claude-specific safety boundaries
-
-Sequence:
-
-1. Productize the Claude Code workflow inside this repo while preserving the router/workflow boundary.
-2. Use the MVP to harden the router boundary and API shape under real usage.
-3. Extract and productize `@model-switchboard/router` as a public package once the boundary has survived real workflow pressure.
-4. Continue Claude Code work as a dependency of the router package.
+This MVP document should only retain packaging details when they materially explain a specific MVP decision or piece of evidence.
 
 ## 7. Assumptions To Verify Or Falsify
+
+The assumptions below are retained as evidence records for the MVP decision window.
+
+Canonical cross-milestone assumptions now live in [PRD.md](PRD.md) under Verified Architectural Assumptions.
 
 ### A. Wrapper Routing Authority
 
@@ -292,6 +244,8 @@ Falsification:
 * Failure modes are ambiguous.
 
 ## 8. MVP Scope Based On PoC 2
+
+Cross-reference: this section records implementation outcomes that operationalize [PRD Verified Architectural Assumptions](PRD.md#84-verified-architectural-assumptions).
 
 The MVP should include:
 

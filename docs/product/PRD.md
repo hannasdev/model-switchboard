@@ -8,6 +8,24 @@ This document is the broader architecture and design reference for the router. T
 
 Milestone 4 is complete and the repository now has a contract-backed explainability and outcome-attribution foundation. The execution plan, decision log, release log, and replay guide are updated to reflect that state. Milestone 5 remains conditional on the stability of the current router boundary.
 
+## Documentation Ownership
+
+Use this matrix to decide where updates should land.
+
+| Topic | Canonical doc | Secondary/supporting docs |
+|---|---|---|
+| Product boundary, architecture, long-term direction | `docs/product/PRD.md` | `docs/product/ROUTER-PHASE-PLAN.md`, `docs/adr/decision-log.md` |
+| MVP scope history and PoC evidence narrative | `docs/product/MVP-PRD.md` | `docs/product/archive/POC-OUTCOME-ANALYSIS.md`, `docs/product/archive/POC-IMPLEMENTATION.md` |
+| Milestone execution status and acceptance criteria | `docs/product/ROUTER-PHASE-PLAN.md` | `docs/release-log.md`, `docs/adr/decision-log.md` |
+| Deferred-to-committed decisions | `docs/adr/decision-log.md` | `docs/product/ROUTER-PHASE-PLAN.md` |
+| Contract schemas and replay/evidence shapes | `docs/contracts/router-contracts.md` | `docs/product/REPLAY-GUIDE.md`, `docs/product/PRD.md` |
+
+Ownership rule:
+
+* If content is expected to stay stable across milestones, update `PRD.md`.
+* If content explains what was learned in a specific MVP/PoC window, update `MVP-PRD.md`.
+* If content tracks execution progress, acceptance, and closeout, update the phase plan and logs.
+
 ## 1. Executive Summary
 
 This router is a vendor-neutral control plane for conversational software-delivery work. It does not replace coding agents, IDE extensions, model gateways, shell sandboxes, or security tooling. Its job is narrower: decide which execution target should handle the next step of a session based on conversation state, task phase, required capabilities, user preferences, privacy constraints, and continuity cost.
@@ -113,6 +131,19 @@ Users may switch targets because of:
 * A current model being underpowered for the work.
 
 Most routing systems only inspect the latest prompt. That is insufficient for conversational software-delivery workflows where model need depends on accumulated context, current phase, approval state, risk, and tool capability.
+
+## 4.1 Target User
+
+The initial user profile is a high-context software engineer who already uses an AI coding surface and wants better default routing without constant model-choice micromanagement.
+
+Primary user expectations:
+
+* Good defaults that reduce model-choice fatigue.
+* Short, understandable route explanations.
+* A reliable escape hatch when manual escalation is needed.
+* Session continuity across routed turns.
+
+The near-term product should feel like normal usage of the chosen execution surface with better route quality and visibility, not a separate orchestration system the user must constantly manage.
 
 ## 5. Goals and Non-Goals
 
@@ -325,6 +356,63 @@ In advisory mode, the router may not select the model directly. It can still pro
 * Routing explanation.
 * Suggested manual escalation.
 * Config generation.
+
+### 8.4 Verified Architectural Assumptions
+
+The following assumptions have implementation evidence and should be treated as current architectural constraints for future integrations.
+
+1. Routing authority belongs at the pre-execution boundary.
+
+  The router should select target/model-effort before execution starts (launch or resume boundary for sessioned clients). In-session switching remains a non-default behavior unless explicitly proven and bounded. Evidence source: [MVP-PRD Section 7.A](MVP-PRD.md#a-wrapper-routing-authority).
+
+2. Session continuity is a first-class requirement.
+
+  Routing value degrades quickly if users must restate context after a target change. Integration design should preserve session identity and continuity semantics across routed turns. Evidence source: [MVP-PRD Section 7.B](MVP-PRD.md#b-claude-continuity).
+
+3. Observation hooks are useful even without in-session model switching.
+
+  Hook or event surfaces remain valuable for explanation, route-context visibility, tool-governance logging, and auditability even when model selection itself is fixed for the active turn. Evidence source: [MVP-PRD Section 7.C](MVP-PRD.md#c-hook-usefulness).
+
+4. Deterministic policy should remain the baseline.
+
+  Deterministic routing with explicit escalation and refusal behavior is the default control-plane posture. Learned or adaptive policy is deferred until deterministic behavior is stable across multiple integrations. Evidence source: [MVP-PRD Section 7.E](MVP-PRD.md#e-routing-policy-fit).
+
+5. Policy stability across integrations is a release gate.
+
+  New client integrations should consume existing core contracts and policy boundaries rather than embedding client-specific routing logic. If an integration requires policy exceptions, they should be made explicit and reviewed as boundary changes.
+
+### 8.5 Package Separation and Sequencing
+
+Long-term packaging should preserve a hard boundary between reusable router logic and client/workflow mechanics.
+
+Candidate package split:
+
+```text
+@model-switchboard/router
+@model-switchboard/<client-integration>
+@model-switchboard/cli
+```
+
+`@model-switchboard/router` should own:
+
+* Session-aware routing policy.
+* Contracted decision and evidence shapes.
+* Capability filtering and refusal logic.
+* Explainability and replay/evaluation primitives.
+
+Client integration packages should own:
+
+* Surface-specific launch/resume behavior.
+* Surface-specific hooks and correlation.
+* UX affordances and operational setup for that client.
+
+Sequencing rule:
+
+1. Productize and stabilize the router boundary under real usage in one integration.
+2. Validate boundary reuse in at least one additional integration.
+3. Extract/publicize package boundaries only after they survive multi-surface pressure.
+
+The extraction decision should be based on boundary stability, not calendar timing.
 
 ## 9. Core Contracts
 
