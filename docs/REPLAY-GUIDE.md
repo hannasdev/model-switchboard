@@ -57,7 +57,12 @@ console.log(result);
 
 ```bash
 node --input-type=module -e "
-import { evaluatePolicyOnEvidence } from './src/switchboard/workflow.js';
+import { loadSessionEvidence, evaluatePolicyOnEvidence } from './src/switchboard/workflow.js';
+
+const evidence = loadSessionEvidence({
+  logPath: process.env.HOME + '/.model-switchboard/switchboard-turns.ndjson',
+  sessionId: 'my-session-123'
+});
 
 const evaluation = evaluatePolicyOnEvidence({
   evidenceSet: evidence,

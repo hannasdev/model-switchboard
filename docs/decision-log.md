@@ -247,10 +247,10 @@ Follow-up:
 
 ## Milestone 4 Closeout
 
-Decision ID: DEC-2025-01-02-milestone-4-explainability-outcome-attribution-closeout
+Decision ID: DEC-2026-05-11-milestone-4-explainability-outcome-attribution-closeout
 Related deferred item: Milestone 4 Explainability And Outcome Attribution Foundation
 Status: committed
-Date: 2025-01-02
+Date: 2026-05-11
 Owners: team
 
 Context:
