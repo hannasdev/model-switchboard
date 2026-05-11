@@ -203,3 +203,44 @@ Consequences:
 Follow-up:
 - Next review milestone: Milestone 3 plan-to-implementation checkpoint.
 - Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/router/session_controller.js, test/session-controller.test.js, test/router.test.js, docs/ROUTER-PHASE-PLAN.md
+
+## Milestone 3 Closeout
+
+Decision ID: DEC-2026-05-11-milestone-3-claude-workflow-boundary-closeout
+Related deferred item: Milestone 3 Claude workflow boundary refit
+Status: committed
+Date: 2026-05-11
+Owners: team
+
+Context:
+- Milestone 3 required the Claude workflow to consume router contracts as a client integration, preserve continuity semantics, and separate router decision evidence from Claude execution evidence.
+
+Options considered:
+- Option A: keep the existing workflow-specific route context format and explain shape, and defer contract-backed persistence until Milestone 4.
+- Option B: refit workflow persistence and explain now so Claude consumes and emits contract-aligned router/session/context shapes while keeping compatibility fields for existing consumers.
+
+Tradeoffs:
+- Option A: smaller short-term diff, but leaves Milestone 3 structurally incomplete and pushes risk into Milestone 4.
+- Option B: slightly larger boundary refit now, but cleaner milestone ownership, stronger replay/explain foundation, and lower follow-on ambiguity.
+
+Verification signal:
+- Expected signal from phase plan: Claude workflow remains functional; router can be exercised independently of Claude launch details; logs distinguish router and Claude execution data; handoff/context fields match the core contract.
+- Evidence observed:
+  - `src/switchboard/workflow.js` now emits separated `router` and `claude` evidence blocks while retaining compatibility summaries.
+  - `src/switchboard/route_context.js` now persists canonical `sessionState`, `routingDecision`, `contextPackage`, and `claudeExecution` fields.
+  - `switchboard explain` now surfaces contract-backed router and Claude evidence.
+  - Full suite passes (`npm test`) including new workflow and explain tests for contract-backed evidence.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: Milestone 3 is formally complete as of 2026-05-11.
+- What remains intentionally deferred: routing log-event normalization across all surfaces, outcome attribution taxonomy, replay-oriented evaluation tooling, and second-surface validation.
+
+Consequences:
+- Near-term implementation impact: Claude workflow is now a cleaner consumer of router outputs with a more explicit control-plane boundary.
+- Test and replay impact: route context and explain data now carry contract-backed session and handoff fields suitable for Milestone 4 normalization.
+- Migration impact: low; legacy route-context fields remain present for current hook correlation and explain consumers.
+
+Follow-up:
+- Next review milestone: Milestone 4 plan-to-implementation checkpoint.
+- Linked artifacts (logs, fixtures, docs, PRs): src/switchboard/workflow.js, src/switchboard/route_context.js, src/switchboard/cli.js, src/switchboard/claude_hook_bridge.js, test/switchboard-workflow.test.js, test/switchboard-cli.test.js, docs/ROUTER-PHASE-PLAN.md

@@ -28,7 +28,7 @@ High-level flow:
 1. You send a prompt through Switchboard.
 2. Switchboard classifies the turn and selects a route label.
 3. Switchboard launches or resumes Claude with matching model and effort settings.
-4. Route context and hook evidence are recorded for explainability and governance.
+4. Route context, session state, and hook evidence are recorded for explainability, replay, and governance.
 
 ## What It Is Not
 
@@ -49,7 +49,9 @@ High-level flow:
 
 Version 1.0.0 is the first stable release of the prompt-driven Switchboard workflow for Claude Code.
 
-Non-interactive continuity is verified for routed turns. Interactive continuity is verified for session reuse, resume semantics, hook correlation, and override handling, while stale-resume recovery and fail-closed error handling remain explicitly tracked as follow-up validation for fully supported interactive parity.
+Milestones 1 through 3 are now complete: router contracts, session-aware policy/controller boundaries, and the Claude workflow refit onto contract-backed router/session/context evidence.
+
+Non-interactive continuity is verified for routed turns. Interactive continuity is verified for session reuse, resume semantics, hook correlation, stale-resume recovery, and fail-closed error handling.
 
 ## Delivery Model
 
