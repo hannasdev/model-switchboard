@@ -6,7 +6,7 @@
 - Why it matters: Completes Milestone 2 policy/controller acceptance criteria and reduces coupling before Milestone 3 Claude-workflow boundary refit.
 - Who is affected: Switchboard maintainers and contributors working on router-policy evolution.
 - Action needed: None.
-- PR: pending
+- PR: https://github.com/hannasdev/model-switchboard/pull/17
 
 ### 2026-05-10 — Add deterministic escalation policy and escalation evidence in explain output
 
