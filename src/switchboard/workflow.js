@@ -90,20 +90,65 @@ function routeDecisionSummary(plan) {
   };
 }
 
-function routingDecisionContract(plan) {
+function routingDecisionContract(plan, targets = []) {
   if (!plan?.route) {
     return {
-      status: plan?.status || "failed",
-      refusalReason: plan?.reason || null
+      schemaVersion: "0.1.0-experimental",
+      status: "refused",
+      mode: null,
+      taskType: null,
+      requiredCapabilities: [],
+      hardConstraintResults: {
+        eligibleTargetIds: [],
+        blocked: []
+      },
+      softConstraintInputs: {
+        userPreference: null,
+        projectOverride: null
+      },
+      targetClass: null,
+      selectedTargetId: null,
+      shouldSwitch: null,
+      continuityCost: null,
+      continuityDecision: null,
+      continuityReason: null,
+      routingOverride: {
+        requested: "auto",
+        applied: false,
+        reason: null
+      },
+      modeResolution: null,
+      policyInputs: null,
+      explanation: plan?.reason || "Unable to produce a router decision.",
+      refusalReason: plan?.reason || plan?.status || "missing_route"
     };
   }
 
+  const blocked = (plan.route.blocked || []).map((entry) => ({
+    targetId: entry.id || entry.targetId || null,
+    missingCapabilities: entry.missingCapabilities || [],
+    constraintReasons: entry.constraintReasons || []
+  }));
+  const blockedTargetIds = new Set(blocked.map((entry) => entry.targetId).filter(Boolean));
+  const eligibleTargetIds = [
+    ...new Set(
+      (targets || [])
+        .map((target) => target.id)
+        .filter((targetId) => targetId && !blockedTargetIds.has(targetId))
+    )
+  ];
+  const selectedTargetId = plan.route.selectedTarget?.id || null;
+  if (selectedTargetId && !eligibleTargetIds.includes(selectedTargetId)) {
+    eligibleTargetIds.push(selectedTargetId);
+  }
+
   return {
+    schemaVersion: "0.1.0-experimental",
     ...plan.route,
-    selectedTargetId: plan.route.selectedTarget?.id || null,
+    selectedTargetId,
     hardConstraintResults: {
-      eligibleTargetIds: [],
-      blocked: plan.route.blocked || []
+      eligibleTargetIds,
+      blocked
     },
     refusalReason: plan.route.status === "refused" ? plan.route.reason || plan.route.explanation || null : null
   };
@@ -314,7 +359,7 @@ function buildSwitchboardTurn({
   let recoveredFromResumeRetry = false;
   const wrapperContext = buildWrapperContext(plan);
   const routeDecision = routeDecisionSummary(plan);
-  const routingDecision = routingDecisionContract(plan);
+  const routingDecision = routingDecisionContract(plan, targets);
   // plannedSelectedClaude reflects the pre-execution plan (before any stale-resume retry).
   // It is used for route-context persistence so the context always records what was planned,
   // while selectedClaude (computed after retry resolution) reflects what actually ran.
