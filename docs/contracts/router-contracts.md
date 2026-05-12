@@ -360,7 +360,7 @@ Current workflow evidence now separates router-decision data from Claude executi
 
 ### A.4 Hook Correlation Mapping
 
-Current hook evidence maps to `RoutingLogEvent.correlation`:
+Current hook evidence maps to `RoutingLogEvent.hookCorrelation`:
 
 * matched route context -> `routeContextMatched=true`
 * unmatched route context -> `routeContextMatched=false`
@@ -376,7 +376,7 @@ Routed decisions are tracked with minimal outcome signals to support policy eval
 
 **Error Signals** (populated in `RoutingLogEvent.outcome.errorSignal`):
 
-- `null` — execution succeeded
+- `null` — no error signal (use `RoutingLogEvent.outcome.executionStatus` to distinguish `planned` vs successful `executed`)
 - `tool_failure` — tool call failed during execution
 - `test_failure` — test run failed
 - `execution_timeout` — execution did not complete in allowed time

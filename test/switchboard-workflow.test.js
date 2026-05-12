@@ -328,6 +328,12 @@ test("Consecutive failed live attempts keep unique turn index and decision ID", 
   // Persisted success turn count stays unchanged for failed executions.
   assert.equal(first.nextSession.turnCount, 0);
   assert.equal(second.nextSession.turnCount, 0);
+
+  const routeContext = JSON.parse(fs.readFileSync(routeContextPath, "utf8"));
+  const turns = routeContext["session-fail-attempt-counter"].turns;
+  assert.equal(turns.length, 2);
+  assert.equal(turns[0].turnCount, 1);
+  assert.equal(turns[1].turnCount, 2);
 });
 
 test("Replay uses recorded attribution policyVersion when decision contract lacks policyVersion", () => {

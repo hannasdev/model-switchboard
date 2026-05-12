@@ -497,14 +497,16 @@ function buildSwitchboardTurn({
   // It is used for route-context persistence so the context always records what was planned,
   // while selectedClaude (computed after retry resolution) reflects what actually ran.
   const plannedSelectedClaude = selectedClaudeSummary(plan);
-  const plannedTurnCount =
-    plan.status === "planned" ? Number(routeSession.turnCount || 0) + 1 : Number(routeSession.turnCount || 0);
+  const attemptedTurnCount =
+    plan.status === "planned"
+      ? Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0) + 1
+      : Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0);
   persistRouteContext({
     routeContextPath,
     threadId,
     claudeSessionId,
     routeSession,
-    turnCount: plannedTurnCount,
+    turnCount: attemptedTurnCount,
     routeDecision,
     routingDecision,
     selectedClaude: plannedSelectedClaude,
@@ -545,11 +547,6 @@ function buildSwitchboardTurn({
 
   const executionResult = executionSummary(execution);
   const turnStatus = executionResult?.status || plan.status;
-
-  const attemptedTurnCount =
-    effectivePlan.status === "planned"
-      ? Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0) + 1
-      : Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0);
 
   const nextSession =
     effectivePlan.status === "planned"
