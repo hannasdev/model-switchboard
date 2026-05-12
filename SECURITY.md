@@ -48,8 +48,8 @@ Secrets and credentials include, at minimum:
 
 - Production and CI/CD secrets must be stored in GitHub Actions Secrets (repository or environment secrets), not in source files.
 - Local developer secrets must be stored in environment variables or local `.env` files that are excluded from version control.
-- Secrets must never be committed to git history, hard-coded in source code, or included in PR descriptions/issues.
-- `.env` and `.env.*` are ignored by git; `.env.example` must contain placeholders only.
+- Secrets must never be committed to Git history, hard-coded in source code, or included in PR descriptions/issues.
+- `.env` and `.env.*` are ignored by Git; `.env.example` must contain placeholders only.
 
 ### Access Control Requirements
 
