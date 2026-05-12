@@ -38,7 +38,7 @@ Tests are automatically verified in CI on every push to `main` and on all pull r
 ### Code Quality
 
 **Static Analysis:**
-- ESLint runs automatically in CI on every push and pull request
+- ESLint runs automatically in CI on pushes to `main` and all pull requests to `main`
 - Security plugin (`eslint-plugin-security`) checks for common vulnerabilities
 - Run locally before pushing: `npm run lint`
 - Auto-fix where possible: `npm run lint -- --fix`
