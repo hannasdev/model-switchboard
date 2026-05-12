@@ -4,12 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
-      - chore/**
-      - feat/**
-      - fix/**
   schedule:
     - cron: "19 3 * * 1"
 
