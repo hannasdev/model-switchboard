@@ -12,4 +12,9 @@ fi
 # Friendly reminder: semantic message validation runs in commit-msg.
 echo "pre-commit: branch check passed (semantic message will be validated by commit-msg)."
 
+# Run linter before committing to catch issues early.
+echo "pre-commit: running lint..."
+npm run lint
+echo "pre-commit: lint passed."
+
 exit 0
