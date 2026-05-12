@@ -271,23 +271,28 @@ function reconstructReasoning(routeDecision, routingDecision) {
       )
       .map((blockedEntry) => blockedEntry.targetId);
 
+  // Normalize constraint values so missing/undefined fields default to "off"
+  const privacyValue = hardConstraints.privacy ?? "off";
+  const availabilityValue = hardConstraints.availability ?? "off";
+  const clientCompatibilityValue = hardConstraints.clientCompatibility ?? "off";
+
   // Build constraint evaluation
   const hardConstraintEvaluation = {
     privacy: {
-      applied: hardConstraints.privacy !== "off",
-      reason: `Privacy: ${hardConstraints.privacy || "not set"}`,
+      applied: privacyValue !== "off",
+      reason: `Privacy: ${privacyValue}`,
       blockedTargets: blockedTargetsByReason((reasonCode) => reasonCode.startsWith("privacy_"))
     },
     availability: {
-      applied: hardConstraints.availability !== "off",
-      reason: `Availability: ${hardConstraints.availability || "not set"}`,
+      applied: availabilityValue !== "off",
+      reason: `Availability: ${availabilityValue}`,
       blockedTargets: blockedTargetsByReason(
         (reasonCode) => reasonCode === "target_unavailable" || reasonCode.includes("availability")
       )
     },
     clientCompatibility: {
-      applied: hardConstraints.clientCompatibility !== "off",
-      reason: `Client compatibility: ${hardConstraints.clientCompatibility || "not set"}`,
+      applied: clientCompatibilityValue !== "off",
+      reason: `Client compatibility: ${clientCompatibilityValue}`,
       blockedTargets: blockedTargetsByReason(
         (reasonCode) => reasonCode === "client_surface_incompatible" || reasonCode.startsWith("client_")
       )

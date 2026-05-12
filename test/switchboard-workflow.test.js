@@ -395,6 +395,50 @@ test("Replay supports legacy nested router evidence shape", () => {
   assert.equal(replayed.matches, true);
 });
 
+test("Switchboard explain reports constraints as not-applied when policyInputs absent", () => {
+  const { logPath, routeContextPath } = tempPaths();
+
+  // Write a legacy-style log entry that has no policyInputs on the routeDecision
+  const legacyEntry = {
+    source: "switchboard_wrapper",
+    threadId: "thread-explain-legacy-constraints",
+    userPrompt: "Do something.",
+    session: { claudeSessionId: "session-legacy-constraints" },
+    routeDecision: {
+      label: "best coder",
+      taskType: "multi_file_refactor",
+      confidence: 0.8,
+      continuityCost: "low",
+      continuityDecision: "switch",
+      continuityReason: "first turn"
+      // policyInputs intentionally omitted
+    },
+    routingDecision: {
+      schemaVersion: "0.1.0-experimental",
+      status: "ok",
+      selectedTargetId: "anthropic-coder",
+      hardConstraintResults: { eligibleTargetIds: ["anthropic-coder"], blocked: [] },
+      softConstraintInputs: { userPreference: "auto", projectOverride: null }
+    }
+  };
+  fs.writeFileSync(logPath, JSON.stringify(legacyEntry) + "\n");
+
+  const explanation = explainLatestSwitchboardTurn({
+    logPath,
+    routeContextPath,
+    threadId: "thread-explain-legacy-constraints"
+  });
+
+  assert.equal(explanation.status, "found");
+  assert.ok(explanation.reasoning, "reasoning should be present");
+  // All constraints should be not-applied when policyInputs is absent
+  assert.equal(explanation.reasoning.hardConstraintEvaluation.privacy.applied, false);
+  assert.equal(explanation.reasoning.hardConstraintEvaluation.availability.applied, false);
+  assert.equal(explanation.reasoning.hardConstraintEvaluation.clientCompatibility.applied, false);
+  // Reason strings should reflect the normalized "off" value
+  assert.match(explanation.reasoning.hardConstraintEvaluation.privacy.reason, /off/);
+});
+
 test("Switchboard interactive turns preserve Claude continuity without prompt args", () => {
   const { storePath, logPath, routeContextPath } = tempPaths();
   const firstTurn = planSwitchboardTurn({
