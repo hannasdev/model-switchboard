@@ -41,7 +41,7 @@ EOF
   exit 1
 fi
 
-if grep -Eiq '^Signed-off-by:[[:space:]]+.+<.+>$' "$MSG_FILE"; then
+if tr -d '\r' < "$MSG_FILE" | grep -Eiq '^Signed-off-by:'; then
   exit 0
 fi
 

@@ -77,7 +77,7 @@ Operational rotation process:
 
 ### Verification and Guardrails
 
-- CI preflight validates required release/publish secrets before release workflows continue.
+- CI preflight validates required release/publish secrets in a dedicated workflow before release/publish operations.
 - Repository policy requires avoiding secret values in logs, comments, and documentation.
 - Security issues involving credentials must follow the private disclosure process below.
 
