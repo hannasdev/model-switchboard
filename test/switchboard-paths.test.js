@@ -13,8 +13,8 @@ import {
   DEFAULT_SWITCHBOARD_LOG_PATH as PRODUCT_WORKFLOW_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH as PRODUCT_WORKFLOW_STORE_PATH
 } from "../src/switchboard/workflow.js";
-import { DEFAULT_ROUTE_CONTEXT_PATH as PRODUCT_ROUTE_CONTEXT_PATH } from "../src/switchboard/route_context.js";
-import { DEFAULT_CLAUDE_HOOK_LOG_PATH as PRODUCT_HOOK_LOG_PATH } from "../src/switchboard/claude_hook_bridge.js";
+import { DEFAULT_ROUTE_CONTEXT_PATH as PRODUCT_ROUTE_CONTEXT_PATH } from "../src/switchboard/route-context.js";
+import { DEFAULT_CLAUDE_HOOK_LOG_PATH as PRODUCT_HOOK_LOG_PATH } from "../src/switchboard/claude-hook-bridge.js";
 
 test("product switchboard defaults resolve under the shared home-state directory", () => {
   const expectedDir = path.join(os.homedir(), ".model-switchboard");

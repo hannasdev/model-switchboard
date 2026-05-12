@@ -8,8 +8,8 @@ Findings from the May 2026 architecture review. Work on these one at a time. Mar
 
 **Problem:** Two parallel, unconnected mapping structures had to be kept in sync manually.
 
-- `src/adapters/model_mappings.js` — `targetId → profile → model` (used by SDK adapters)
-- `src/adapters/model_mappings.js` — `TARGET_TO_CLAUDE_CLI` (`targetId → { model, effort }`) (used by CLI path)
+- `src/adapters/model-mappings.js` — `targetId → profile → model` (used by SDK adapters)
+- `src/adapters/model-mappings.js` — `TARGET_TO_CLAUDE_CLI` (`targetId → { model, effort }`) (used by CLI path)
 
 Adding or renaming a target required updates in both places with no guardrail.
 
@@ -19,7 +19,7 @@ Adding or renaming a target required updates in both places with no guardrail.
 
 ## 2. Extract shared fs-utils — LOW effort
 
-**Problem:** `session_store.js` and `route_context.js` each define nearly identical private helpers:
+**Problem:** `session-store.js` and `route-context.js` each define nearly identical private helpers:
 
 ```js
 function ensureFile(storePath) { ... }
@@ -75,7 +75,7 @@ The classifier produces signals; the router consumes them. They have different c
 
 ## 6. Remove or promote `extractTurnFields` — LOW effort
 
-**Problem:** `route_context.js` had a function named `deriveLegacyTurnFields`. The "legacy" label signaled it had been kept alive longer than intended and imposed a cognitive tax on every reader.
+**Problem:** `route-context.js` had a function named `deriveLegacyTurnFields`. The "legacy" label signaled it had been kept alive longer than intended and imposed a cognitive tax on every reader.
 
 **Status:** Done
 
@@ -83,11 +83,11 @@ The classifier produces signals; the router consumes them. They have different c
 
 ## 7. Align file naming convention — LOW effort
 
-**Problem:** Source files use `snake_case` (`anthropic_claude_adapter.js`, `session_store.js`); test files use `kebab-case` (`claude-cli-launcher.test.js`, `thread-session-store.test.js`). Pairing a source file with its test requires a mental translation step.
+**Problem:** Source files used `snake_case` while test files used `kebab-case`, forcing a mental translation step when pairing source files to tests.
 
 **Fix:** Decide on one convention (kebab-case is more common in the JS ecosystem) and rename files accordingly. Update all imports.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 

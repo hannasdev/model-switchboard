@@ -259,5 +259,5 @@ Future enhancements:
 ## See Also
 
 - [Router Contracts](./contracts/router-contracts.md) — Normalized event shapes
-- [Attribution Store](../src/switchboard/attribution_store.js) — Outcome tracking API
+- [Attribution Store](../src/switchboard/attribution-store.js) — Outcome tracking API
 - [Decision Log](./decision-log.md) — Policy decisions and rationales

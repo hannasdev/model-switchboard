@@ -17,10 +17,10 @@ Completed in the current pass:
 * Added `src/switchboard/paths.js` with shared product defaults under `~/.model-switchboard`.
 * Moved Switchboard workflow, route-context, session-store, and Claude hook implementation into `src/switchboard`.
 * Moved router implementation into `src/router/router.js`.
-* Moved `claude_cli_launcher.js` into `src/switchboard/claude_cli_launcher.js`.
+* Moved `claude-cli-launcher.js` into `src/switchboard/claude-cli-launcher.js`.
 * Moved target registry data into `src/router/data/`.
 * Removed the old `src/poc/*` harnesses and compatibility wrappers intentionally; the MVP surface is now the product `switchboard` command plus focused tests.
-* Updated Claude hook settings to call `src/switchboard/claude_hook_bridge.js`.
+* Updated Claude hook settings to call `src/switchboard/claude-hook-bridge.js`.
 
 All planned refactor steps are complete.
 
@@ -56,10 +56,10 @@ src/
   switchboard/
     cli.js
     workflow.js
-    claude_cli_launcher.js
-    claude_hook_bridge.js
-    route_context.js
-    session_store.js
+    claude-cli-launcher.js
+    claude-hook-bridge.js
+    route-context.js
+    session-store.js
     paths.js
 ```
 
@@ -89,14 +89,14 @@ Tests should continue to inject temp paths. `bin/switchboard.js` should use prod
    * Keep path overrides injectable for tests.
 
 2. Move route context and session store.
-   * Moved `src/poc/switchboard_route_context.js` to `src/switchboard/route_context.js`.
-   * Moved `src/poc/thread_session_store.js` to `src/switchboard/session_store.js`.
+   * Moved `src/poc/switchboard_route-context.js` to `src/switchboard/route-context.js`.
+   * Moved `src/poc/thread_session-store.js` to `src/switchboard/session-store.js`.
    * Update imports.
 
 3. Move Claude workflow modules.
    * Moved `src/poc/switchboard_workflow.js` to `src/switchboard/workflow.js`.
-   * Moved `src/poc/claude_cli_launcher.js` to `src/switchboard/claude_cli_launcher.js`.
-   * Moved `src/poc/claude_hook_bridge.js` to `src/switchboard/claude_hook_bridge.js`.
+   * Moved `src/poc/claude-cli-launcher.js` to `src/switchboard/claude-cli-launcher.js`.
+   * Moved `src/poc/claude-hook-bridge.js` to `src/switchboard/claude-hook-bridge.js`.
    * Updated Claude hook settings to point at the product hook bridge.
 
 4. Move or re-export router core.
@@ -119,7 +119,7 @@ Tests should continue to inject temp paths. `bin/switchboard.js` should use prod
 * Removed PoC npm scripts are no longer documented as active commands.
 * `switchboard --dry-run "Implement the plan."` still produces compact route output.
 * `switchboard explain` still summarizes latest evidence.
-* Claude hook settings point at `src/switchboard/claude_hook_bridge.js`.
+* Claude hook settings point at `src/switchboard/claude-hook-bridge.js`.
 * `npm test` passes.
 * `git diff --check` passes.
 

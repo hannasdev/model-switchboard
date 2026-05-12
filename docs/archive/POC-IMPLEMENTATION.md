@@ -71,22 +71,22 @@ Note: the old `src/poc/*` harnesses, gateway/prod-hook simulators, and `npm run 
 * Switchboard CLI: `src/switchboard/cli.js`
 * Shared product paths: `src/switchboard/paths.js`
 * Switchboard workflow: `src/switchboard/workflow.js`
-* Switchboard route-context store: `src/switchboard/route_context.js`
-* Switchboard session store: `src/switchboard/session_store.js`
-* Claude hook bridge: `src/switchboard/claude_hook_bridge.js`
+* Switchboard route-context store: `src/switchboard/route-context.js`
+* Switchboard session store: `src/switchboard/session-store.js`
+* Claude hook bridge: `src/switchboard/claude-hook-bridge.js`
 * Router core: `src/router/router.js`
 * Switchboard CLI tests: `test/switchboard-cli.test.js`
 * Switchboard path tests: `test/switchboard-paths.test.js`
 
 ### Router and Adapter Surface
 
-* OpenAI/Codex adapter: `src/adapters/openai_codex_adapter.js`
-* OpenAI SDK client: `src/adapters/openai_sdk_client.js`
-* Anthropic/Claude adapter: `src/adapters/anthropic_claude_adapter.js`
-* Anthropic SDK client: `src/adapters/anthropic_sdk_client.js`
-* Google/Gemini adapter: `src/adapters/gemini_adapter.js`
-* Gemini SDK client: `src/adapters/gemini_sdk_client.js`
-* Mapping registry: `src/adapters/model_mappings.js`
+* OpenAI/Codex adapter: `src/adapters/openai-codex-adapter.js`
+* OpenAI SDK client: `src/adapters/openai-sdk-client.js`
+* Anthropic/Claude adapter: `src/adapters/anthropic-claude-adapter.js`
+* Anthropic SDK client: `src/adapters/anthropic-sdk-client.js`
+* Google/Gemini adapter: `src/adapters/gemini-adapter.js`
+* Gemini SDK client: `src/adapters/gemini-sdk-client.js`
+* Mapping registry: `src/adapters/model-mappings.js`
 * OpenAI target registry: `src/router/data/targets.openai.json`
 * Anthropic target registry: `src/router/data/targets.anthropic.json`
 * Gemini target registry: `src/router/data/targets.gemini.json`

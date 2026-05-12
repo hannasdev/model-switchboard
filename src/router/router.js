@@ -1,4 +1,4 @@
-import { MODE_TO_REQUIREMENTS, resolveSessionMode } from "./session_controller.js";
+import { MODE_TO_REQUIREMENTS, resolveSessionMode } from "./session-controller.js";
 import {
   classifyPrompt,
   TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS

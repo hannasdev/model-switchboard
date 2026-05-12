@@ -11,7 +11,7 @@ import {
   updateAttributionOutcome,
   queryAttributionsByErrorSignal,
   getSessionAttributionStats
-} from "../src/switchboard/attribution_store.js";
+} from "../src/switchboard/attribution-store.js";
 import { planSwitchboardTurn } from "../src/switchboard/workflow.js";
 
 function tempAttributionPath() {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveSessionMode } from "../src/router/session_controller.js";
+import { resolveSessionMode } from "../src/router/session-controller.js";
 
 test("resolves proposed mode when there is no previous mode", () => {
   const resolution = resolveSessionMode({}, {

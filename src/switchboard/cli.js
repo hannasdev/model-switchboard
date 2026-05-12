@@ -8,8 +8,8 @@ import {
   explainLatestSwitchboardTurn,
   planSwitchboardTurn
 } from "./workflow.js";
-import { DEFAULT_CLAUDE_HOOK_LOG_PATH } from "./claude_hook_bridge.js";
-import { DEFAULT_ROUTE_CONTEXT_PATH } from "./route_context.js";
+import { DEFAULT_CLAUDE_HOOK_LOG_PATH } from "./claude-hook-bridge.js";
+import { DEFAULT_ROUTE_CONTEXT_PATH } from "./route-context.js";
 
 function getArg(args, flag) {
   const idx = args.lastIndexOf(flag);

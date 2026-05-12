@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { planClaudeCliLaunch } from "./claude_cli_launcher.js";
+import { planClaudeCliLaunch } from "./claude-cli-launcher.js";
 import {
   ANTHROPIC_TARGETS_PATH,
   DEFAULT_SWITCHBOARD_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH
 } from "./paths.js";
-import { saveRouteContext } from "./route_context.js";
-import { loadThreadSession, saveThreadSession } from "./session_store.js";
+import { saveRouteContext } from "./route-context.js";
+import { loadThreadSession, saveThreadSession } from "./session-store.js";
 import {
   determineErrorSignal,
   determineSwitchingReason,
