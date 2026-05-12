@@ -54,7 +54,7 @@ The `explain` command is conceptually separate — it reads past logs rather tha
 
 **Fix:** Create `src/switchboard/explain.js` that owns `explainLatestSwitchboardTurn`, `reconstructReasoning`, and related read-only log helpers. Import from `workflow.js` if needed, then remove the implementation there.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
