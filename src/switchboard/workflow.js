@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { planClaudeCliLaunch } from "./claude_cli_launcher.js";
 import {
+  ANTHROPIC_TARGETS_PATH,
   DEFAULT_SWITCHBOARD_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH
 } from "./paths.js";
@@ -22,10 +22,6 @@ export {
   DEFAULT_SWITCHBOARD_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH
 } from "./paths.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.anthropic.json");
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
