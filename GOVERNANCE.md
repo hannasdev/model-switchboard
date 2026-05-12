@@ -4,11 +4,11 @@ This document describes the roles, responsibilities, and decision-making process
 
 ## Roles
 
-### Maintainer
+### Maintainers
 
-The maintainer is responsible for the overall direction and health of the project.
+Maintainers are responsible for the overall direction and health of the project.
 
-**Current maintainer:** [@hannasdev](https://github.com/hannasdev)
+**Current maintainers:** [@hannasdev](https://github.com/hannasdev)
 
 **Responsibilities:**
 
@@ -22,7 +22,7 @@ The maintainer is responsible for the overall direction and health of the projec
 
 ### Contributor
 
-Anyone who submits a pull request, opens an issue, or otherwise participates in the project.
+A contributor is anyone who submits a pull request, opens an issue, or otherwise participates in the project.
 
 **Responsibilities:**
 
@@ -33,7 +33,7 @@ Anyone who submits a pull request, opens an issue, or otherwise participates in 
 
 ## Decision Making
 
-The maintainer has final decision-making authority over the project, including architecture, releases, and acceptance of contributions. For significant changes, the maintainer may seek input through GitHub issues or PR discussion before deciding.
+Maintainers have final decision-making authority over the project, including architecture, releases, and acceptance of contributions. For significant changes, maintainers may seek input through GitHub issues or PR discussion before deciding. When there are multiple maintainers, decisions are made by consensus; unresolved disagreements are escalated to the senior maintainer.
 
 ## Adding New Maintainers
 
@@ -42,4 +42,4 @@ New maintainers may be added at the discretion of the current maintainer. When a
 1. They are granted the appropriate repository role on GitHub.
 2. They are added to the sensitive resources table in [SECURITY.md](SECURITY.md).
 3. This file is updated to reflect the new maintainer.
-4. The `CODEOWNERS` file is updated accordingly.
+4. The `.github/CODEOWNERS` file is updated accordingly.
