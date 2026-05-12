@@ -19,10 +19,9 @@ esac
 PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?(!)?: .+$'
 
 if printf '%s' "$MSG" | grep -Eq "$PATTERN"; then
-  exit 0
-fi
-
-cat <<'EOF'
+  :
+else
+  cat <<'EOF'
 ERROR: Commit message must follow semantic commit format.
 
 Expected:
@@ -37,6 +36,26 @@ Examples:
   feat(router): add session controller extraction
   fix(cli): handle stale resume retry path
   chore: update release log links
+EOF
+
+  exit 1
+fi
+
+if grep -Eiq '^Signed-off-by:[[:space:]]+.+<.+>$' "$MSG_FILE"; then
+  exit 0
+fi
+
+cat <<'EOF'
+ERROR: Missing DCO sign-off.
+
+Include a Signed-off-by trailer in each commit message, for example:
+  Signed-off-by: Your Name <you@example.com>
+
+Recommended command:
+  git commit -s
+
+If you already committed without sign-off:
+  git commit --amend -s --no-edit
 EOF
 
 exit 1
