@@ -9,5 +9,6 @@ Historical planning and validation documents were moved here to reduce clutter i
 - POC-OUTCOME-ANALYSIS.md
 - SWITCHBOARD-MVP-REFACTOR.md
 - MILESTONE-4-PLAN.md
+- REFACTORING-PLAN.md
 
 These documents are retained for decision history and implementation evidence.
