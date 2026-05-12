@@ -52,3 +52,9 @@ If you cannot use advisories, contact the maintainer directly through GitHub and
 - We will investigate and validate the report.
 - We will work on a fix and coordinate a responsible disclosure timeline.
 - We will publish a security release note after a fix is available.
+
+## Project Members with Access to Sensitive Resources
+
+| Member | Role | Sensitive Access |
+|--------|------|-----------------|
+| [@hannasdev](https://github.com/hannasdev) | Maintainer | Repository admin, npm publish token (`NPM_TOKEN`), release deploy key (`RELEASE_DEPLOY_KEY`), Snyk token (`SNYK_TOKEN`) |
