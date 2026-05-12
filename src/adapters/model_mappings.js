@@ -34,6 +34,12 @@ export const PROFILE_MODEL_MAP = {
   }
 };
 
+export const TARGET_TO_CLAUDE_CLI = {
+  "anthropic-quick": { model: "haiku", effort: "low" },
+  "anthropic-balanced": { model: "sonnet", effort: "medium" },
+  "anthropic-coder": { model: "sonnet", effort: "high" }
+};
+
 export function getTargetProfileMap(vendor) {
   return TARGET_PROFILE_MAP[vendor] || {};
 }

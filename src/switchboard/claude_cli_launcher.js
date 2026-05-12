@@ -1,19 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { TARGET_TO_CLAUDE_CLI } from "../adapters/model_mappings.js";
+import { ANTHROPIC_TARGETS_PATH } from "./paths.js";
 import { routePrompt } from "../router/router.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.anthropic.json");
-
-const TARGET_TO_CLAUDE_CLI = {
-  "anthropic-quick": { model: "haiku", effort: "low" },
-  "anthropic-balanced": { model: "sonnet", effort: "medium" },
-  "anthropic-coder": { model: "sonnet", effort: "high" }
-};
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));

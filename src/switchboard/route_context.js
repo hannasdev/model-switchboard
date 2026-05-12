@@ -1,25 +1,9 @@
-import fs from "node:fs";
-import path from "node:path";
 import { DEFAULT_ROUTE_CONTEXT_PATH } from "./paths.js";
+import { readStore, writeStore } from "./fs-utils.js";
 
 export { DEFAULT_ROUTE_CONTEXT_PATH } from "./paths.js";
 
-function ensureFile(storePath) {
-  fs.mkdirSync(path.dirname(storePath), { recursive: true });
-  if (!fs.existsSync(storePath)) fs.writeFileSync(storePath, "{}\n", "utf8");
-}
-
-function readStore(storePath) {
-	ensureFile(storePath);
-	return JSON.parse(fs.readFileSync(storePath, "utf8"));
-}
-
-function writeStore(storePath, store) {
-	ensureFile(storePath);
-	fs.writeFileSync(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
-}
-
-function deriveLegacyTurnFields(context = {}) {
+function extractTurnFields(context = {}) {
 	const sessionState = context.sessionState || null;
 	const routingDecision = context.routingDecision || null;
 	const contextPackage = context.contextPackage || null;
@@ -83,7 +67,7 @@ export function saveRouteContext({
 
 	const store = readStore(storePath);
 	const existing = store[sessionId] || { turns: [] };
-	const legacy = deriveLegacyTurnFields(context);
+	const legacy = extractTurnFields(context);
 	const turn = {
 		threadId: legacy.threadId,
 		claudeSessionId: sessionId,
