@@ -67,18 +67,18 @@ export function saveRouteContext({
 
 	const store = readStore(storePath);
 	const existing = store[sessionId] || { turns: [] };
-	const legacy = extractTurnFields(context);
+	const turnFields = extractTurnFields(context);
 	const turn = {
-		threadId: legacy.threadId,
+		threadId: turnFields.threadId,
 		claudeSessionId: sessionId,
-		turnCount: legacy.turnCount,
-		routeLabel: legacy.routeLabel,
-		targetId: legacy.targetId,
-		model: legacy.model,
-		effort: legacy.effort,
-		mode: legacy.mode,
-		executionMode: legacy.executionMode,
-		wrapperContext: legacy.wrapperContext,
+		turnCount: turnFields.turnCount,
+		routeLabel: turnFields.routeLabel,
+		targetId: turnFields.targetId,
+		model: turnFields.model,
+		effort: turnFields.effort,
+		mode: turnFields.mode,
+		executionMode: turnFields.executionMode,
+		wrapperContext: turnFields.wrapperContext,
 		sessionState: context.sessionState || null,
 		routingDecision: context.routingDecision || null,
 		contextPackage: context.contextPackage || null,
