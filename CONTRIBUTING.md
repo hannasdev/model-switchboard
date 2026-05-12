@@ -23,7 +23,7 @@ Thank you for your interest in contributing to Model Switchboard! This guide wil
 2. **Add tests** for new functionality to `test/` directory
 3. **Run tests locally**: `npm test`
 4. **Lint your code**: `npm run lint` (also runs on CI)
-5. **Commit with semantic messages**: Use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
+5. **Commit with semantic messages and DCO sign-off**: Use conventional commits (`feat:`, `fix:`, `docs:`, etc.) and sign every commit with `-s`.
 
 ### Test Policy
 
@@ -89,6 +89,16 @@ test: add edge case coverage for session resumption
 ```
 
 Commit messages are validated by the local `commit-msg` git hook. Install hooks with `npm run hooks:install`.
+
+## Developer Certificate of Origin (DCO)
+
+All commits must include a `Signed-off-by:` trailer asserting that the contributor is legally authorized to submit the contribution.
+
+- Create signed commits with: `git commit -s -m "type(scope): subject"`
+- If you forgot to sign the latest commit: `git commit --amend -s --no-edit`
+- The CI `DCO` workflow enforces this requirement on pull requests and pushes to `main`
+
+See [DCO.md](DCO.md) for the full certificate text.
 
 ## Security
 
