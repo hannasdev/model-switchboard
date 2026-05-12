@@ -3,6 +3,9 @@
     "requireCleanWorkingDir": true,
     "requireCommits": true,
     "commit": true,
+    "commitArgs": [
+      "--signoff"
+    ],
     "tag": true,
     "tagName": "v${version}",
     "push": true,
