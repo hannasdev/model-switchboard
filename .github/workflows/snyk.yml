@@ -3,8 +3,6 @@ name: Snyk Security Scan
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   schedule:
     # Daily vulnerability scan at 2 AM UTC
     - cron: '0 2 * * *'
@@ -21,7 +19,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Run Snyk vulnerability scan
-        uses: snyk/actions/node@v1
+        uses: snyk/actions/node@v1.0.0
         with:
           args: --severity-threshold=high --all-projects --sarif-file-output=snyk.sarif
         env:

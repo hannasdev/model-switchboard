@@ -38,10 +38,10 @@ export default [
     },
   },
   {
-    // All filesystem paths in src/switchboard/ and bin/ are constructed by the
-    // central paths.js module and validated at the application boundary.
-    // detect-non-literal-fs-filename is a false positive here: paths are never
-    // derived from raw user input without sanitisation.
+    // `src/switchboard/**/*.js` and `bin/check.js` only operate on explicit
+    // file paths from CLI/config inputs or the central paths.js defaults.
+    // detect-non-literal-fs-filename is a false positive here because the path
+    // sources are controlled and not built from arbitrary string concatenation.
     files: ['src/switchboard/**/*.js', 'bin/**/*.js'],
     rules: {
       'security/detect-non-literal-fs-filename': 'off',

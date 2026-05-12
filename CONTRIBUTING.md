@@ -88,7 +88,7 @@ docs: update installation instructions
 test: add edge case coverage for session resumption
 ```
 
-Commit messages are validated by local git hooks. Install hooks with `npm run hooks:install`.
+Commit messages are validated by the local `commit-msg` git hook. Install hooks with `npm run hooks:install`.
 
 ## Security
 

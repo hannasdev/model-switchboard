@@ -27,10 +27,10 @@ This project is committed to secure software development. The following practice
 
 ### Security Assurance Measures
 - **Automated code analysis**: ESLint with security plugin (`eslint-plugin-security`) checks for common vulnerabilities in CI on pull requests and pushes to `main`
-- **Dependency scanning**: npm audit integrated into CI pipeline
+- **Dependency scanning**: `npm audit` integrated into CI pipeline on pull requests and pushes to `main`; Snyk scans run on pushes to `main` and a daily schedule
 - **Test coverage**: Comprehensive test suite validates security-relevant code paths
 - **Code review**: All changes reviewed before merge to `main`
-- **Git hooks**: Local validation enforces semantic commit messages and blocks direct commits to `main`
+- **Git hooks**: When installed, local validation enforces semantic commit messages and blocks direct commits to `main`
 
 ## Reporting a Vulnerability
 

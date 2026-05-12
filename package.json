@@ -27,7 +27,7 @@
     "access": "public"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint --max-warnings 0 .",
     "test": "node --test test/*.test.js",
     "hooks:install": "sh scripts/install-git-hooks.sh",
     "hooks:doctor": "git config --get core.hooksPath",
@@ -48,7 +48,7 @@
     "url": "https://github.com/hannasdev/model-switchboard"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
   },
   "license": "MIT",
   "dependencies": {
