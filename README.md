@@ -38,6 +38,7 @@ High-level flow:
 
 ## Primary Commands
 
+- `switchboard advise --surface openai-codex "your prompt"`
 - `switchboard "your prompt"`
 - `switchboard --interactive`
 - `switchboard explain`
@@ -53,8 +54,3 @@ Milestones 1 through 3 are now complete: router contracts, session-aware policy/
 
 Non-interactive continuity is verified for routed turns. Interactive continuity is verified for session reuse, resume semantics, hook correlation, stale-resume recovery, and fail-closed error handling.
 
-## Delivery Model
-
-Feature branches, tagged releases, and npm publishing are now part of the delivery workflow.
-
-See [CI/CD and Release Flow](docs/CI-CD.md).
