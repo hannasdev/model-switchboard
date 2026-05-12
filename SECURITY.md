@@ -32,6 +32,55 @@ This project is committed to secure software development. The following practice
 - **Code review**: All changes reviewed before merge to `main`
 - **Git hooks**: When installed, local validation enforces semantic commit messages and helps block direct commits to `main`
 
+## Secrets and Credentials Management Policy
+
+This project manages secrets and credentials using a least-privilege, no-hardcoded-secrets policy.
+
+### Scope
+
+Secrets and credentials include, at minimum:
+
+- CI/CD and automation secrets (for example: `NPM_TOKEN`, `RELEASE_DEPLOY_KEY`, `RELEASE_DEPLOY_KNOWN_HOSTS`, `SNYK_TOKEN`)
+- API keys used for local development or integration checks
+- Any credential that grants access to source, artifacts, release systems, or security tooling
+
+### Storage Requirements
+
+- Production and CI/CD secrets must be stored in GitHub Actions Secrets (repository or environment secrets), not in source files.
+- Local developer secrets must be stored in environment variables or local `.env` files that are excluded from version control.
+- Secrets must never be committed to git history, hard-coded in source code, or included in PR descriptions/issues.
+- `.env` and `.env.*` are ignored by git; `.env.example` must contain placeholders only.
+
+### Access Control Requirements
+
+- Access to secrets is limited to maintainers with a task-based need.
+- CI workflows must use least-privilege permissions and only expose required secrets to jobs that need them.
+- Secrets inventory and maintainers with sensitive access are tracked in this document under "Project Members with Access to Sensitive Resources".
+- When possible, prefer short-lived credentials and OIDC-based federation over long-lived static credentials.
+
+### Rotation and Update Requirements
+
+Secrets and credentials must be rotated or replaced when any of the following occurs:
+
+- A maintainer with access is removed or changes role.
+- Suspected or confirmed credential exposure.
+- Upstream provider revocation, expiry, or incident response guidance.
+- Material pipeline or permission model changes that alter trust boundaries.
+
+Operational rotation process:
+
+1. Create a replacement credential with minimum required scope.
+2. Update GitHub Actions Secrets (and environment secrets where used).
+3. Revoke or delete the previous credential.
+4. Run CI preflight and relevant release/publish checks to verify the new credential.
+5. Update this policy and related docs if secret names, ownership, or access boundaries changed.
+
+### Verification and Guardrails
+
+- CI preflight validates required release/publish secrets before release workflows continue.
+- Repository policy requires avoiding secret values in logs, comments, and documentation.
+- Security issues involving credentials must follow the private disclosure process below.
+
 ## Reporting a Vulnerability
 
 Please report suspected vulnerabilities privately by opening a GitHub Security Advisory draft:
