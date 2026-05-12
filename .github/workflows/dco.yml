@@ -1,0 +1,59 @@
+name: DCO
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  signoff:
+    name: Signed-off-by check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Verify commit sign-offs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            if [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
+              range="${{ github.sha }}^..${{ github.sha }}"
+            else
+              range="${{ github.event.before }}..${{ github.sha }}"
+            fi
+          fi
+
+          echo "Checking commits in range: ${range}"
+          missing=""
+
+          while IFS= read -r commit; do
+            [[ -z "$commit" ]] && continue
+
+            if ! git show -s --format=%B "$commit" | grep -Eiq '^Signed-off-by:'; then
+              missing+="${commit}"$'\n'
+            fi
+          done < <(git rev-list "$range")
+
+          if [[ -n "$missing" ]]; then
+            echo "The following commits are missing a Signed-off-by trailer:"
+            echo "$missing"
+            echo "Amend each commit with: git commit --amend -s"
+            echo "Or for multiple commits, rebase and sign each commit."
+            exit 1
+          fi
+
+          echo "All commits include Signed-off-by trailers."
