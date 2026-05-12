@@ -132,6 +132,114 @@ test("switchboard explain summarizes latest route context and hook events", () =
   assert.match(explainIo.stdoutText, /PreToolUse correlation=matched allow/);
 });
 
+test("switchboard advise returns an advisory decision for an openai surface", () => {
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["advise", "--surface", "openai-codex", "Implement the plan."],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(io.stdoutText, /Switchboard advisory \(openai-codex\): best coder/);
+  assert.match(io.stdoutText, /Surface: openai-codex/);
+  assert.match(io.stdoutText, /Recommended target: best coder \(openai-coder\)/);
+  assert.match(io.stdoutText, /Required: repo_context, file_read, file_edit/);
+  assert.equal(io.stderrText, "");
+});
+
+test("switchboard advise json exposes the routing decision contract", () => {
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["advise", "--surface", "openai-codex", "--json", "Implement the plan."],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  const result = JSON.parse(io.stdoutText);
+  assert.equal(result.surface, "openai-codex");
+  assert.equal(result.status, "ok");
+  assert.equal(result.routeDecision.targetId, "openai-coder");
+  assert.equal(result.routingDecision.schemaVersion, "0.1.0-experimental");
+  assert.equal(result.routingDecision.selectedTargetId, "openai-coder");
+  assert.equal(result.routingDecision.status, "ok");
+});
+
+test("switchboard advise json stays contract-consistent across multiple surfaces", () => {
+  const cases = [
+    { surface: "openai-codex", expectedTargetId: "openai-coder" },
+    { surface: "google-gemini", expectedTargetId: "gemini-coder" },
+    { surface: "claude", expectedTargetId: "anthropic-coder" }
+  ];
+
+  for (const testCase of cases) {
+    const io = memoryIo();
+    const exitCode = runSwitchboardCli(
+      ["advise", "--surface", testCase.surface, "--json", "Implement the plan."],
+      io
+    );
+
+    assert.equal(exitCode, 0);
+    const result = JSON.parse(io.stdoutText);
+    assert.equal(result.surface, testCase.surface);
+    assert.equal(result.status, "ok");
+    assert.equal(result.routeDecision.targetId, testCase.expectedTargetId);
+    assert.equal(result.routingDecision.schemaVersion, "0.1.0-experimental");
+    assert.equal(result.routingDecision.selectedTargetId, testCase.expectedTargetId);
+    assert.equal(result.routingDecision.status, "ok");
+    assert.deepEqual(result.routeDecision.requiredCapabilities, ["repo_context", "file_read", "file_edit"]);
+  }
+});
+
+test("switchboard advise accepts common vendor aliases", () => {
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["advise", "--surface", "gemini", "--json", "Implement the plan."],
+    io
+  );
+
+  assert.equal(exitCode, 0);
+  const result = JSON.parse(io.stdoutText);
+  assert.equal(result.surface, "google-gemini");
+  assert.equal(result.routeDecision.targetId, "gemini-coder");
+  assert.equal(result.routingDecision.selectedTargetId, "gemini-coder");
+});
+
+test("switchboard advise rejects an unknown advisory surface", () => {
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["advise", "--surface", "unknown-surface", "Implement the plan."],
+    io
+  );
+
+  assert.equal(exitCode, 1);
+  assert.match(io.stderrText, /unknown surface 'unknown-surface'/);
+  assert.equal(io.stdoutText, "");
+});
+
+test("switchboard advise reports pre-execution failures without crashing", () => {
+  const originalReadFileSync = fs.readFileSync;
+  try {
+    fs.readFileSync = function mockReadFileSync(filePath, ...args) {
+      if (String(filePath).includes("targets.openai.json")) {
+        throw new Error("simulated advise failure");
+      }
+      return originalReadFileSync.call(this, filePath, ...args);
+    };
+
+    const io = memoryIo();
+    const exitCode = runSwitchboardCli(
+      ["advise", "--surface", "openai-codex", "Implement the plan."],
+      io
+    );
+
+    assert.equal(exitCode, 1);
+    assert.match(io.stderrText, /switchboard advise failed: simulated advise failure/);
+    assert.equal(io.stdoutText, "");
+  } finally {
+    fs.readFileSync = originalReadFileSync;
+  }
+});
+
 test("switchboard requires a prompt for routed turns", () => {
   const io = memoryIo();
   const exitCode = runSwitchboardCli(["--dry-run"], io);

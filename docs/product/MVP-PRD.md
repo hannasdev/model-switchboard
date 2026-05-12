@@ -1,10 +1,10 @@
 # Session-Aware AI Router MVP PRD
 
-The latest PoC learning is captured in [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) and the executable evidence summarized in [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md). Those documents supersede the earlier generic vendor-router direction.
+The latest PoC learning is captured in [PoC Outcome Analysis](../archive/POC-OUTCOME-ANALYSIS.md) and the executable evidence summarized in [PoC Implementation Notes](../archive/POC-IMPLEMENTATION.md). Those documents supersede the earlier generic vendor-router direction.
 
 ## Status Snapshot
 
-This document is still relevant as the scoped MVP product slice and the record of the assumptions that were validated by PoC 2 and the early Switchboard workflow. It is no longer the best source of truth for current implementation status; use [PRD.md](PRD.md), [ROUTER-PHASE-PLAN.md](ROUTER-PHASE-PLAN.md), and the milestone logs for the up-to-date state.
+This document is still relevant as the scoped MVP product slice and the record of the assumptions that were validated by PoC 2 and the early Switchboard workflow. It is no longer the best source of truth for current implementation status; use [PRD.md](../PRD.md), [ROUTER-PHASE-PLAN.md](ROUTER-PHASE-PLAN.md), and the milestone logs for the up-to-date state.
 
 This PRD is intentionally scoped to the first product slice. PoC 2 has now verified enough of the Claude Code wrapper and hook architecture to proceed toward an MVP, with one important boundary: the verified path is prompt-driven non-interactive Claude CLI launch/resume, not a fully polished interactive Claude replacement.
 
@@ -104,13 +104,13 @@ Verified:
 
 Remaining validation before calling the MVP shippable:
 
-All items resolved. See Section 8 for implementation status and [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) for the PoC 2 outcome summary with MVP implications.
+All items resolved. See Section 8 for implementation status and [PoC Outcome Analysis](../archive/POC-OUTCOME-ANALYSIS.md) for the PoC 2 outcome summary with MVP implications.
 
 1. ~~Replace PoC npm commands with a first-class `switchboard` command.~~ Done.
 2. ~~Decide whether the initial MVP supports prompt-driven turns only, or also supports a no-prompt interactive mode.~~ Done: both prompt-driven and `--interactive` modes are implemented and live-verified.
 3. ~~Harden failure behavior when Claude auth, hook setup, or route-context correlation is unavailable.~~ Done: CLI fails closed pre-launch; hook policy fails closed without matched route context.
 4. ~~Define the minimum production tool-governance policy.~~ Done: documented in [Switchboard Wrapper Threat Model](WRAPPER-THREAT-MODEL.md).
-5. ~~Write a concise PoC 2 outcome summary with MVP implications.~~ Done: captured in [PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md).
+5. ~~Write a concise PoC 2 outcome summary with MVP implications.~~ Done: captured in [PoC Outcome Analysis](../archive/POC-OUTCOME-ANALYSIS.md).
 
 The MVP should still not include:
 
@@ -409,10 +409,10 @@ The MVP is acceptable when:
 
 ## 12. Relationship To Other Docs
 
-[PoC](archive/POC.md) describes the original risk-reduction plan.
+[PoC](../archive/POC.md) describes the original risk-reduction plan.
 
-[PoC Outcome Analysis](archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed, including the PoC 2 outcome summary with verified assumptions and MVP implications. [PoC Implementation Notes](archive/POC-IMPLEMENTATION.md) contains the executable PoC 2 evidence.
+[PoC Outcome Analysis](../archive/POC-OUTCOME-ANALYSIS.md) is the current source of truth for what the first PoC proved and how the product direction changed, including the PoC 2 outcome summary with verified assumptions and MVP implications. [PoC Implementation Notes](../archive/POC-IMPLEMENTATION.md) contains the executable PoC 2 evidence.
 
-[Architecture and Design Document](PRD.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
+[Architecture and Design Document](../ARCHITECTURE-SPEC.md) remains broader product context. It should not be treated as MVP scope unless this PRD explicitly includes the feature.
 
-[Switchboard MVP Refactor Plan](archive/SWITCHBOARD-MVP-REFACTOR.md) captures the proposed cleanup to move product code and runtime paths out of the PoC structure.
+[Switchboard MVP Refactor Plan](../archive/SWITCHBOARD-MVP-REFACTOR.md) captures the proposed cleanup to move product code and runtime paths out of the PoC structure.

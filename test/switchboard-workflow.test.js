@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
+  adviseSwitchboardTurn,
   executeSwitchboardContinuityProbe,
   executeSwitchboardInteractiveContinuityProbe,
   executeSwitchboardTurn,
@@ -25,6 +26,29 @@ function tempPaths() {
 
 function readLog(logPath) {
   return fs.readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
+}
+
+function advisoryTargetsFor(prefix) {
+  return [
+    {
+      id: `${prefix}-coder`,
+      label: "best coder",
+      target_class: "strong_coding",
+      capabilities: [
+        "chat",
+        "reasoning",
+        "structured_output",
+        "repo_context",
+        "file_read",
+        "file_edit",
+        "shell_execution",
+        "test_execution"
+      ],
+      privacy_tier: "external",
+      availability: "available",
+      client_surfaces: ["vendor-cli"]
+    }
+  ];
 }
 
 test("Switchboard turn plans Claude launch and records separable evidence", () => {
@@ -178,6 +202,76 @@ test("Switchboard logs escalation policy details for escalated turns", () => {
   const [entry] = readLog(logPath);
   assert.equal(entry.routeDecision.escalationPolicy?.applied, true);
   assert.equal(entry.routeDecision.escalationPolicy?.reasons.includes("user_correction"), true);
+});
+
+test("Advisory matrix: privacy hard constraint refuses all surfaces consistently", () => {
+  const cases = [
+    { surface: "openai-codex", targetPrefix: "openai" },
+    { surface: "google-gemini", targetPrefix: "gemini" },
+    { surface: "claude", targetPrefix: "anthropic" }
+  ];
+
+  for (const testCase of cases) {
+    const result = adviseSwitchboardTurn({
+      input: "Implement the plan.",
+      surface: testCase.surface,
+      targets: advisoryTargetsFor(testCase.targetPrefix),
+      policyInputs: {
+        hardConstraints: {
+          privacy: "enforced",
+          requiredPrivacyTier: "local"
+        }
+      }
+    });
+
+    assert.equal(result.status, "refused");
+    assert.equal(result.surface, testCase.surface);
+    assert.equal(result.routeDecision.status, "refused");
+    assert.equal(result.routingDecision.status, "refused");
+    assert.equal(
+      result.routingDecision.hardConstraintResults.blocked.some(
+        (entry) =>
+          entry.targetId === `${testCase.targetPrefix}-coder` &&
+          entry.constraintReasons.includes("privacy_tier_below_required")
+      ),
+      true
+    );
+  }
+});
+
+test("Advisory matrix: client compatibility hard constraint refuses all surfaces consistently", () => {
+  const cases = [
+    { surface: "openai-codex", targetPrefix: "openai" },
+    { surface: "google-gemini", targetPrefix: "gemini" },
+    { surface: "claude", targetPrefix: "anthropic" }
+  ];
+
+  for (const testCase of cases) {
+    const result = adviseSwitchboardTurn({
+      input: "Implement the plan.",
+      surface: testCase.surface,
+      targets: advisoryTargetsFor(testCase.targetPrefix),
+      clientSurface: "copilot-chat",
+      policyInputs: {
+        hardConstraints: {
+          clientCompatibility: "enforced"
+        }
+      }
+    });
+
+    assert.equal(result.status, "refused");
+    assert.equal(result.surface, testCase.surface);
+    assert.equal(result.routeDecision.status, "refused");
+    assert.equal(result.routingDecision.status, "refused");
+    assert.equal(
+      result.routingDecision.hardConstraintResults.blocked.some(
+        (entry) =>
+          entry.targetId === `${testCase.targetPrefix}-coder` &&
+          entry.constraintReasons.includes("client_surface_incompatible")
+      ),
+      true
+    );
+  }
 });
 
 test("Switchboard continuity probe preserves Claude session while route changes", () => {

@@ -38,23 +38,21 @@ High-level flow:
 
 ## Primary Commands
 
-- `switchboard "your prompt"`
-- `switchboard --interactive`
-- `switchboard explain`
-- `switchboard probe continuity`
-- `switchboard probe continuity-interactive`
-- `npm test`
+| Command | What It Does | Use It When |
+| --- | --- | --- |
+| `switchboard "your prompt"` | Routes a single prompt, chooses target/effort, then launches or resumes Claude for that turn. | You want normal prompt-driven usage with routing applied automatically. |
+| `switchboard --interactive` | Starts an interactive Claude session through Switchboard with route-aware session handling. | You want a live back-and-forth session instead of one-shot prompts. |
+| `switchboard explain` | Shows the latest routing decision, reasoning signals, and correlated evidence for a thread. | You want to audit why a route was chosen or debug routing behavior. |
+| `switchboard advise --surface openai-codex "your prompt"` | Returns an advisory routing recommendation for a selected surface without taking over execution. | You want a cross-surface recommendation or policy check before running a turn. |
+| `switchboard probe continuity` | Runs a continuity probe for prompt-driven turns and reports whether session continuity checks pass. | You want to verify non-interactive continuity behavior after changes. |
+| `switchboard probe continuity-interactive` | Runs the interactive continuity probe and verifies resume/session behavior across turns. | You want to validate interactive continuity and related checks. |
+| `npm test` | Runs the full automated test suite for adapters, router, workflow, and CLI behavior. | You changed routing/workflow/docs and want a full regression check. |
 
-## Project Status
+### Typical First Run
 
-Version 1.0.0 is the first stable release of the prompt-driven Switchboard workflow for Claude Code.
-
-Milestones 1 through 3 are now complete: router contracts, session-aware policy/controller boundaries, and the Claude workflow refit onto contract-backed router/session/context evidence.
-
-Non-interactive continuity is verified for routed turns. Interactive continuity is verified for session reuse, resume semantics, hook correlation, stale-resume recovery, and fail-closed error handling.
-
-## Delivery Model
-
-Feature branches, tagged releases, and npm publishing are now part of the delivery workflow.
-
-See [CI/CD and Release Flow](docs/CI-CD.md).
+1. Send one routed prompt:
+   `switchboard "Implement the retry logic for stale session recovery."`
+2. Inspect why the route was chosen:
+   `switchboard explain`
+3. Validate behavior before opening a PR:
+   `npm test`

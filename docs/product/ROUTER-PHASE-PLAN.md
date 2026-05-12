@@ -29,7 +29,7 @@ The core objective is not to add more vendor integrations immediately. The core 
 
 ## Why This Phase Exists
 
-The broader product definition in [PRD.md](PRD.md) describes a vendor-neutral, session-aware routing layer that owns session state, task classification, routing policy, execution-target eligibility, handoff, and routing logs.
+The broader product definition in [PRD.md](../PRD.md) describes a vendor-neutral, session-aware routing layer that owns session state, task classification, routing policy, execution-target eligibility, handoff, and routing logs.
 
 The current MVP in [MVP-PRD.md](MVP-PRD.md) proves a narrower but valuable product slice: a Claude-scoped workflow integration with deterministic routing, continuity, explanation, and conservative governance.
 
