@@ -30,7 +30,7 @@ This project is committed to secure software development. The following practice
 - **Dependency scanning**: `npm audit` integrated into CI pipeline on pull requests and pushes to `main`; Snyk scans run on pushes to `main` and a daily schedule
 - **Test coverage**: Comprehensive test suite validates security-relevant code paths
 - **Code review**: All changes reviewed before merge to `main`
-- **Git hooks**: When installed, local validation enforces semantic commit messages and blocks direct commits to `main`
+- **Git hooks**: When installed, local validation enforces semantic commit messages and helps block direct commits to `main`
 
 ## Reporting a Vulnerability
 

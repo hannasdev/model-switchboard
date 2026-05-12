@@ -233,7 +233,7 @@ switchboard explain --json | jq .reasoning
 
 ### Dry-run mode (preview route without launching)
 ```bash
-SWITCHBOARD_DRY_RUN=1 switchboard "Implement the retry logic"
+switchboard --dry-run "Implement the retry logic"
 ```
 
 ### Validate continuity before release

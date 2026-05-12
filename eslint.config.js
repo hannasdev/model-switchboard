@@ -42,7 +42,7 @@ export default [
     // file paths from CLI/config inputs or the central paths.js defaults.
     // detect-non-literal-fs-filename is a false positive here because the path
     // sources are controlled and not built from arbitrary string concatenation.
-    files: ['src/switchboard/**/*.js', 'bin/**/*.js'],
+    files: ['src/switchboard/**/*.js', 'bin/check.js'],
     rules: {
       'security/detect-non-literal-fs-filename': 'off',
     },
