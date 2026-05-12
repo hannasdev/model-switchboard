@@ -211,6 +211,7 @@ async function main() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	main().catch((error) => {
 		console.error(error.stack || String(error));
+		// eslint-disable-next-line no-process-exit -- top-level CLI entry point; process.exit is required to set non-zero exit code
 		process.exit(1);
 	});
 }

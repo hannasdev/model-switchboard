@@ -6,6 +6,16 @@ Model Switchboard is a routing layer for AI-assisted software delivery.
 
 It keeps coding sessions moving by choosing model and effort settings before each turn, so you do not have to make that call manually every time.
 
+## Get, Provide Feedback, and Contribute
+
+- Obtain the software:
+   - GitHub repository: https://github.com/hannasdev/model-switchboard
+   - npm package: https://www.npmjs.com/package/model-switchboard
+- Provide feedback (bug reports and enhancements):
+   - Issues: https://github.com/hannasdev/model-switchboard/issues
+- Contribute to the project:
+   - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## Why It Exists
 
 Choosing the right model repeatedly is a real cognitive tax. A single coding session can shift between quick clarifications, planning, implementation, and debugging, each with different cost and quality needs.
@@ -36,6 +46,18 @@ High-level flow:
 - Not a general-purpose agent runtime.
 - Not a cross-vendor orchestration product in this MVP phase.
 
+## Security & Code Quality
+
+This project prioritizes security for AI-related software:
+
+- **Vulnerability Scanning**: Automated dependency scanning via `npm audit` in CI on pull requests and pushes to `main`, plus [Snyk](https://snyk.io) scans on pushes to `main` and a daily schedule when `SNYK_TOKEN` is configured
+- **Static Analysis**: ESLint with security plugin to detect common vulnerabilities
+- **Responsible Disclosure**: Follow the [Security Policy](SECURITY.md) to report vulnerabilities privately
+- **Test Coverage**: Comprehensive test suite validates security-relevant code paths
+- **Developer Knowledge**: Core team has expertise in secure software design and threat modeling
+
+See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting process and security practices.
+
 ## Primary Commands
 
 | Command | What It Does | Use It When |
@@ -56,3 +78,5 @@ High-level flow:
    `switchboard explain`
 3. Validate behavior before opening a PR:
    `npm test`
+
+For detailed command documentation, environment variables, and output formats, see [CLI Reference](docs/CLI-REFERENCE.md).
