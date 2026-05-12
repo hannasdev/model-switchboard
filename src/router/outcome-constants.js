@@ -123,6 +123,10 @@ export function generateDecisionId({ sessionId, threadId, turnCount }) {
  * @returns {string|null} - switching reason
  */
 export function determineSwitchingReason(routingDecision, previousTargetId) {
+  if (previousTargetId == null) {
+    return SWITCHING_REASON.NO_SWITCH;
+  }
+
   const selectedId = routingDecision?.selectedTargetId;
 
   // No switch

@@ -1,15 +1,17 @@
 # Replay Guide: Testing Router Policies
 
-**Milestone 4** establishes infrastructure for offline decision evaluation. This guide explains how to use the replay system to test policy changes against historical evidence.
+**Milestone 4** establishes infrastructure for offline decision evaluation. This guide explains how to use the current replay helpers to check recorded decision metadata and policy-version consistency against historical evidence.
 
 ## Overview
 
 The replay system allows you to:
 
 1. **Load historical evidence** from your Switchboard logs
-2. **Re-evaluate past decisions** under different policy configurations  
-3. **Compare policies** to see which one would have made better decisions
+2. **Check recorded decisions** against a target policy version
+3. **Compare policy-version alignment** across sessions and turns
 4. **Validate policy changes** before deploying them
+
+Note: current replay helpers do not recompute routing decisions from raw inputs. `matches` indicates policy-version equality between recorded evidence and the provided `policyVersion`.
 
 ## Quick Start
 
@@ -84,12 +86,12 @@ console.log(evaluation);
 "
 ```
 
-## Workflow: Test a New Policy
+## Workflow: Validate Policy Version Alignment
 
 ### Scenario
 
-You want to make a routing policy change:
-- *Change:* Lower the continuity-cost threshold so we switch targets more aggressively
+You want to validate policy rollout consistency:
+- *Change:* You introduced policy version `0.2.0` and want to check which historical decisions were logged under older versions.
 
 ### Steps
 
@@ -110,11 +112,7 @@ console.log(JSON.stringify(baseline, null, 2));
 "
 ```
 
-#### 2. Implement your policy change
-
-Edit `src/router/router.js` or `src/router/session_controller.js` to change the continuity cost thresholds.
-
-#### 3. Re-evaluate with new policy
+#### 2. Compare evidence against target policy version
 
 ```bash
 node --input-type=module -e "
@@ -123,19 +121,19 @@ const evidence = loadSessionEvidence({
   logPath: process.env.HOME + '/.model-switchboard/switchboard-turns.ndjson',
   sessionId: 'my-session-123'
 });
-const newPolicyResults = evidence.map(e => replayRoutingDecision({ evidence: e, policyVersion: '0.2.0' }));
-const regressions = newPolicyResults.filter(r => !r.matches);
-console.log(\`Regressions: \${regressions.length} / \${evidence.length}\`);
+const versionResults = evidence.map(e => replayRoutingDecision({ evidence: e, policyVersion: '0.2.0' }));
+const mismatches = versionResults.filter(r => !r.matches);
+console.log(\`Version mismatches: \${mismatches.length} / \${evidence.length}\`);
 "
 ```
 
-#### 4. Compare results
+#### 3. Compare results
 
-- **If match rate is similar:** Policy change is a good candidate
-- **If many regressions:** Policy may be too aggressive; refine it
-- **If better match rate:** Policy improves decision quality
+- **If match rate is high:** Most decisions were already logged under the target policy version
+- **If many mismatches:** Evidence contains decisions logged under other policy versions
+- **If match rate is 0%:** The requested policy version is absent from this session's evidence
 
-#### 5. Run tests and validate
+#### 4. Run tests and validate
 
 ```bash
 npm test
@@ -146,10 +144,10 @@ git commit -m "policy: adjust continuity-cost thresholds"
 
 ### Match Rate
 
-- **100% match:** Policy is identical to baseline
-- **>90% match:** Minor tweaks, likely safe
-- **75-90% match:** Significant changes, should review regressions
-- **<75% match:** Major changes, likely needs refinement
+- **100% match:** All recorded decisions already use the compared policy version
+- **>90% match:** Most decisions use the compared policy version
+- **75-90% match:** Mixed-policy evidence; investigate rollout boundaries
+- **<75% match:** Majority of decisions were recorded under different policy versions
 
 ### Confidence
 
@@ -227,14 +225,14 @@ fixtures.evidence.forEach((e, idx) => {
 
 Current replay system:
 
-- **Scope:** Tests routing decision matching, not end-to-end execution
-- **Policy input:** Can only compare against recorded policy versions
+- **Scope:** Checks recorded metadata consistency, not re-computed routing outcomes
+- **Policy input:** Compares against recorded policy versions only
 - **Outcome:** Does not include outcome feedback (success/failure)
 
 Future enhancements:
 
 - **Outcome-aware evaluation:** Factor in whether decisions succeeded or failed
-- **Alternative policy configs:** Pass custom policy parameters instead of fixed versions
+- **True policy replay:** Recompute routing decisions from evidence inputs and compare selected targets/outcomes
 - **A/B testing:** Compare two policies head-to-head with statistical significance
 - **Regression detection:** Automatic flagging of decisions that would have regressed
 - **Replay optimizations:** Cache results for faster iteration

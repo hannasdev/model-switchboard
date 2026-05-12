@@ -42,6 +42,8 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(result.status, "planned");
   assert.equal(result.routeDecision.label, "best coder");
   assert.equal(result.routeDecision.taskType, "multi_file_refactor");
+  assert.equal(typeof result.routeDecision.confidence, "number");
+  assert.ok(result.routeDecision.confidence > 0);
   assert.equal(result.routeDecision.continuityCost, "low");
   assert.equal(result.routeDecision.modeResolution.resolvedMode, "implement");
   assert.equal(result.routeDecision.policyInputs.hardConstraints.privacy, "off");
@@ -68,6 +70,8 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(entry.claude.selectedClaude.model, "sonnet");
   assert.equal(entry.wrapperContext.kind, "switchboard_context");
   assert.equal(entry.routeDecision.label, "best coder");
+  assert.equal(entry.attribution.decisionConfidence, result.routeDecision.confidence);
+  assert.equal(entry.attribution.switchingReason, null);
   assert.deepEqual(entry.routeDecision.escalationPolicy?.reasons, []);
   assert.equal(entry.selectedClaude.effort, "high");
   assert.equal(entry.session.claudeSessionId, "claude-session-1");

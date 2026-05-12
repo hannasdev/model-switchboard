@@ -81,6 +81,7 @@ function routeDecisionSummary(plan) {
   const route = plan.route || {};
   return {
     status: route.status || plan.status,
+    confidence: route.classification?.confidence ?? route.confidence ?? null,
     mode: route.mode || null,
     taskType: route.taskType || null,
     label: route.selectedTarget?.label || null,
@@ -627,7 +628,7 @@ function buildSwitchboardTurn({
         turnCount: attemptedTurnCount
       }),
       decisionConfidence: routeDecision?.confidence ?? 0.5,
-      switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId || null),
+      switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId ?? null),
       escalationApplied: routeDecision?.escalationPolicy?.applied || false,
       policyVersion: POLICY_VERSION
     },
