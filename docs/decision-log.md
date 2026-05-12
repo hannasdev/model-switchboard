@@ -1,6 +1,6 @@
 # Decision Log
 
-Use this log for deferred-to-committed design decisions referenced by [ROUTER-PHASE-PLAN.md](ROUTER-PHASE-PLAN.md).
+Use this log for deferred-to-committed design decisions referenced by [ROUTER-PHASE-PLAN.md](product/ROUTER-PHASE-PLAN.md).
 
 A decision is not treated as committed unless a completed entry exists.
 
@@ -80,7 +80,7 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 1 closeout.
-- Linked artifacts (logs, fixtures, docs, PRs): docs/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
+- Linked artifacts (logs, fixtures, docs, PRs): docs/product/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
 
 ## Milestone 1 Closeout
 
@@ -122,7 +122,7 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 2 plan-to-implementation checkpoint.
-- Linked artifacts (logs, fixtures, docs, PRs): docs/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
+- Linked artifacts (logs, fixtures, docs, PRs): docs/product/ROUTER-PHASE-PLAN.md, docs/contracts/router-contracts.md
 
 ## Milestone 2 Checkpoint (Slice 1)
 
@@ -202,7 +202,7 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 3 plan-to-implementation checkpoint.
-- Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/router/session-controller.js, test/session-controller.test.js, test/router.test.js, docs/ROUTER-PHASE-PLAN.md
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/router/session-controller.js, test/session-controller.test.js, test/router.test.js, docs/product/ROUTER-PHASE-PLAN.md
 
 ## Milestone 3 Closeout
 
@@ -243,7 +243,7 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 4 plan-to-implementation checkpoint.
-- Linked artifacts (logs, fixtures, docs, PRs): src/switchboard/workflow.js, src/switchboard/route-context.js, src/switchboard/cli.js, src/switchboard/claude-hook-bridge.js, test/switchboard-workflow.test.js, test/switchboard-cli.test.js, docs/ROUTER-PHASE-PLAN.md
+- Linked artifacts (logs, fixtures, docs, PRs): src/switchboard/workflow.js, src/switchboard/route-context.js, src/switchboard/cli.js, src/switchboard/claude-hook-bridge.js, test/switchboard-workflow.test.js, test/switchboard-cli.test.js, docs/product/ROUTER-PHASE-PLAN.md
 
 ## Milestone 4 Closeout
 
@@ -287,4 +287,4 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 5 second-surface proof conditional gate (review stability, integration readiness, contract reusability).
-- Linked artifacts (logs, fixtures, docs, PRs): src/router/outcome-constants.js, src/switchboard/attribution-store.js, src/switchboard/workflow.js, src/switchboard/cli.js, test/attribution.test.js, docs/contracts/router-contracts.md, docs/REPLAY-GUIDE.md, docs/ROUTER-PHASE-PLAN.md
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/outcome-constants.js, src/switchboard/attribution-store.js, src/switchboard/workflow.js, src/switchboard/cli.js, test/attribution.test.js, docs/contracts/router-contracts.md, docs/REPLAY-GUIDE.md, docs/product/ROUTER-PHASE-PLAN.md

@@ -4,7 +4,7 @@ The latest PoC learning is captured in [PoC Outcome Analysis](archive/POC-OUTCOM
 
 ## Status Snapshot
 
-This document is still relevant as the scoped MVP product slice and the record of the assumptions that were validated by PoC 2 and the early Switchboard workflow. It is no longer the best source of truth for current implementation status; use [PRD.md](PRD.md), [ROUTER-PHASE-PLAN.md](ROUTER-PHASE-PLAN.md), and the milestone logs for the up-to-date state.
+This document is still relevant as the scoped MVP product slice and the record of the assumptions that were validated by PoC 2 and the early Switchboard workflow. It is no longer the best source of truth for current implementation status; use [PRD.md](../PRD.md), [ROUTER-PHASE-PLAN.md](ROUTER-PHASE-PLAN.md), and the milestone logs for the up-to-date state.
 
 This PRD is intentionally scoped to the first product slice. PoC 2 has now verified enough of the Claude Code wrapper and hook architecture to proceed toward an MVP, with one important boundary: the verified path is prompt-driven non-interactive Claude CLI launch/resume, not a fully polished interactive Claude replacement.
 
