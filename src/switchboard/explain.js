@@ -1,15 +1,5 @@
-import fs from "node:fs";
 import { DEFAULT_SWITCHBOARD_LOG_PATH } from "./paths.js";
-
-function readNdjson(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  return fs.readFileSync(filePath, "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
-}
-
-function readJsonIfExists(filePath) {
-  if (!filePath || !fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
-}
+import { readJsonIfExists, readNdjson } from "./readers.js";
 
 function reconstructReasoning(routeDecision, routingDecision) {
   if (!routeDecision || !routingDecision) {

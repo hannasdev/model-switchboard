@@ -17,6 +17,7 @@ import {
   POLICY_VERSION,
   EXECUTION_STATUS
 } from "../router/outcome-constants.js";
+import { readNdjson } from "./readers.js";
 
 export {
   DEFAULT_SWITCHBOARD_LOG_PATH,
@@ -31,11 +32,6 @@ function readJson(filePath) {
 function appendLog(entry, logPath = DEFAULT_SWITCHBOARD_LOG_PATH) {
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, "utf8");
-}
-
-function readNdjson(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  return fs.readFileSync(filePath, "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
 }
 
 function defaultSession(targets) {
