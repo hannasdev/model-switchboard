@@ -27,6 +27,7 @@
     "access": "public"
   },
   "scripts": {
+    "lint": "eslint --max-warnings 0 .",
     "test": "node --test test/*.test.js",
     "hooks:install": "sh scripts/install-git-hooks.sh",
     "hooks:doctor": "git config --get core.hooksPath",
@@ -46,6 +47,9 @@
     "type": "git",
     "url": "https://github.com/hannasdev/model-switchboard"
   },
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
@@ -53,7 +57,10 @@
     "openai": "^6.37.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "auto-changelog": "^2.5.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-security": "^4.0.0",
     "fast-check": "^4.7.0",
     "release-it": "^20.0.1"
   }

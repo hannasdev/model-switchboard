@@ -38,7 +38,7 @@ Tests are automatically verified in CI on every push to `main` and on all pull r
 ### Code Quality
 
 **Static Analysis:**
-- ESLint runs automatically in CI on every push and pull request
+- ESLint runs automatically in CI on pushes to `main` and all pull requests to `main`
 - Security plugin (`eslint-plugin-security`) checks for common vulnerabilities
 - Run locally before pushing: `npm run lint`
 - Auto-fix where possible: `npm run lint -- --fix`
@@ -88,7 +88,7 @@ docs: update installation instructions
 test: add edge case coverage for session resumption
 ```
 
-Commit messages are validated by the `commit-msg` git hook locally. Install hooks once per clone with `npm run hooks:install`.
+Commit messages are validated by the local `commit-msg` git hook. Install hooks with `npm run hooks:install`.
 
 ## Security
 

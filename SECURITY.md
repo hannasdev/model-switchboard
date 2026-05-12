@@ -9,7 +9,7 @@ The latest published release receives security updates.
 This project is committed to secure software development. The following practices are implemented:
 
 ### Development Knowledge
-- Primary developers have training and experience in secure software design, including:
+- Primary developers are expected to apply secure software design practices, including:
   - Secure architecture and threat modeling
   - Input validation and sanitization
   - Authentication and authorization patterns
@@ -26,11 +26,11 @@ This project is committed to secure software development. The following practice
   - **Path traversal**: Path operations validated and restricted to intended directories
 
 ### Security Assurance Measures
-- **Automated code analysis**: ESLint with security plugin (`eslint-plugin-security`) checks for common vulnerabilities in CI on every push and pull request
-- **Dependency scanning**: npm audit integrated into CI pipeline
+- **Automated code analysis**: ESLint with security plugin (`eslint-plugin-security`) checks for common vulnerabilities in CI on pull requests and pushes to `main`
+- **Dependency scanning**: `npm audit` integrated into CI pipeline on pull requests and pushes to `main`; Snyk scans run on pushes to `main` and a daily schedule when `SNYK_TOKEN` is configured
 - **Test coverage**: Comprehensive test suite validates security-relevant code paths
 - **Code review**: All changes reviewed before merge to `main`
-- **Git hooks**: Local validation enforces semantic commit messages and blocks direct commits to `main`
+- **Git hooks**: When installed, local validation enforces semantic commit messages and helps block direct commits to `main`
 
 ## Reporting a Vulnerability
 

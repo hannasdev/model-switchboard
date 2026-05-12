@@ -1,0 +1,33 @@
+name: Snyk Security Scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Daily vulnerability scan at 2 AM UTC
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  snyk:
+    if: secrets.SNYK_TOKEN != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Run Snyk vulnerability scan
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04
+        with:
+          args: --severity-threshold=high --all-projects --sarif-file-output=snyk.sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload Snyk results to GitHub Security
+        uses: github/codeql-action/upload-sarif@3ab4101902695724f1a74a5fcce0f4a565409b4d
+        if: always() && hashFiles('snyk.sarif') != ''
+        with:
+          sarif_file: snyk.sarif
+          wait-for-processing: true

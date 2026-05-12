@@ -6,7 +6,7 @@ Model Switchboard is a routing layer for AI-assisted software delivery.
 
 It keeps coding sessions moving by choosing model and effort settings before each turn, so you do not have to make that call manually every time.
 
-## Get, Feedback, and Contribute
+## Get, Provide Feedback, and Contribute
 
 - Obtain the software:
    - GitHub repository: https://github.com/hannasdev/model-switchboard
@@ -50,7 +50,7 @@ High-level flow:
 
 This project prioritizes security for AI-related software:
 
-- **Vulnerability Scanning**: Automated dependency scanning via npm audit and [Snyk](https://snyk.io) on every push
+- **Vulnerability Scanning**: Automated dependency scanning via `npm audit` in CI on pull requests and pushes to `main`, plus [Snyk](https://snyk.io) scans on pushes to `main` and a daily schedule when `SNYK_TOKEN` is configured
 - **Static Analysis**: ESLint with security plugin to detect common vulnerabilities
 - **Responsible Disclosure**: Follow the [Security Policy](SECURITY.md) to report vulnerabilities privately
 - **Test Coverage**: Comprehensive test suite validates security-relevant code paths
