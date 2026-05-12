@@ -6,10 +6,13 @@ import { planClaudeCliLaunch } from "./claude-cli-launcher.js";
 import {
   ANTHROPIC_TARGETS_PATH,
   DEFAULT_SWITCHBOARD_LOG_PATH,
-  DEFAULT_SWITCHBOARD_STORE_PATH
+  DEFAULT_SWITCHBOARD_STORE_PATH,
+  GEMINI_TARGETS_PATH,
+  OPENAI_TARGETS_PATH
 } from "./paths.js";
 import { saveRouteContext } from "./route-context.js";
 import { loadThreadSession, saveThreadSession } from "./session-store.js";
+import { routePrompt } from "../router/router.js";
 import {
   determineErrorSignal,
   determineSwitchingReason,
@@ -24,6 +27,20 @@ export {
   DEFAULT_SWITCHBOARD_STORE_PATH
 } from "./paths.js";
 export { explainLatestSwitchboardTurn } from "./explain.js";
+
+const ADVISORY_SURFACE_TARGETS = {
+  "openai-codex": OPENAI_TARGETS_PATH,
+  "google-gemini": GEMINI_TARGETS_PATH,
+  claude: ANTHROPIC_TARGETS_PATH
+};
+
+const ADVISORY_SURFACE_ALIASES = {
+  openai: "openai-codex",
+  codex: "openai-codex",
+  gemini: "google-gemini",
+  anthropic: "claude",
+  "claude-code": "claude"
+};
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -84,6 +101,45 @@ function routeDecisionSummary(plan) {
     policyInputs: route.policyInputs || null,
     escalationPolicy: route.escalationPolicy || null,
     explanation: route.explanation || null
+  };
+}
+
+function advisoryWrapperContext({ surface, routeDecision }) {
+  if (routeDecision.status !== "ok") {
+    return {
+      kind: "switchboard_advisory",
+      text: `Switchboard advisory (${surface}): ${routeDecision.explanation || routeDecision.status}`
+    };
+  }
+
+  const reasons = [];
+  if (routeDecision.requiredCapabilities?.includes("file_edit")) reasons.push("repo edits");
+  if (routeDecision.requiredCapabilities?.includes("test_execution")) reasons.push("tests");
+
+  return {
+    kind: "switchboard_advisory",
+    text: `Switchboard advisory (${surface}): ${routeDecision.label} - ${reasons.join(" - ") || routeDecision.mode}`
+  };
+}
+
+function resolveAdvisorySurface(surface) {
+  const requestedSurface = (surface || "openai-codex").trim().toLowerCase();
+  const normalizedSurface = ADVISORY_SURFACE_ALIASES[requestedSurface] || requestedSurface;
+  const targetsPath = ADVISORY_SURFACE_TARGETS[normalizedSurface];
+
+  if (!targetsPath) {
+    return {
+      status: "invalid_surface",
+      reason: "unknown_surface",
+      surface: requestedSurface,
+      supportedSurfaces: Object.keys(ADVISORY_SURFACE_TARGETS)
+    };
+  }
+
+  return {
+    status: "ok",
+    surface: normalizedSurface,
+    targetsPath
   };
 }
 
@@ -616,6 +672,62 @@ function buildSwitchboardTurn({
     previousSession: persistedSession,
     nextSession: savedSession || nextSession,
     evidence
+  };
+}
+
+export function adviseSwitchboardTurn({
+  input,
+  surface = "openai-codex",
+  threadId = "default",
+  routingOverride = "auto",
+  clientSurface,
+  policyInputs,
+  targets
+}) {
+  const surfaceResolution = resolveAdvisorySurface(surface);
+  if (surfaceResolution.status !== "ok") {
+    return surfaceResolution;
+  }
+
+  const targetList = Array.isArray(targets)
+    ? targets
+    : (readJson(surfaceResolution.targetsPath).targets || []);
+  const session = {
+    ...defaultSession(targetList),
+    threadId,
+    routingOverride,
+    vendorClient: surfaceResolution.surface,
+    clientSurface: clientSurface || null,
+    policyInputs: policyInputs || undefined
+  };
+  const route = routePrompt({
+    input,
+    session,
+    targets: targetList,
+    executionSupported: false
+  });
+
+  const plan = {
+    status: route.status === "ok" ? "planned" : "refused",
+    reason: route.reason,
+    route,
+    targetId: route.selectedTarget?.id || null
+  };
+  const routeDecision = routeDecisionSummary(plan);
+  const routingDecision = routingDecisionContract(plan, targetList);
+  const wrapperContext = advisoryWrapperContext({
+    surface: surfaceResolution.surface,
+    routeDecision
+  });
+
+  return {
+    status: route.status,
+    surface: surfaceResolution.surface,
+    supportedSurfaces: Object.keys(ADVISORY_SURFACE_TARGETS),
+    threadId,
+    wrapperContext,
+    routeDecision,
+    routingDecision
   };
 }
 

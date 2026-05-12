@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import {
   DEFAULT_SWITCHBOARD_LOG_PATH,
   DEFAULT_SWITCHBOARD_STORE_PATH,
+  adviseSwitchboardTurn,
   executeSwitchboardContinuityProbe,
   executeSwitchboardInteractiveContinuityProbe,
   executeSwitchboardTurn,
@@ -55,6 +56,22 @@ function printHumanTurn(result, stdout) {
   }
   stdout.write(`Status: ${result.status}\n`);
   if (result.execution?.stdoutPreview) stdout.write(`${result.execution.stdoutPreview}\n`);
+}
+
+function printHumanAdvice(result, stdout) {
+  stdout.write(`${result.wrapperContext.text}\n`);
+  stdout.write(`Thread: ${result.threadId}\n`);
+  stdout.write(`Surface: ${result.surface}\n`);
+  stdout.write(`Status: ${result.status}\n`);
+
+  if (result.routeDecision.label) {
+    stdout.write(`Recommended target: ${result.routeDecision.label} (${result.routeDecision.targetId || "unknown"})\n`);
+  }
+  if (result.routeDecision.mode) stdout.write(`Mode: ${result.routeDecision.mode}\n`);
+  if (result.routeDecision.requiredCapabilities?.length > 0) {
+    stdout.write(`Required: ${result.routeDecision.requiredCapabilities.join(", ")}\n`);
+  }
+  if (result.routeDecision.explanation) stdout.write(`Explanation: ${result.routeDecision.explanation}\n`);
 }
 
 function printHumanExplain(explanation, stdout) {
@@ -126,6 +143,7 @@ function printHumanExplain(explanation, stdout) {
 function printUsage(stdout) {
   stdout.write("Usage:\n");
   stdout.write("  switchboard \"Implement the plan.\"\n");
+  stdout.write("  switchboard advise --surface openai-codex \"Implement the plan.\"\n");
   stdout.write("  switchboard --dry-run \"Implement the plan.\"\n");
   stdout.write("  switchboard --interactive\n");
   stdout.write("  switchboard --dry-run --interactive\n");
@@ -140,7 +158,7 @@ function printUsage(stdout) {
 export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
   const stdout = io.stdout || process.stdout;
   const stderr = io.stderr || process.stderr;
-  const command = argv[0] === "explain" || argv[0] === "help" || argv[0] === "probe" ? argv[0] : "turn";
+  const command = ["advise", "explain", "help", "probe"].includes(argv[0]) ? argv[0] : "turn";
 
   if (command === "help" || hasFlag(argv, "--help")) {
     printUsage(stdout);
@@ -160,6 +178,35 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
     routeContextPath: getArg(argv, "--route-context-path") || DEFAULT_ROUTE_CONTEXT_PATH
   };
   const json = hasFlag(argv, "--json");
+
+  if (command === "advise") {
+    const input = stripFlags(
+      argv.slice(1),
+      new Set(["--thread-id", "--surface", "--override"]),
+      new Set(["--json", "--stronger", "--cheaper", "--stay", "--auto"])
+    ).join(" ").trim();
+    if (!input) {
+      stderr.write("switchboard advise requires a prompt.\n");
+      return 1;
+    }
+
+    const result = adviseSwitchboardTurn({
+      input,
+      surface: getArg(argv, "--surface") || "openai-codex",
+      threadId: options.threadId,
+      routingOverride: options.routingOverride
+    });
+    if (result.status === "invalid_surface") {
+      stderr.write(
+        `switchboard advise: unknown surface '${result.surface}'. Available: ${result.supportedSurfaces.join(", ")}\n`
+      );
+      return 1;
+    }
+
+    if (json) stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else printHumanAdvice(result, stdout);
+    return result.status === "refused" ? 1 : 0;
+  }
 
   if (command === "probe") {
     const probe = argv[1];

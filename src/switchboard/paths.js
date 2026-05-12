@@ -11,3 +11,5 @@ export const DEFAULT_SWITCHBOARD_LOG_PATH = path.join(DEFAULT_SWITCHBOARD_STATE_
 export const DEFAULT_ROUTE_CONTEXT_PATH = path.join(DEFAULT_SWITCHBOARD_STATE_DIR, "switchboard-route-context.json");
 export const DEFAULT_CLAUDE_HOOK_LOG_PATH = path.join(DEFAULT_SWITCHBOARD_STATE_DIR, "claude-hook-events.ndjson");
 export const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.anthropic.json");
+export const OPENAI_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.openai.json");
+export const GEMINI_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.gemini.json");
