@@ -6,7 +6,7 @@ This document is the product-facing PRD for the Session-Aware AI Router.
 
 It focuses on user problem, product boundary, goals, scope, MVP shape, and roadmap direction.
 
-For technical design details, see [ARCHITECTURE-SPEC.md](ARCHITECTURE-SPEC.md).
+For technical design details, see [ARCHITECTURE-SPEC.md](../ARCHITECTURE-SPEC.md).
 
 ## Status Snapshot
 
