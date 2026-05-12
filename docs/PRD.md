@@ -6,7 +6,7 @@ This document is the broader architecture and design reference for the router. T
 
 ## Status Snapshot
 
-Milestone 4 is complete and the repository now has a contract-backed explainability and outcome-attribution foundation. The execution plan, decision log, release log, and replay guide are updated to reflect that state. Milestone 5 remains conditional on the stability of the current router boundary.
+Milestone 4 is complete and the repository now has a contract-backed explainability and outcome-attribution foundation. The execution plan, decision log, release log, and replay guide are updated to reflect that state. Recent boundary-hardening refactors have extracted `explain` and prompt-classifier concerns into dedicated modules, reducing policy-layer coupling. Milestone 5 remains conditional on the stability of the current router boundary.
 
 ## 1. Executive Summary
 
