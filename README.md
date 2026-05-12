@@ -51,8 +51,8 @@ High-level flow:
 ### Typical First Run
 
 1. Send one routed prompt:
-	`switchboard "Implement the retry logic for stale session recovery."`
+   `switchboard "Implement the retry logic for stale session recovery."`
 2. Inspect why the route was chosen:
-	`switchboard explain`
+   `switchboard explain`
 3. Validate behavior before opening a PR:
-	`npm test`
+   `npm test`

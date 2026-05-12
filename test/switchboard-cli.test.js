@@ -216,6 +216,28 @@ test("switchboard advise rejects an unknown advisory surface", () => {
   assert.equal(io.stdoutText, "");
 });
 
+test("switchboard advise reports pre-execution failures without crashing", () => {
+  const originalReadFileSync = fs.readFileSync;
+  fs.readFileSync = function mockReadFileSync(filePath, ...args) {
+    if (String(filePath).includes("targets.openai.json")) {
+      throw new Error("simulated advise failure");
+    }
+    return originalReadFileSync.call(this, filePath, ...args);
+  };
+
+  const io = memoryIo();
+  const exitCode = runSwitchboardCli(
+    ["advise", "--surface", "openai-codex", "Implement the plan."],
+    io
+  );
+
+  fs.readFileSync = originalReadFileSync;
+
+  assert.equal(exitCode, 1);
+  assert.match(io.stderrText, /switchboard advise failed: simulated advise failure/);
+  assert.equal(io.stdoutText, "");
+});
+
 test("switchboard requires a prompt for routed turns", () => {
   const io = memoryIo();
   const exitCode = runSwitchboardCli(["--dry-run"], io);

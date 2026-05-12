@@ -190,12 +190,18 @@ export function runSwitchboardCli(argv = process.argv.slice(2), io = {}) {
       return 1;
     }
 
-    const result = adviseSwitchboardTurn({
-      input,
-      surface: getArg(argv, "--surface") || "openai-codex",
-      threadId: options.threadId,
-      routingOverride: options.routingOverride
-    });
+    let result;
+    try {
+      result = adviseSwitchboardTurn({
+        input,
+        surface: getArg(argv, "--surface") || "openai-codex",
+        threadId: options.threadId,
+        routingOverride: options.routingOverride
+      });
+    } catch (error) {
+      stderr.write(`switchboard advise failed: ${error.message}\n`);
+      return 1;
+    }
     if (result.status === "invalid_surface") {
       stderr.write(
         `switchboard advise: unknown surface '${result.surface}'. Available: ${result.supportedSurfaces.join(", ")}\n`
