@@ -218,24 +218,26 @@ test("switchboard advise rejects an unknown advisory surface", () => {
 
 test("switchboard advise reports pre-execution failures without crashing", () => {
   const originalReadFileSync = fs.readFileSync;
-  fs.readFileSync = function mockReadFileSync(filePath, ...args) {
-    if (String(filePath).includes("targets.openai.json")) {
-      throw new Error("simulated advise failure");
-    }
-    return originalReadFileSync.call(this, filePath, ...args);
-  };
+  try {
+    fs.readFileSync = function mockReadFileSync(filePath, ...args) {
+      if (String(filePath).includes("targets.openai.json")) {
+        throw new Error("simulated advise failure");
+      }
+      return originalReadFileSync.call(this, filePath, ...args);
+    };
 
-  const io = memoryIo();
-  const exitCode = runSwitchboardCli(
-    ["advise", "--surface", "openai-codex", "Implement the plan."],
-    io
-  );
+    const io = memoryIo();
+    const exitCode = runSwitchboardCli(
+      ["advise", "--surface", "openai-codex", "Implement the plan."],
+      io
+    );
 
-  fs.readFileSync = originalReadFileSync;
-
-  assert.equal(exitCode, 1);
-  assert.match(io.stderrText, /switchboard advise failed: simulated advise failure/);
-  assert.equal(io.stdoutText, "");
+    assert.equal(exitCode, 1);
+    assert.match(io.stderrText, /switchboard advise failed: simulated advise failure/);
+    assert.equal(io.stdoutText, "");
+  } finally {
+    fs.readFileSync = originalReadFileSync;
+  }
 });
 
 test("switchboard requires a prompt for routed turns", () => {
