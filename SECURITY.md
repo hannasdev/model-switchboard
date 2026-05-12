@@ -26,11 +26,11 @@ This project is committed to secure software development. The following practice
   - **Path traversal**: Path operations validated and restricted to intended directories
 
 ### Security Assurance Measures
-- **Automated code analysis**: ESLint with security plugin (`eslint-plugin-security`) checks for common vulnerabilities on every commit and in CI
+- **Automated code analysis**: ESLint with security plugin (`eslint-plugin-security`) checks for common vulnerabilities in CI on every push and pull request
 - **Dependency scanning**: npm audit integrated into CI pipeline
 - **Test coverage**: Comprehensive test suite validates security-relevant code paths
 - **Code review**: All changes reviewed before merge to `main`
-- **Git hooks**: Local validation prevents accidental credential leaks and enforces semantic commits
+- **Git hooks**: Local validation enforces semantic commit messages and blocks direct commits to `main`
 
 ## Reporting a Vulnerability
 
@@ -46,15 +46,9 @@ Please report suspected vulnerabilities privately by opening a GitHub Security A
 
 If you cannot use advisories, contact the maintainer directly through GitHub and avoid posting vulnerability details in public issues.
 
-### Response Timeline
-- We will acknowledge receipt as soon as possible (target: within 14 days)
-- We will investigate and validate the report
-- We will work on a fix and coordinate a responsible disclosure timeline
-- We will publish a security release note after a fix is available
-
 ## Disclosure Process
 
-- We will acknowledge receipt as soon as possible.
+- We will acknowledge receipt as soon as possible (target: within 14 days of receipt).
 - We will investigate and validate the report.
 - We will work on a fix and coordinate a responsible disclosure timeline.
 - We will publish a security release note after a fix is available.

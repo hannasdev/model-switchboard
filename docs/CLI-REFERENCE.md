@@ -13,19 +13,24 @@ npx model-switchboard <command> [options]
 ## Global Options
 
 - `--help` - Display help information
-- `--version` - Display version number
 - `--json` - Output in JSON format (where applicable)
 
 ## Commands
 
-### switchboard [options] [prompt]
+### switchboard [options] "prompt"
 
 Routes a single prompt and launches Claude with the selected model/effort settings.
 
 **Input:**
-- `prompt` (optional) - The prompt text to send. If omitted, enters interactive mode.
-- `--interactive` - Start an interactive session with route-aware resumption
+- `prompt` (required unless `--interactive`) - The prompt text to send. A prompt and `--interactive` are mutually exclusive.
+- `--interactive` - Start an interactive session with route-aware resumption (no prompt allowed)
+- `--dry-run` - Preview the routing decision without launching Claude
+- `--stronger` / `--cheaper` / `--stay` - Override routing direction
 - `--json` - Output routing decision as JSON
+- `--thread-id <id>` - Use a specific thread ID (default: `default`)
+- `--store-path <path>` - Override session store path
+- `--log-path <path>` - Override turn log path
+- `--timeout-ms <ms>` - Override execution timeout (default: `180000`)
 
 **Output:**
 - Launches Claude with the routed model and effort level
@@ -34,8 +39,7 @@ Routes a single prompt and launches Claude with the selected model/effort settin
 
 **Exit Codes:**
 - `0` - Success
-- `1` - Error (missing configuration, invalid surface, etc.)
-- `2` - User cancelled operation
+- `1` - Error (missing prompt, invalid configuration, execution failure)
 
 **Example:**
 ```bash
@@ -47,7 +51,9 @@ switchboard "Implement the retry logic for stale session recovery."
 Starts an interactive Claude session where each turn is routed independently.
 
 **Input:**
-- Prompts entered at the CLI prompt
+- `--interactive` flag (required; incompatible with a prompt argument)
+- `--dry-run` - Preview routing without launching Claude
+- `--json` - Output routing decisions as JSON
 
 **Output:**
 - Route decision displayed before each turn
@@ -55,9 +61,8 @@ Starts an interactive Claude session where each turn is routed independently.
 - Session state persisted across turns
 
 **Exit Codes:**
-- `0` - Success (user exited normally)
+- `0` - Success
 - `1` - Error
-- `2` - User cancelled
 
 **Example:**
 ```bash
@@ -115,7 +120,7 @@ Validates session continuity for prompt-driven (non-interactive) turns.
 
 **Input:**
 - `--no-tools` - Run without external tool integration
-- `--inter-turn-delay-ms <ms>` - Delay between probe turns (default: 100)
+- `--inter-turn-delay-ms <ms>` - Delay between probe turns (default: `1000`)
 - `--json` - Output results as JSON
 
 **Output:**
@@ -161,45 +166,53 @@ switchboard probe continuity-interactive --json
 
 ## Environment Variables
 
-### Configuration
+### API Keys
 
-- `CLAUDE_API_KEY` - Anthropic API key for Claude (required for routing to Claude)
+- `ANTHROPIC_API_KEY` - Anthropic API key for Claude (required for Anthropic-routed turns)
 - `OPENAI_API_KEY` - OpenAI API key (required for openai-codex routing)
-- `GOOGLE_API_KEY` - Google API key for Gemini (required for gemini routing)
+- `GOOGLE_API_KEY` - Google API key (required for Gemini routing)
 
-### Session Management
+### Path Overrides (CLI flags; no environment variable equivalents)
 
-- `SWITCHBOARD_HOME` - Base directory for session storage (default: `$HOME/.switchboard`)
-- `SWITCHBOARD_SESSION_ID` - Override session ID (default: auto-generated)
-
-### Behavior
-
-- `SWITCHBOARD_DRY_RUN` - Set to `1` to preview routes without launching Claude
-- `SWITCHBOARD_EVIDENCE_LEVEL` - Set to `detailed`, `standard`, or `minimal` (default: `standard`)
+Paths are controlled via CLI flags rather than environment variables:
+- `--store-path <path>` - Session store file (default: `~/.model-switchboard/switchboard-sessions.json`)
+- `--log-path <path>` - Turn log file (default: `~/.model-switchboard/switchboard-turns.ndjson`)
+- `--route-context-path <path>` - Route context file (default: `~/.model-switchboard/switchboard-route-context.json`)
+- `--hook-log-path <path>` - Hook event log (default: `~/.model-switchboard/claude-hook-events.ndjson`)
 
 ## Output Formats
 
 ### Routing Decision (JSON)
 
+The turn result object (emitted with `--json`) contains:
+
 ```json
 {
-  "route": "standard",
-  "model": "claude-3-5-sonnet",
-  "effort": "standard",
-  "reasoning": ["multi-turn task", "refactoring implied"],
-  "policyVersion": "1.0",
-  "decisionId": "d-abc123...",
-  "timestamp": "2026-05-12T15:30:00Z"
+  "routeDecision": {
+    "label": "best coder",
+    "taskType": "multi_file_refactor",
+    "confidence": 0.9,
+    "continuityCost": "low",
+    "escalationPolicy": { "applied": false, "reasons": [] }
+  },
+  "routingDecision": {
+    "schemaVersion": "0.1.0-experimental",
+    "status": "ok",
+    "selectedTargetId": "anthropic-coder"
+  },
+  "selectedClaude": {
+    "model": "claude-opus-4-5",
+    "effort": "high",
+    "sessionId": "..."
+  },
+  "status": "live",
+  "threadId": "default"
 }
 ```
 
 ### Session State
 
-Session state is stored in `$SWITCHBOARD_HOME/sessions/` as JSON files containing:
-- Turn history
-- Routing decisions
-- Claude session information
-- Attribution data
+Session state is stored in a single JSON file at `~/.model-switchboard/switchboard-sessions.json` (override with `--store-path`). Turn logs are written as newline-delimited JSON at `~/.model-switchboard/switchboard-turns.ndjson`.
 
 ## Common Use Cases
 
@@ -233,8 +246,7 @@ npm run switchboard:continuity
 | Code | Meaning |
 | --- | --- |
 | 0 | Command succeeded |
-| 1 | Error (configuration, routing, execution) |
-| 2 | User cancelled (interactive mode) |
+| 1 | Error (configuration, routing, execution, missing prompt) |
 
 ## Troubleshooting
 
@@ -245,6 +257,6 @@ Ensure you've run at least one routed prompt in this session directory.
 Check available routes with `switchboard advise --help` or verify configuration.
 
 **Claude not launching:**
-Ensure `CLAUDE_API_KEY` is set and valid. Check `switchboard explain` for routing details.
+Ensure `ANTHROPIC_API_KEY` is set and valid. Check `switchboard explain` for routing details.
 
 For more information, see [ARCHITECTURE-SPEC.md](ARCHITECTURE-SPEC.md) and [README.md](../README.md).

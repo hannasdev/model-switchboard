@@ -7,7 +7,7 @@ Thank you for your interest in contributing to Model Switchboard! This guide wil
 1. Fork the repository
 2. Clone your fork: `git clone https://github.com/your-username/model-switchboard.git`
 3. Create a feature branch: `git checkout -b feature/your-feature-name`
-4. Install dependencies: `npm install`
+4. Install dependencies: `npm ci`
 5. Install git hooks: `npm run hooks:install`
 
 ## Development Workflow
@@ -15,7 +15,7 @@ Thank you for your interest in contributing to Model Switchboard! This guide wil
 ### Before You Start
 
 - Ensure your local git hooks are installed: `npm run hooks:doctor` should return `.githooks`
-- Install dev dependencies: `npm ci`
+- Confirm dev dependencies are installed: `npm ci`
 
 ### Making Changes
 
@@ -38,9 +38,10 @@ Tests are automatically verified in CI on every push to `main` and on all pull r
 ### Code Quality
 
 **Static Analysis:**
-- ESLint runs automatically on all commits (via git hooks) and in CI
+- ESLint runs automatically in CI on every push and pull request
 - Security plugin (`eslint-plugin-security`) checks for common vulnerabilities
-- Fix linting issues: `npm run lint -- --fix`
+- Run locally before pushing: `npm run lint`
+- Auto-fix where possible: `npm run lint -- --fix`
 
 **Testing:**
 - Unit tests: `npm test`
