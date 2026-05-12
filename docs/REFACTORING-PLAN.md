@@ -6,12 +6,12 @@ Findings from the May 2026 architecture review. Work on these one at a time. Mar
 
 ## 1. Unify target mappings — LOW effort / HIGH value
 
-**Problem:** Two parallel, unconnected mapping structures must be kept in sync manually.
+**Problem:** Two parallel, unconnected mapping structures had to be kept in sync manually.
 
 - `src/adapters/model_mappings.js` — `targetId → profile → model` (used by SDK adapters)
-- `src/switchboard/claude_cli_launcher.js` — `TARGET_TO_CLAUDE_CLI` (`targetId → { model, effort }`) (used by CLI path)
+- `src/adapters/model_mappings.js` — `TARGET_TO_CLAUDE_CLI` (`targetId → { model, effort }`) (used by CLI path)
 
-Adding or renaming a target requires updates in both places with no guardrail.
+Adding or renaming a target required updates in both places with no guardrail.
 
 **Status:** Done
 
@@ -35,14 +35,11 @@ Divergence risk: if one is fixed, the other silently stays broken.
 
 ## 3. Hard-code `ANTHROPIC_TARGETS_PATH` in one place — LOW effort
 
-**Problem:** The same path is independently resolved in two files:
+**Problem:** The same path was independently resolved in two files:
 
 ```js
-// workflow.js line 27
-const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.anthropic.json");
-
-// claude_cli_launcher.js line 9
-const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.anthropic.json");
+// now centralized in src/switchboard/paths.js
+export const ANTHROPIC_TARGETS_PATH = path.join(__dirname, "..", "router", "data", "targets.anthropic.json");
 ```
 
 **Status:** Done
@@ -76,9 +73,9 @@ The classifier produces signals; the router consumes them. They have different c
 
 ---
 
-## 6. Remove or promote `deriveLegacyTurnFields` — LOW effort
+## 6. Remove or promote `extractTurnFields` — LOW effort
 
-**Problem:** `route_context.js` contains a function named `deriveLegacyTurnFields`. The "legacy" label signals it has been kept alive longer than intended and imposes a cognitive tax on every reader.
+**Problem:** `route_context.js` had a function named `deriveLegacyTurnFields`. The "legacy" label signaled it had been kept alive longer than intended and imposed a cognitive tax on every reader.
 
 **Status:** Done
 
