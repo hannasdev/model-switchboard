@@ -24,7 +24,7 @@ const evidence = loadSessionEvidence({
   sessionId: 'my-session-123'
 });
 
-console.log(`Loaded ${evidence.length} decisions from session`);
+console.log('Loaded ' + evidence.length + ' decisions from session');
 "
 ```
 

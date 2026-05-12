@@ -51,7 +51,8 @@ function defaultSession(targets) {
     mode: "plan",
     cost_posture: "balanced",
     currentTargetId: targets.find((target) => target.label === "balanced")?.id || targets[0]?.id || null,
-    turnCount: 0
+    turnCount: 0,
+    attemptedTurnCount: 0
   };
 }
 
@@ -545,14 +546,32 @@ function buildSwitchboardTurn({
   const executionResult = executionSummary(execution);
   const turnStatus = executionResult?.status || plan.status;
 
+  const attemptedTurnCount =
+    effectivePlan.status === "planned"
+      ? Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0) + 1
+      : Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0);
+
   const nextSession =
-    effectivePlan.status === "planned" && (!execute || executionResult?.status === "executed")
+    effectivePlan.status === "planned"
       ? {
           ...routeSession,
-          currentTargetId: effectivePlan.selectedTarget.targetId,
-          currentLabel: effectivePlan.selectedTarget.label,
-          turnCount: Number(routeSession.turnCount || 0) + 1,
-          lastRoute: routeDecision,
+          currentTargetId:
+            !execute || executionResult?.status === "executed"
+              ? effectivePlan.selectedTarget.targetId
+              : routeSession.currentTargetId,
+          currentLabel:
+            !execute || executionResult?.status === "executed"
+              ? effectivePlan.selectedTarget.label
+              : routeSession.currentLabel,
+          turnCount:
+            !execute || executionResult?.status === "executed"
+              ? Number(routeSession.turnCount || 0) + 1
+              : Number(routeSession.turnCount || 0),
+          attemptedTurnCount,
+          lastRoute:
+            !execute || executionResult?.status === "executed"
+              ? routeDecision
+              : routeSession.lastRoute,
           claudeSessionId,
           routingOverride: "auto"
         }
@@ -562,11 +581,6 @@ function buildSwitchboardTurn({
     persist && effectivePlan.status === "planned"
       ? saveThreadSession({ storePath, threadId, session: nextSession })
       : null;
-
-  const attemptedTurnCount =
-    effectivePlan.status === "planned"
-      ? Number(routeSession.turnCount || 0) + 1
-      : Number(routeSession.turnCount || 0);
 
   const currentSessionState = buildSessionState({
     threadId,

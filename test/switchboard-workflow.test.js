@@ -286,6 +286,50 @@ test("Switchboard live failure keeps normalized turn fields internally consisten
   assert.equal(entry.contextPackage.turnIndex, entry.turnIndex);
 });
 
+test("Consecutive failed live attempts keep unique turn index and decision ID", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+
+  function failingRunner() {
+    return {
+      status: 1,
+      signal: null,
+      stdout: "",
+      stderr: "simulated failure",
+      error: { message: "simulated failure" }
+    };
+  }
+
+  const first = executeSwitchboardTurn({
+    input: "first failing attempt",
+    threadId: "thread-fail-attempt-counter",
+    sessionId: "session-fail-attempt-counter",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner: failingRunner
+  });
+
+  const second = executeSwitchboardTurn({
+    input: "second failing attempt",
+    threadId: "thread-fail-attempt-counter",
+    sessionId: "session-fail-attempt-counter",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner: failingRunner
+  });
+
+  assert.equal(first.evidence.turnIndex, 1);
+  assert.equal(second.evidence.turnIndex, 2);
+  assert.notEqual(first.evidence.attribution.decisionId, second.evidence.attribution.decisionId);
+
+  // Persisted success turn count stays unchanged for failed executions.
+  assert.equal(first.nextSession.turnCount, 0);
+  assert.equal(second.nextSession.turnCount, 0);
+});
+
 test("Replay uses recorded attribution policyVersion when decision contract lacks policyVersion", () => {
   const replayed = replayRoutingDecision({
     evidence: {
