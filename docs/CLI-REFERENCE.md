@@ -26,10 +26,14 @@ Routes a single prompt and launches Claude with the selected model/effort settin
 - `--interactive` - Start an interactive session with route-aware resumption (no prompt allowed)
 - `--dry-run` - Preview the routing decision without launching Claude
 - `--stronger` / `--cheaper` / `--stay` - Override routing direction
+- `--override <auto|stronger|cheaper|stay>` - Explicitly set routing override (equivalent to shorthand flags)
 - `--json` - Output routing decision as JSON
 - `--thread-id <id>` - Use a specific thread ID (default: `default`)
+- `--claude-bin <path>` - Path to Claude binary (default: `claude`)
+- `--output-format <format>` - Output format passed to Claude (default: `json`)
 - `--store-path <path>` - Override session store path
 - `--log-path <path>` - Override turn log path
+- `--route-context-path <path>` - Override route context path
 - `--timeout-ms <ms>` - Override execution timeout (default: `180000`)
 
 **Output:**
@@ -122,6 +126,13 @@ Validates session continuity for prompt-driven (non-interactive) turns.
 - `--no-tools` - Run without external tool integration
 - `--inter-turn-delay-ms <ms>` - Delay between probe turns (default: `1000`)
 - `--json` - Output results as JSON
+- `--thread-id <id>` - Probe thread ID (default: generated)
+- `--claude-bin <path>` - Path to Claude binary (default: `claude`)
+- `--output-format <format>` - Output format passed to Claude (default: `json`)
+- `--store-path <path>` - Override session store path
+- `--log-path <path>` - Override turn log path
+- `--route-context-path <path>` - Override route context path
+- `--timeout-ms <ms>` - Override execution timeout (default: `180000`)
 
 **Output:**
 - Pass/fail for each continuity check:
@@ -145,7 +156,16 @@ Validates interactive session continuity and session resumption behavior.
 
 **Input:**
 - `--json` - Output results as JSON
+- `--thread-id <id>` - Probe thread ID (default: generated)
+- `--claude-bin <path>` - Path to Claude binary (default: `claude`)
+- `--output-format <format>` - Output format passed to Claude (default: `json`)
+- `--no-tools` - Run without external tool integration
 - `--inter-turn-delay-ms <ms>` - Delay between probe turns
+- `--store-path <path>` - Override session store path
+- `--log-path <path>` - Override turn log path
+- `--route-context-path <path>` - Override route context path
+- `--timeout-ms <ms>` - Override execution timeout (default: `180000`)
+- `--hook-log-path <path>` - Path to hook event log to correlate against
 
 **Output:**
 - Pass/fail for:
@@ -170,7 +190,7 @@ switchboard probe continuity-interactive --json
 
 - `ANTHROPIC_API_KEY` - Anthropic API key for Claude (required for Anthropic-routed turns)
 - `OPENAI_API_KEY` - OpenAI API key (required for openai-codex routing)
-- `GOOGLE_API_KEY` - Google API key (required for Gemini routing)
+- `GOOGLE_API_KEY` or `GEMINI_API_KEY` - Google API key (required for Gemini routing; either variable is accepted)
 
 ### Path Overrides (CLI flags; no environment variable equivalents)
 
