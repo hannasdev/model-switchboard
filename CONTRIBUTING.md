@@ -55,7 +55,7 @@ Tests are automatically verified in CI on every push to `main` and on all pull r
 3. Run linter: `npm run lint`
 4. Open a PR with a clear description of changes
 5. Reference any related issues
-6. Wait for CI to pass (tests, lint, build checks)
+6. Wait for CI to pass (tests and lint)
 7. Address any review feedback
 
 ## Commit Message Format
@@ -88,7 +88,7 @@ docs: update installation instructions
 test: add edge case coverage for session resumption
 ```
 
-Commit messages are validated by git hooks locally, and CI will reject non-semantic commits.
+Commit messages are validated by the `commit-msg` git hook locally. Install hooks once per clone with `npm run hooks:install`.
 
 ## Security
 

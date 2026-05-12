@@ -28,8 +28,11 @@ Routes a single prompt and launches Claude with the selected model/effort settin
 - `--stronger` / `--cheaper` / `--stay` - Override routing direction
 - `--json` - Output routing decision as JSON
 - `--thread-id <id>` - Use a specific thread ID (default: `default`)
+- `--claude-bin <path>` - Path to Claude binary (default: `claude`)
+- `--output-format <format>` - Output format passed to Claude (default: `json`)
 - `--store-path <path>` - Override session store path
 - `--log-path <path>` - Override turn log path
+- `--route-context-path <path>` - Override route context path
 - `--timeout-ms <ms>` - Override execution timeout (default: `180000`)
 
 **Output:**
@@ -146,6 +149,7 @@ Validates interactive session continuity and session resumption behavior.
 **Input:**
 - `--json` - Output results as JSON
 - `--inter-turn-delay-ms <ms>` - Delay between probe turns
+- `--hook-log-path <path>` - Path to hook event log to correlate against
 
 **Output:**
 - Pass/fail for:
@@ -170,7 +174,7 @@ switchboard probe continuity-interactive --json
 
 - `ANTHROPIC_API_KEY` - Anthropic API key for Claude (required for Anthropic-routed turns)
 - `OPENAI_API_KEY` - OpenAI API key (required for openai-codex routing)
-- `GOOGLE_API_KEY` - Google API key (required for Gemini routing)
+- `GOOGLE_API_KEY` or `GEMINI_API_KEY` - Google API key (required for Gemini routing; either variable is accepted)
 
 ### Path Overrides (CLI flags; no environment variable equivalents)
 
@@ -233,7 +237,7 @@ switchboard explain --json | jq .reasoning
 
 ### Dry-run mode (preview route without launching)
 ```bash
-SWITCHBOARD_DRY_RUN=1 switchboard "Implement the retry logic"
+switchboard --dry-run "Implement the retry logic"
 ```
 
 ### Validate continuity before release
