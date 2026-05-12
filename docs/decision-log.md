@@ -186,7 +186,7 @@ Tradeoffs:
 Verification signal:
 - Expected signal from phase plan: mode transition logic deterministic and testable; policy decisions explainable with session/task/constraint/continuity context; route labels continue mapping cleanly.
 - Evidence observed:
-  - Session mode transition logic extracted to `src/router/session_controller.js` and consumed by router.
+  - Session mode transition logic extracted to `src/router/session-controller.js` and consumed by router.
   - Dedicated transition tests added in `test/session-controller.test.js`.
   - Full suite passes (`npm test`) with continuity, escalation, override, and hard-constraint behavior preserved.
 
@@ -202,7 +202,7 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 3 plan-to-implementation checkpoint.
-- Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/router/session_controller.js, test/session-controller.test.js, test/router.test.js, docs/ROUTER-PHASE-PLAN.md
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/router.js, src/router/session-controller.js, test/session-controller.test.js, test/router.test.js, docs/ROUTER-PHASE-PLAN.md
 
 ## Milestone 3 Closeout
 
@@ -227,7 +227,7 @@ Verification signal:
 - Expected signal from phase plan: Claude workflow remains functional; router can be exercised independently of Claude launch details; logs distinguish router and Claude execution data; handoff/context fields match the core contract.
 - Evidence observed:
   - `src/switchboard/workflow.js` now emits separated `router` and `claude` evidence blocks while retaining compatibility summaries.
-  - `src/switchboard/route_context.js` now persists canonical `sessionState`, `routingDecision`, `contextPackage`, and `claudeExecution` fields.
+  - `src/switchboard/route-context.js` now persists canonical `sessionState`, `routingDecision`, `contextPackage`, and `claudeExecution` fields.
   - `switchboard explain` now surfaces contract-backed router and Claude evidence.
   - Full suite passes (`npm test`) including new workflow and explain tests for contract-backed evidence.
 
@@ -243,7 +243,7 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 4 plan-to-implementation checkpoint.
-- Linked artifacts (logs, fixtures, docs, PRs): src/switchboard/workflow.js, src/switchboard/route_context.js, src/switchboard/cli.js, src/switchboard/claude_hook_bridge.js, test/switchboard-workflow.test.js, test/switchboard-cli.test.js, docs/ROUTER-PHASE-PLAN.md
+- Linked artifacts (logs, fixtures, docs, PRs): src/switchboard/workflow.js, src/switchboard/route-context.js, src/switchboard/cli.js, src/switchboard/claude-hook-bridge.js, test/switchboard-workflow.test.js, test/switchboard-cli.test.js, docs/ROUTER-PHASE-PLAN.md
 
 ## Milestone 4 Closeout
 
@@ -269,7 +269,7 @@ Verification signal:
 - Evidence observed:
   - `docs/contracts/router-contracts.md` now contains RoutingLogEvent schema (Section 7) and outcome taxonomy (Appendix A.5-A.6).
   - `src/router/outcome-constants.js` defines 3 enums (EXECUTION_STATUS, ERROR_SIGNAL, SWITCHING_REASON) with deterministic decision ID generation.
-  - `src/switchboard/attribution_store.js` provides persistence (NDJSON) and querying for attribution records by sessionId, decisionId, errorSignal.
+  - `src/switchboard/attribution-store.js` provides persistence (NDJSON) and querying for attribution records by sessionId, decisionId, errorSignal.
   - `src/switchboard/workflow.js` enhanced with event normalization (schemaVersion, sessionId, turnIndex, outcome, attribution inline) + reconstructReasoning() + replay functions (loadSessionEvidence, replayRoutingDecision, evaluatePolicyOnEvidence).
   - `src/switchboard/cli.js` printHumanExplain() now renders "Decision Reasoning:" section with constraint evaluation, continuity cost, confidence, and rationale.
   - `docs/REPLAY-GUIDE.md` documents complete workflow for testing policies against recorded evidence.
@@ -287,4 +287,4 @@ Consequences:
 
 Follow-up:
 - Next review milestone: Milestone 5 second-surface proof conditional gate (review stability, integration readiness, contract reusability).
-- Linked artifacts (logs, fixtures, docs, PRs): src/router/outcome-constants.js, src/switchboard/attribution_store.js, src/switchboard/workflow.js, src/switchboard/cli.js, test/attribution.test.js, docs/contracts/router-contracts.md, docs/REPLAY-GUIDE.md, docs/ROUTER-PHASE-PLAN.md
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/outcome-constants.js, src/switchboard/attribution-store.js, src/switchboard/workflow.js, src/switchboard/cli.js, test/attribution.test.js, docs/contracts/router-contracts.md, docs/REPLAY-GUIDE.md, docs/ROUTER-PHASE-PLAN.md

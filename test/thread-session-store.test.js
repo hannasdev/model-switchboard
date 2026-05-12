@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadThreadSession, saveThreadSession, clearThreadSession } from "../src/switchboard/session_store.js";
+import { loadThreadSession, saveThreadSession, clearThreadSession } from "../src/switchboard/session-store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

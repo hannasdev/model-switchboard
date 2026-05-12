@@ -7,15 +7,15 @@ import { routePrompt } from "../src/router/router.js";
 import {
   createMockOpenAIClient,
   createOpenAICodexAdapter
-} from "../src/adapters/openai_codex_adapter.js";
-import { createOpenAISDKClient } from "../src/adapters/openai_sdk_client.js";
+} from "../src/adapters/openai-codex-adapter.js";
+import { createOpenAISDKClient } from "../src/adapters/openai-sdk-client.js";
 import {
   createMockAnthropicClient,
   createAnthropicClaudeAdapter
-} from "../src/adapters/anthropic_claude_adapter.js";
-import { createAnthropicSDKClient } from "../src/adapters/anthropic_sdk_client.js";
-import { createMockGeminiClient, createGeminiAdapter } from "../src/adapters/gemini_adapter.js";
-import { createGeminiSDKClient } from "../src/adapters/gemini_sdk_client.js";
+} from "../src/adapters/anthropic-claude-adapter.js";
+import { createAnthropicSDKClient } from "../src/adapters/anthropic-sdk-client.js";
+import { createMockGeminiClient, createGeminiAdapter } from "../src/adapters/gemini-adapter.js";
+import { createGeminiSDKClient } from "../src/adapters/gemini-sdk-client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

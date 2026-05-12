@@ -10,7 +10,7 @@
   - Enhanced `switchboard explain` output includes "Decision Reasoning" section with constraint evaluation, continuity cost, confidence, and selected-target rationale.
   - New `docs/REPLAY-GUIDE.md` guide documents policy testing workflow.
   - New outcome taxonomy enums (EXECUTION_STATUS, ERROR_SIGNAL, SWITCHING_REASON) in `src/router/outcome-constants.js`.
-  - New attribution store (`src/switchboard/attribution_store.js`) provides queryable outcome tracking by session, decision ID, or error signal.
+  - New attribution store (`src/switchboard/attribution-store.js`) provides queryable outcome tracking by session, decision ID, or error signal.
   - New replay functions (loadSessionEvidence, replayRoutingDecision, evaluatePolicyOnEvidence) support offline decision evaluation.
   - Backward compatible: all new fields coexist with legacy evidence shape.
 - Tests: 80/80 passing (73 original + 7 new attribution tests, 0 regressions).

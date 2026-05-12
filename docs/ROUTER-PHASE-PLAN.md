@@ -195,7 +195,7 @@ Acceptance criteria:
 
 All phases implemented and integrated:
 - **Phase 1:** Event normalization with RoutingLogEvent schema (`src/router/outcome-constants.js`, updated contracts.md)
-- **Phase 2:** Attribution store persistence layer (`src/switchboard/attribution_store.js`)
+- **Phase 2:** Attribution store persistence layer (`src/switchboard/attribution-store.js`)
 - **Phase 3:** Enhanced explain with decision reasoning reconstruction (`src/switchboard/workflow.js`, updated cli.js)
 - **Phase 4:** Replay functions for offline policy evaluation (`src/switchboard/workflow.js`)
 - **Phase 5:** Documentation (`docs/REPLAY-GUIDE.md`, ROUTER-PHASE-PLAN.md status update)

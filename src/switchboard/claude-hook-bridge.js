@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { routePrompt } from "../router/router.js";
-import { loadRouteContext } from "./route_context.js";
+import { loadRouteContext } from "./route-context.js";
 import { DEFAULT_CLAUDE_HOOK_LOG_PATH } from "./paths.js";
 
 export { DEFAULT_CLAUDE_HOOK_LOG_PATH } from "./paths.js";

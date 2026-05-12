@@ -1,4 +1,4 @@
-import { getTargetProfileMap } from "./model_mappings.js";
+import { getTargetProfileMap } from "./model-mappings.js";
 
 export const ANTHROPIC_CLAUDE_TARGET_TO_PROFILE = getTargetProfileMap("anthropic-claude");
 

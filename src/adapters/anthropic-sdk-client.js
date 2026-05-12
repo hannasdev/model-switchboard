@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getProfileModelMap } from "./model_mappings.js";
+import { getProfileModelMap } from "./model-mappings.js";
 
 const PROFILE_TO_MODEL = getProfileModelMap("anthropic-claude");
 
