@@ -10,7 +10,8 @@ import {
   executeSwitchboardTurn,
   explainLatestSwitchboardTurn,
   planSwitchboardContinuityProbe,
-  planSwitchboardTurn
+  planSwitchboardTurn,
+  replayRoutingDecision
 } from "../src/switchboard/workflow.js";
 
 function tempPaths() {
@@ -41,6 +42,8 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(result.status, "planned");
   assert.equal(result.routeDecision.label, "best coder");
   assert.equal(result.routeDecision.taskType, "multi_file_refactor");
+  assert.equal(typeof result.routeDecision.confidence, "number");
+  assert.ok(result.routeDecision.confidence > 0);
   assert.equal(result.routeDecision.continuityCost, "low");
   assert.equal(result.routeDecision.modeResolution.resolvedMode, "implement");
   assert.equal(result.routeDecision.policyInputs.hardConstraints.privacy, "off");
@@ -67,6 +70,8 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(entry.claude.selectedClaude.model, "sonnet");
   assert.equal(entry.wrapperContext.kind, "switchboard_context");
   assert.equal(entry.routeDecision.label, "best coder");
+  assert.equal(entry.attribution.decisionConfidence, result.routeDecision.confidence);
+  assert.equal(entry.attribution.switchingReason, "capability_gap");
   assert.deepEqual(entry.routeDecision.escalationPolicy?.reasons, []);
   assert.equal(entry.selectedClaude.effort, "high");
   assert.equal(entry.session.claudeSessionId, "claude-session-1");
@@ -255,6 +260,183 @@ test("Live Switchboard continuity probe captures execution evidence", () => {
   assert.equal(entries[0].executionMode, "live");
   assert.equal(entries[0].execution.status, "executed");
   assert.equal(entries[1].execution.stdoutPreview, "{\"result\":\"switchboard-continuity-2718\"}");
+});
+
+test("Switchboard live failure keeps normalized turn fields internally consistent", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+
+  executeSwitchboardTurn({
+    input: "Fail this run to test attempted turn indexing.",
+    threadId: "thread-turn-consistency",
+    sessionId: "claude-session-turn-consistency",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner() {
+      return {
+        status: 1,
+        signal: null,
+        stdout: "",
+        stderr: "simulated failure",
+        error: { message: "simulated failure" }
+      };
+    }
+  });
+
+  const [entry] = readLog(logPath);
+  assert.equal(entry.turnIndex, 1);
+  assert.equal(entry.sessionState.turnCount, entry.turnIndex);
+  assert.equal(entry.contextPackage.turnIndex, entry.turnIndex);
+});
+
+test("Consecutive failed live attempts keep unique turn index and decision ID", () => {
+  const { storePath, logPath, routeContextPath } = tempPaths();
+
+  function failingRunner() {
+    return {
+      status: 1,
+      signal: null,
+      stdout: "",
+      stderr: "simulated failure",
+      error: { message: "simulated failure" }
+    };
+  }
+
+  const first = executeSwitchboardTurn({
+    input: "first failing attempt",
+    threadId: "thread-fail-attempt-counter",
+    sessionId: "session-fail-attempt-counter",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner: failingRunner
+  });
+
+  const second = executeSwitchboardTurn({
+    input: "second failing attempt",
+    threadId: "thread-fail-attempt-counter",
+    sessionId: "session-fail-attempt-counter",
+    cwd: "/repo",
+    storePath,
+    logPath,
+    routeContextPath,
+    commandRunner: failingRunner
+  });
+
+  assert.equal(first.evidence.turnIndex, 1);
+  assert.equal(second.evidence.turnIndex, 2);
+  assert.notEqual(first.evidence.attribution.decisionId, second.evidence.attribution.decisionId);
+
+  // Persisted success turn count stays unchanged for failed executions.
+  assert.equal(first.nextSession.turnCount, 0);
+  assert.equal(second.nextSession.turnCount, 0);
+
+  const routeContext = JSON.parse(fs.readFileSync(routeContextPath, "utf8"));
+  const turns = routeContext["session-fail-attempt-counter"].turns;
+  assert.equal(turns.length, 2);
+  assert.equal(turns[0].turnCount, 1);
+  assert.equal(turns[1].turnCount, 2);
+});
+
+test("Replay uses recorded attribution policyVersion when decision contract lacks policyVersion", () => {
+  const replayed = replayRoutingDecision({
+    evidence: {
+      ts: "2026-05-11T00:00:00.000Z",
+      sessionId: "session-policy-version",
+      threadId: "thread-policy-version",
+      turnIndex: 3,
+      routingDecision: {
+        selectedTargetId: "anthropic-coder"
+      },
+      attribution: {
+        decisionId: "decision-policy-version",
+        policyVersion: "0.1.0-experimental",
+        decisionConfidence: 0.9,
+        switchingReason: null
+      }
+    },
+    policyVersion: "0.1.0-experimental"
+  });
+
+  assert.equal(replayed.originalPolicyVersion, "0.1.0-experimental");
+  assert.equal(replayed.matches, true);
+});
+
+test("Replay supports legacy nested router evidence shape", () => {
+  const replayed = replayRoutingDecision({
+    evidence: {
+      ts: "2026-05-11T00:00:00.000Z",
+      sessionId: "session-router-nested",
+      threadId: "thread-router-nested",
+      turnIndex: 2,
+      router: {
+        routingDecision: {
+          selectedTargetId: "anthropic-coder"
+        },
+        sessionState: {
+          turnCount: 2
+        }
+      },
+      attribution: {
+        decisionId: "decision-router-nested",
+        policyVersion: "0.1.0-experimental",
+        decisionConfidence: 0.88,
+        switchingReason: "no_switch"
+      }
+    },
+    policyVersion: "0.1.0-experimental"
+  });
+
+  assert.equal(replayed.status, "replayed");
+  assert.equal(replayed.originalSelectedTargetId, "anthropic-coder");
+  assert.equal(replayed.evidence.sessionState.turnCount, 2);
+  assert.equal(replayed.matches, true);
+});
+
+test("Switchboard explain reports constraints as not-applied when policyInputs absent", () => {
+  const { logPath, routeContextPath } = tempPaths();
+
+  // Write a legacy-style log entry that has no policyInputs on the routeDecision
+  const legacyEntry = {
+    source: "switchboard_wrapper",
+    threadId: "thread-explain-legacy-constraints",
+    userPrompt: "Do something.",
+    session: { claudeSessionId: "session-legacy-constraints" },
+    routeDecision: {
+      label: "best coder",
+      taskType: "multi_file_refactor",
+      confidence: 0.8,
+      continuityCost: "low",
+      continuityDecision: "switch",
+      continuityReason: "first turn"
+      // policyInputs intentionally omitted
+    },
+    routingDecision: {
+      schemaVersion: "0.1.0-experimental",
+      status: "ok",
+      selectedTargetId: "anthropic-coder",
+      hardConstraintResults: { eligibleTargetIds: ["anthropic-coder"], blocked: [] },
+      softConstraintInputs: { userPreference: "auto", projectOverride: null }
+    }
+  };
+  fs.writeFileSync(logPath, JSON.stringify(legacyEntry) + "\n");
+
+  const explanation = explainLatestSwitchboardTurn({
+    logPath,
+    routeContextPath,
+    threadId: "thread-explain-legacy-constraints"
+  });
+
+  assert.equal(explanation.status, "found");
+  assert.ok(explanation.reasoning, "reasoning should be present");
+  // All constraints should be not-applied when policyInputs is absent
+  assert.equal(explanation.reasoning.hardConstraintEvaluation.privacy.applied, false);
+  assert.equal(explanation.reasoning.hardConstraintEvaluation.availability.applied, false);
+  assert.equal(explanation.reasoning.hardConstraintEvaluation.clientCompatibility.applied, false);
+  // Reason strings should reflect the normalized "off" value
+  assert.match(explanation.reasoning.hardConstraintEvaluation.privacy.reason, /off/);
 });
 
 test("Switchboard interactive turns preserve Claude continuity without prompt args", () => {

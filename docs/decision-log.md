@@ -244,3 +244,47 @@ Consequences:
 Follow-up:
 - Next review milestone: Milestone 4 plan-to-implementation checkpoint.
 - Linked artifacts (logs, fixtures, docs, PRs): src/switchboard/workflow.js, src/switchboard/route_context.js, src/switchboard/cli.js, src/switchboard/claude_hook_bridge.js, test/switchboard-workflow.test.js, test/switchboard-cli.test.js, docs/ROUTER-PHASE-PLAN.md
+
+## Milestone 4 Closeout
+
+Decision ID: DEC-2026-05-11-milestone-4-explainability-outcome-attribution-closeout
+Related deferred item: Milestone 4 Explainability And Outcome Attribution Foundation
+Status: committed
+Date: 2026-05-11
+Owners: team
+
+Context:
+- Milestone 4 required event normalization with contract-backed schemas, decision reasoning reconstruction, outcome attribution tracking, and offline replay capabilities so future policy work has solid observability and evaluation foundations.
+
+Options considered:
+- Option A: defer all outcome attribution until Milestone 5, focus explain on reconstructing existing evidence only.
+- Option B: complete outcome attribution foundations now (RoutingLogEvent schema, attribution store, replay functions) so Milestone 5 can focus purely on new integrations without blocked dependencies.
+
+Tradeoffs:
+- Option A: smaller initial scope, but delays critical attribution infrastructure and leaves Milestone 5 at risk of structural debt.
+- Option B: larger Milestone 4 scope, but delivers fully integrated explainability + attribution stack ready for policy tuning and second-surface reuse.
+
+Verification signal:
+- Expected signal from phase plan: routed turns can be inspected offline with full reasoning reconstruction; outcome attribution is queryable via contract fields; evidence can be replayed to test policy changes; documented replay workflow is available.
+- Evidence observed:
+  - `docs/contracts/router-contracts.md` now contains RoutingLogEvent schema (Section 7) and outcome taxonomy (Appendix A.5-A.6).
+  - `src/router/outcome-constants.js` defines 3 enums (EXECUTION_STATUS, ERROR_SIGNAL, SWITCHING_REASON) with deterministic decision ID generation.
+  - `src/switchboard/attribution_store.js` provides persistence (NDJSON) and querying for attribution records by sessionId, decisionId, errorSignal.
+  - `src/switchboard/workflow.js` enhanced with event normalization (schemaVersion, sessionId, turnIndex, outcome, attribution inline) + reconstructReasoning() + replay functions (loadSessionEvidence, replayRoutingDecision, evaluatePolicyOnEvidence).
+  - `src/switchboard/cli.js` printHumanExplain() now renders "Decision Reasoning:" section with constraint evaluation, continuity cost, confidence, and rationale.
+  - `docs/REPLAY-GUIDE.md` documents complete workflow for testing policies against recorded evidence.
+  - Full test suite passes: 80/80 tests (73 original + 7 attribution tests + existing flow coverage), 0 regressions.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: Milestone 4 is formally complete as of 2026-05-11.
+- What remains intentionally deferred: outcome feedback integration (success/failure attribution), statistical policy comparison (A/B testing), Milestone 5 second-surface validation.
+
+Consequences:
+- Near-term implementation impact: switchboard logs now carry normalized, contract-backed event data alongside legacy fields; explain output includes human-readable reasoning reconstruction; attribution queries enable offline analysis.
+- Test and replay impact: 7 new attribution tests establish baseline; replay functions enable policy verification against stored evidence without live Claude runs.
+- Migration impact: none; all changes maintain backward compatibility; legacy fields preserved in evidence objects.
+
+Follow-up:
+- Next review milestone: Milestone 5 second-surface proof conditional gate (review stability, integration readiness, contract reusability).
+- Linked artifacts (logs, fixtures, docs, PRs): src/router/outcome-constants.js, src/switchboard/attribution_store.js, src/switchboard/workflow.js, src/switchboard/cli.js, test/attribution.test.js, docs/contracts/router-contracts.md, docs/REPLAY-GUIDE.md, docs/ROUTER-PHASE-PLAN.md

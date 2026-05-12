@@ -10,6 +10,13 @@ import {
 } from "./paths.js";
 import { saveRouteContext } from "./route_context.js";
 import { loadThreadSession, saveThreadSession } from "./session_store.js";
+import {
+  determineErrorSignal,
+  determineSwitchingReason,
+  generateDecisionId,
+  POLICY_VERSION,
+  EXECUTION_STATUS
+} from "../router/outcome-constants.js";
 
 export {
   DEFAULT_SWITCHBOARD_LOG_PATH,
@@ -44,7 +51,8 @@ function defaultSession(targets) {
     mode: "plan",
     cost_posture: "balanced",
     currentTargetId: targets.find((target) => target.label === "balanced")?.id || targets[0]?.id || null,
-    turnCount: 0
+    turnCount: 0,
+    attemptedTurnCount: 0
   };
 }
 
@@ -73,6 +81,7 @@ function routeDecisionSummary(plan) {
   const route = plan.route || {};
   return {
     status: route.status || plan.status,
+    confidence: route.classification?.confidence ?? route.confidence ?? null,
     mode: route.mode || null,
     taskType: route.taskType || null,
     label: route.selectedTarget?.label || null,
@@ -201,6 +210,40 @@ function buildContextPackage({
   };
 }
 
+function normalizeRoutingLogEvent({
+  ts,
+  source,
+  sessionId,
+  threadId,
+  turnIndex,
+  userPrompt,
+  sessionState,
+  routingDecision,
+  contextPackage,
+  outcome,
+  attribution,
+  wrapperContext,
+  legacy = {}
+}) {
+  return {
+    schemaVersion: "0.1.0-experimental",
+    ts,
+    source,
+    sessionId,
+    threadId,
+    turnIndex,
+    userPrompt: userPrompt ?? null,
+    sessionState,
+    routingDecision,
+    contextPackage,
+    outcome,
+    attribution,
+    hookCorrelation: null,
+    wrapperContext: wrapperContext ?? null,
+    legacy
+  };
+}
+
 function selectedClaudeSummary(plan) {
   if (plan.status !== "planned") return null;
   return {
@@ -210,6 +253,101 @@ function selectedClaudeSummary(plan) {
     effort: plan.selectedTarget.effort,
     sessionId: plan.sessionId,
     commandPreview: plan.commandPreview
+  };
+}
+
+function reconstructReasoning(routeDecision, routingDecision) {
+  if (!routeDecision || !routingDecision) {
+    return null;
+  }
+
+  const policyInputs = routeDecision.policyInputs || {};
+  const hardConstraints = policyInputs.hardConstraints || {};
+  const blockedEntries = routingDecision.hardConstraintResults?.blocked || [];
+  const blockedTargetsByReason = (reasonMatcher) =>
+    blockedEntries
+      .filter((blockedEntry) =>
+        (blockedEntry.constraintReasons || []).some((reasonCode) => reasonMatcher(reasonCode))
+      )
+      .map((blockedEntry) => blockedEntry.targetId);
+
+  // Normalize constraint values so missing/undefined fields default to "off"
+  const privacyValue = hardConstraints.privacy ?? "off";
+  const availabilityValue = hardConstraints.availability ?? "off";
+  const clientCompatibilityValue = hardConstraints.clientCompatibility ?? "off";
+
+  // Build constraint evaluation
+  const hardConstraintEvaluation = {
+    privacy: {
+      applied: privacyValue !== "off",
+      reason: `Privacy: ${privacyValue}`,
+      blockedTargets: blockedTargetsByReason((reasonCode) => reasonCode.startsWith("privacy_"))
+    },
+    availability: {
+      applied: availabilityValue !== "off",
+      reason: `Availability: ${availabilityValue}`,
+      blockedTargets: blockedTargetsByReason(
+        (reasonCode) => reasonCode === "target_unavailable" || reasonCode.includes("availability")
+      )
+    },
+    clientCompatibility: {
+      applied: clientCompatibilityValue !== "off",
+      reason: `Client compatibility: ${clientCompatibilityValue}`,
+      blockedTargets: blockedTargetsByReason(
+        (reasonCode) => reasonCode === "client_surface_incompatible" || reasonCode.startsWith("client_")
+      )
+    }
+  };
+
+  // Build soft constraint evaluation
+  const userPref = routingDecision.softConstraintInputs?.userPreference || "auto";
+  const softConstraintEvaluation = {
+    userPreference: userPref,
+    projectOverride: routingDecision.softConstraintInputs?.projectOverride || null,
+    impact:
+      userPref !== "auto"
+        ? "influenced_choice"
+        : routingDecision.hardConstraintResults?.eligibleTargetIds?.length === 1
+          ? "only_eligible_target"
+          : "no_influence"
+  };
+
+  // Build continuity cost explanation
+  const continuityCost = routeDecision.continuityCost || "unknown";
+  const continuityDecision = routeDecision.continuityDecision || "unknown";
+  const continuityReason = routeDecision.continuityReason || "no continuity reason";
+
+  const continuityCostEval = {
+    calculated: continuityCost,
+    decision: continuityDecision,
+    reason: continuityReason
+  };
+
+  // Build rationale
+  const selectedLabel = routeDecision.label || "unknown";
+  const confidence = routeDecision.confidence ?? 0.5;
+  const taskType = routingDecision.taskType || "unknown";
+  const mode = routingDecision.mode || "unknown";
+
+  let rationale = `Selected ${selectedLabel} for ${taskType} (${mode} mode)`;
+  if (routeDecision.escalationPolicy?.applied) {
+    const reasons = routeDecision.escalationPolicy.reasons || [];
+    rationale += ` due to escalation: ${reasons.join(", ")}`;
+  } else if (continuityDecision !== "stay_on_current_target") {
+    rationale += ` (continuity cost: ${continuityCost})`;
+  } else {
+    rationale += ` (low continuity cost, staying current)`;
+  }
+
+  return {
+    taskType,
+    modeResolution: routeDecision.modeResolution || null,
+    requiredCapabilities: routingDecision.requiredCapabilities || [],
+    hardConstraintEvaluation,
+    softConstraintEvaluation,
+    continuityCost: continuityCostEval,
+    selectedTargetRationale: rationale,
+    confidence
   };
 }
 
@@ -331,6 +469,7 @@ function buildSwitchboardTurn({
   timeoutMs = 180000,
   commandRunner = defaultCommandRunner
 }) {
+  const turnStartTimeMs = Date.now();
   const persistedSession = loadThreadSession({ storePath, threadId }) || {};
   const baseSession = defaultSession(targets);
   const claudeSessionId = persistedSession.claudeSessionId || sessionId;
@@ -364,14 +503,16 @@ function buildSwitchboardTurn({
   // It is used for route-context persistence so the context always records what was planned,
   // while selectedClaude (computed after retry resolution) reflects what actually ran.
   const plannedSelectedClaude = selectedClaudeSummary(plan);
-  const plannedTurnCount =
-    plan.status === "planned" ? Number(routeSession.turnCount || 0) + 1 : Number(routeSession.turnCount || 0);
+  const attemptedTurnCount =
+    plan.status === "planned"
+      ? Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0) + 1
+      : Number(routeSession.attemptedTurnCount || routeSession.turnCount || 0);
   persistRouteContext({
     routeContextPath,
     threadId,
     claudeSessionId,
     routeSession,
-    turnCount: plannedTurnCount,
+    turnCount: attemptedTurnCount,
     routeDecision,
     routingDecision,
     selectedClaude: plannedSelectedClaude,
@@ -414,13 +555,26 @@ function buildSwitchboardTurn({
   const turnStatus = executionResult?.status || plan.status;
 
   const nextSession =
-    effectivePlan.status === "planned" && (!execute || executionResult?.status === "executed")
+    effectivePlan.status === "planned"
       ? {
           ...routeSession,
-          currentTargetId: effectivePlan.selectedTarget.targetId,
-          currentLabel: effectivePlan.selectedTarget.label,
-          turnCount: Number(routeSession.turnCount || 0) + 1,
-          lastRoute: routeDecision,
+          currentTargetId:
+            !execute || executionResult?.status === "executed"
+              ? effectivePlan.selectedTarget.targetId
+              : routeSession.currentTargetId,
+          currentLabel:
+            !execute || executionResult?.status === "executed"
+              ? effectivePlan.selectedTarget.label
+              : routeSession.currentLabel,
+          turnCount:
+            !execute || executionResult?.status === "executed"
+              ? Number(routeSession.turnCount || 0) + 1
+              : Number(routeSession.turnCount || 0),
+          attemptedTurnCount,
+          lastRoute:
+            !execute || executionResult?.status === "executed"
+              ? routeDecision
+              : routeSession.lastRoute,
           claudeSessionId,
           routingOverride: "auto"
         }
@@ -431,31 +585,98 @@ function buildSwitchboardTurn({
       ? saveThreadSession({ storePath, threadId, session: nextSession })
       : null;
 
-  const evidence = {
+  const currentSessionState = buildSessionState({
+    threadId,
+    claudeSessionId,
+    routeSession,
+    routeDecision,
+    selectedClaude,
+    turnCount: attemptedTurnCount
+  });
+  const currentContextPackage = buildContextPackage({
+    threadId,
+    claudeSessionId,
+    turnCount: attemptedTurnCount,
+    routeDecision,
+    selectedClaude,
+    wrapperContext
+  });
+
+  const executionStatus = !execute
+    ? EXECUTION_STATUS.PLANNED
+    : effectivePlan.status !== "planned" || !executionResult
+      ? EXECUTION_STATUS.PLANNED
+      : executionResult?.exitCode === 0
+      ? EXECUTION_STATUS.EXECUTED
+      : EXECUTION_STATUS.FAILED;
+
+  const normalizedEvent = normalizeRoutingLogEvent({
     ts: new Date().toISOString(),
     source: "switchboard_wrapper",
+    sessionId: claudeSessionId,
     threadId,
-    executionMode: execute ? "live" : "planned",
+    turnIndex: attemptedTurnCount,
     userPrompt: input,
+    sessionState: currentSessionState,
+    routingDecision,
+    contextPackage: currentContextPackage,
+    outcome: {
+      executionStatus,
+      exitCode: executionResult?.exitCode ?? null,
+      errorSignal: determineErrorSignal(executionStatus, executionResult),
+      durationMs: Date.now() - turnStartTimeMs
+    },
+    attribution: {
+      decisionId: generateDecisionId({
+        sessionId: claudeSessionId,
+        threadId,
+        turnCount: attemptedTurnCount
+      }),
+      decisionConfidence: routeDecision?.confidence ?? 0.5,
+      switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId ?? routeSession.currentTargetId),
+      escalationApplied: routeDecision?.escalationPolicy?.applied || false,
+      policyVersion: POLICY_VERSION
+    },
+    wrapperContext,
+    legacy: {
+      routeDecision,
+      selectedClaude,
+      execution: executionResult,
+      recovery: {
+        recoveredFromResumeRetry
+      },
+      session: {
+        threadId,
+        claudeSessionId,
+        previousSession: persistedSession,
+        nextSession: savedSession || nextSession
+      },
+      router: {
+        routingDecision,
+        routeDecision,
+        sessionState: currentSessionState,
+        contextPackage: currentContextPackage
+      },
+      claude: {
+        selectedClaude,
+        execution: executionResult,
+        launch: {
+          resume: Boolean(effectivePlan.resume),
+          interactive: Boolean(effectivePlan.interactive),
+          commandPreview: effectivePlan.commandPreview || null
+        }
+      }
+    }
+  });
+
+  const evidence = {
+    ...normalizedEvent,
+    executionMode: execute ? "live" : "planned",
     router: {
       routingDecision,
       routeDecision,
-      sessionState: buildSessionState({
-        threadId,
-        claudeSessionId,
-        routeSession,
-        routeDecision,
-        selectedClaude,
-        turnCount: Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0)
-      }),
-      contextPackage: buildContextPackage({
-        threadId,
-        claudeSessionId,
-        turnCount: Number((savedSession || nextSession)?.turnCount || routeSession.turnCount || 0),
-        routeDecision,
-        selectedClaude,
-        wrapperContext
-      })
+      sessionState: currentSessionState,
+      contextPackage: currentContextPackage
     },
     claude: {
       selectedClaude,
@@ -466,7 +687,6 @@ function buildSwitchboardTurn({
         commandPreview: effectivePlan.commandPreview || null
       }
     },
-    wrapperContext,
     routeDecision,
     selectedClaude,
     execution: executionResult,
@@ -478,7 +698,10 @@ function buildSwitchboardTurn({
       claudeSessionId,
       previousSession: persistedSession,
       nextSession: savedSession || nextSession
-    }
+    },
+    sessionState: currentSessionState,
+    routingDecision,
+    contextPackage: currentContextPackage
   };
 
   appendLog(evidence, logPath);
@@ -696,29 +919,51 @@ export function explainLatestSwitchboardTurn({
     ? readNdjson(hookLogPath).filter((entry) => entry.sessionId === claudeSessionId)
     : [];
 
-  const routerEvidence = latest.router || {
-    routingDecision: latest.routingDecision || latest.routeDecision || null,
-    routeDecision: latest.routeDecision || null,
-    sessionState: null,
-    contextPackage: null
+  const routerEvidence = {
+    routingDecision:
+      latest.routingDecision ||
+      latest.router?.routingDecision ||
+      latest.legacy?.router?.routingDecision ||
+      null,
+    routeDecision:
+      latest.routeDecision ||
+      latest.router?.routeDecision ||
+      latest.legacy?.routeDecision ||
+      null,
+    sessionState:
+      latest.sessionState ||
+      latest.router?.sessionState ||
+      latest.legacy?.router?.sessionState ||
+      null,
+    contextPackage:
+      latest.contextPackage ||
+      latest.router?.contextPackage ||
+      latest.legacy?.router?.contextPackage ||
+      null
   };
-  const claudeEvidence = latest.claude || {
+  const claudeEvidence = latest.claude || latest.legacy?.claude || {
     selectedClaude: latest.selectedClaude || null,
     execution: latest.execution || null,
     launch: null
   };
+
+  const reasoning = reconstructReasoning(
+    latest.routeDecision || latest.router?.routeDecision || latest.legacy?.routeDecision || routerEvidence.routeDecision,
+    latest.routingDecision || routerEvidence.routingDecision
+  );
 
   return {
     status: "found",
     threadId: latest.threadId || null,
     userPrompt: latest.userPrompt || null,
     wrapperContext: latest.wrapperContext || null,
+    reasoning,
     routerEvidence,
     claudeEvidence,
     routeDecision: latest.routeDecision || null,
     routingDecision: routerEvidence.routingDecision || null,
-    selectedClaude: latest.selectedClaude || null,
-    execution: latest.execution || null,
+    selectedClaude: latest.selectedClaude || latest.claude?.selectedClaude || null,
+    execution: latest.execution || latest.claude?.execution || null,
     session: latest.session || null,
     routeContext: routeContext
       ? {
@@ -740,5 +985,119 @@ export function explainLatestSwitchboardTurn({
       toolName: event.toolName || null,
       permissionDecision: event.output?.hookSpecificOutput?.permissionDecision || null
     }))
+  };
+}
+
+/**
+ * Load all evidence events for a session from the log.
+ * @param {object} params
+ * @param {string} params.logPath - path to switchboard log
+ * @param {string} params.sessionId - session ID to filter by
+ * @returns {array} - normalized events for that session
+ */
+export function loadSessionEvidence({ logPath = DEFAULT_SWITCHBOARD_LOG_PATH, sessionId }) {
+  if (!sessionId) {
+    throw new Error("sessionId is required");
+  }
+
+  const allEntries = readNdjson(logPath);
+  return allEntries.filter((entry) => entry.sessionId === sessionId || entry.session?.claudeSessionId === sessionId);
+}
+
+/**
+ * Replay a routing decision with a given evidence set and policy.
+ * Useful for testing if a new policy would make different decisions.
+ * @param {object} params
+ * @param {object} params.evidence - a routing log event
+ * @param {string} params.policyVersion - policy version identifier
+ * @returns {object} - comparison of original vs replayed decision
+ */
+export function replayRoutingDecision({
+  evidence,
+  policyVersion = POLICY_VERSION
+}) {
+  const routingDecision =
+    evidence?.routingDecision ||
+    evidence?.router?.routingDecision ||
+    evidence?.legacy?.router?.routingDecision ||
+    null;
+  if (!evidence || !routingDecision) {
+    return {
+      status: "unable_to_replay",
+      reason: "missing_routing_decision_in_evidence"
+    };
+  }
+
+  const originalDecision = routingDecision;
+  const sessionState =
+    evidence.sessionState ||
+    evidence.router?.sessionState ||
+    evidence.legacy?.router?.sessionState ||
+    null;
+  const originalSelectedId = originalDecision.selectedTargetId;
+
+  // For now, replaying means comparing with the current policy version
+  // In a full implementation, this would accept alternative policy configs
+  const matches = (evidence.attribution?.policyVersion ?? originalDecision.policyVersion) === policyVersion;
+
+  return {
+    status: "replayed",
+    originalSelectedTargetId: originalSelectedId,
+    originalDecisionId: evidence.attribution?.decisionId || null,
+    currentPolicyVersion: policyVersion,
+    originalPolicyVersion: evidence.attribution?.policyVersion ?? originalDecision.policyVersion ?? null,
+    matches,
+    confidence: evidence.attribution?.decisionConfidence ?? 0.5,
+    switchingReason: evidence.attribution?.switchingReason || null,
+    evidence: {
+      ts: evidence.ts,
+      sessionId: evidence.sessionId,
+      threadId: evidence.threadId,
+      turnIndex: evidence.turnIndex,
+      sessionState
+    }
+  };
+}
+
+/**
+ * Evaluate how a policy performed on a set of historical decisions.
+ * @param {object} params
+ * @param {array} params.evidenceSet - array of evidence events
+ * @param {string} params.policyVersion - policy version to compare against
+ * @returns {object} - evaluation summary
+ */
+export function evaluatePolicyOnEvidence({ evidenceSet = [], policyVersion = POLICY_VERSION }) {
+  if (!Array.isArray(evidenceSet) || evidenceSet.length === 0) {
+    return {
+      status: "no_evidence",
+      totalDecisions: 0
+    };
+  }
+
+  const results = evidenceSet.map((evidence) =>
+    replayRoutingDecision({ evidence, policyVersion })
+  );
+
+  const matchCount = results.filter((r) => r.matches).length;
+  const matchRate = results.length > 0 ? matchCount / results.length : 0;
+
+  const avgConfidence = results.length > 0
+    ? results.reduce((sum, r) => sum + (r.confidence || 0), 0) / results.length
+    : 0;
+
+  const switchingReasons = {};
+  results.forEach((r) => {
+    const reason = r.switchingReason || "no_switch";
+    switchingReasons[reason] = (switchingReasons[reason] || 0) + 1;
+  });
+
+  return {
+    status: "evaluated",
+    totalDecisions: results.length,
+    matchCount,
+    matchRate: (matchRate * 100).toFixed(1) + "%",
+    avgConfidence: (avgConfidence * 100).toFixed(1) + "%",
+    switchingReasons,
+    results
   };
 }

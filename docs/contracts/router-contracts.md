@@ -260,50 +260,58 @@ Notes:
 * Hard and soft constraint inputs should be named even when implementations are staged.
 * Unknown fields should be ignored by default in early versions.
 
-### 7) RoutingLogEvent
+### 7) RoutingLogEvent (Milestone 4)
+
+Normalized event emitted for every routing decision. This is the primary log format for explainability and replay.
 
 ```json
 {
   "schemaVersion": "0.1.0-experimental",
-  "eventType": "routing_decision|execution_result|hook_event|policy_evaluation",
-  "timestamp": "ISO-8601 timestamp",
+  "ts": "ISO-8601 timestamp",
+  "source": "switchboard_wrapper|adapter_anthropic|adapter_gemini|adapter_openai|gateway_X",
+  
   "sessionId": "string",
   "threadId": "string",
   "turnIndex": "number",
-  "input": {
-    "userPrompt": "string"
+  "userPrompt": "string|null",
+  
+  "sessionState": { ... },
+  "routingDecision": { ... },
+  "contextPackage": { ... },
+  
+  "outcome": {
+    "executionStatus": "executed|failed|planned",
+    "exitCode": "number|null",
+    "errorSignal": "null|tool_failure|test_failure|execution_timeout|auth_failure|hook_correlation_miss|target_not_available|low_confidence_escalation|user_correction_needed",
+    "durationMs": "number|null"
   },
-  "classification": {
-    "taskType": "string",
-    "mode": "plan|implement|debug|review|summarize|agent_workflow|out_of_domain",
-    "confidence": "number"
-  },
-  "decision": {
-    "status": "ok|refused",
-    "selectedTargetId": "string|null",
-    "explanation": "string"
-  },
+  
   "attribution": {
-    "outcome": "success|partial|failure|unknown",
-    "reason": "string|null"
+    "decisionId": "string",
+    "decisionConfidence": "number",
+    "switchingReason": "null|continuity_cost|capability_gap|user_override|escalation|availability",
+    "escalationApplied": "boolean",
+    "policyVersion": "string"
   },
-  "execution": {
-    "clientSurface": "string|null",
-    "provider": "string|null",
-    "result": "executed|failed|not_executed|null"
-  },
-  "correlation": {
-    "routeContextMatched": "boolean|null",
-    "hookEventId": "string|null"
-  }
+  
+  "hookCorrelation": { "status": "matched|unmatched|unavailable", ... }|null,
+  "wrapperContext": { "kind": "string", "text": "string" }|null,
+  
+  "legacy": { ... }|null
 }
 ```
 
 Notes:
 
-* This contract is intentionally log-friendly for replay and explain.
-* Outcome attribution is minimal by design in v0.1 and can expand in later versions.
-* Omit or null fields that are unavailable from a given surface.
+* `schemaVersion` matches core contracts for consistency.
+* `sessionState`, `routingDecision`, `contextPackage` are the canonical contract shapes (see sections 1, 4, 5).
+* `outcome` captures execution results for replay and evaluation.
+* `attribution` stores decision metadata for queryability and outcome attribution.
+* `decisionId` is unique per decision (UUID or deterministic hash) for correlating with hooks and feedback.
+* `policyVersion` tracks which policy made this decision (for policy comparison replay).
+* `hookCorrelation` records whether this decision correlated with hook events (optional).
+* `wrapperContext` is the user-facing context message (if available).
+* `legacy` field is present for backward compatibility; new readers should prefer canonical shapes.
 
 ## Compatibility And Migration
 
@@ -352,7 +360,7 @@ Current workflow evidence now separates router-decision data from Claude executi
 
 ### A.4 Hook Correlation Mapping
 
-Current hook evidence maps to `RoutingLogEvent.correlation`:
+Current hook evidence maps to `RoutingLogEvent.hookCorrelation`:
 
 * matched route context -> `routeContextMatched=true`
 * unmatched route context -> `routeContextMatched=false`
@@ -361,6 +369,44 @@ Current hook evidence maps to `RoutingLogEvent.correlation`:
 Hook timing and correlation quality remain surface-specific and should not be treated as universal across clients.
 
 Current route-context persistence also records a contract-backed `ContextPackage` and `claudeExecution` block so hook correlation can consume stable handoff fields without depending only on legacy flat fields.
+
+### A.5 Outcome Attribution (Milestone 4)
+
+Routed decisions are tracked with minimal outcome signals to support policy evaluation without a full telemetry infrastructure.
+
+**Error Signals** (populated in `RoutingLogEvent.outcome.errorSignal`):
+
+- `null` — no error signal (use `RoutingLogEvent.outcome.executionStatus` to distinguish `planned` vs successful `executed`)
+- `tool_failure` — tool call failed during execution
+- `test_failure` — test run failed
+- `execution_timeout` — execution did not complete in allowed time
+- `auth_failure` — authentication/authorization failed (e.g., Claude auth)
+- `hook_correlation_miss` — decision did not correlate with expected hook events
+- `target_not_available` — selected target became unavailable after decision
+- `low_confidence_escalation` — router escalated due to confidence < 0.7
+- `user_correction_needed` — user had to correct or re-issue after decision
+
+**Switching Reasons** (populated in `RoutingLogEvent.attribution.switchingReason`):
+
+- `null` — no switch occurred (stayed on current target)
+- `continuity_cost` — switched due to continuity cost evaluation
+- `capability_gap` — switched because current target lacks required capability
+- `user_override` — switched due to user preference override
+- `escalation` — switched due to escalation policy (e.g., low confidence, repeated failure)
+- `availability` — switched because current target became unavailable
+
+### A.6 Replay And Policy Evaluation (Milestone 4)
+
+The normalized event structure enables offline policy evaluation against stored evidence.
+
+**Storage:**
+- `~/.model-switchboard/switchboard-turns.ndjson` — normalized RoutingLogEvent records
+- `~/.model-switchboard/attributions/{sessionId}.ndjson` — outcome attribution records (keyed by `decisionId`)
+
+**Evaluation Functions:**
+- `loadSessionEvidence(sessionId)` — load all events for a session
+- `replayRoutingDecision(evidence, policyVersion)` — re-evaluate one decision under alternate policy
+- `evaluatePolicyOnEvidence(evidenceSet, policyVersion)` — batch evaluation across all turns
 
 ## Appendix B: Open Questions
 

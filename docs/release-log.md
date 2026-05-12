@@ -1,5 +1,21 @@
 ## Unreleased
 
+### 2026-05-11 — Complete Milestone 4: Explainability and Outcome Attribution Foundation
+
+- What changed: Added contract-backed event normalization (RoutingLogEvent schema), attribution store with outcome tracking, decision reasoning reconstruction in explain output, and replay functions for offline policy evaluation.
+- Why it matters: Establishes stable observability and policy-evaluation infrastructure so Milestone 5 (second-surface proof) can exercise the router boundary without duplicating explainability work. Enables users to test policy changes against recorded evidence without live Claude runs.
+- Who is affected: Switchboard maintainers, policy researchers, and future non-Claude integrations.
+- Action needed: None. Review `docs/REPLAY-GUIDE.md` for offline policy evaluation workflow.
+- Features:
+  - Enhanced `switchboard explain` output includes "Decision Reasoning" section with constraint evaluation, continuity cost, confidence, and selected-target rationale.
+  - New `docs/REPLAY-GUIDE.md` guide documents policy testing workflow.
+  - New outcome taxonomy enums (EXECUTION_STATUS, ERROR_SIGNAL, SWITCHING_REASON) in `src/router/outcome-constants.js`.
+  - New attribution store (`src/switchboard/attribution_store.js`) provides queryable outcome tracking by session, decision ID, or error signal.
+  - New replay functions (loadSessionEvidence, replayRoutingDecision, evaluatePolicyOnEvidence) support offline decision evaluation.
+  - Backward compatible: all new fields coexist with legacy evidence shape.
+- Tests: 80/80 passing (73 original + 7 new attribution tests, 0 regressions).
+- PR: https://github.com/hannasdev/model-switchboard/pull/19
+
 ### 2026-05-11 — Close Milestone 3 with contract-backed Claude workflow evidence
 
 - What changed: Refit the Claude workflow so route-context persistence and explain output now carry contract-backed router decision, session state, and context-package evidence while separating router and Claude execution data.
