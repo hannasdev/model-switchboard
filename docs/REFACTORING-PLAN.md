@@ -69,7 +69,7 @@ The classifier produces signals; the router consumes them. They have different c
 
 **Fix:** Extract `classifyPrompt` (and its supporting constants like `TASK_TYPE_TO_ADDITIONAL_REQUIREMENTS`) into `src/router/classifier.js`. Keep `router.js` as the policy engine that imports from the classifier.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
