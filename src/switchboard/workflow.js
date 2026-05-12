@@ -628,7 +628,7 @@ function buildSwitchboardTurn({
         turnCount: attemptedTurnCount
       }),
       decisionConfidence: routeDecision?.confidence ?? 0.5,
-      switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId ?? null),
+      switchingReason: determineSwitchingReason(routingDecision, persistedSession?.currentTargetId ?? routeSession.currentTargetId),
       escalationApplied: routeDecision?.escalationPolicy?.applied || false,
       policyVersion: POLICY_VERSION
     },

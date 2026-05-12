@@ -71,7 +71,7 @@ test("Switchboard turn plans Claude launch and records separable evidence", () =
   assert.equal(entry.wrapperContext.kind, "switchboard_context");
   assert.equal(entry.routeDecision.label, "best coder");
   assert.equal(entry.attribution.decisionConfidence, result.routeDecision.confidence);
-  assert.equal(entry.attribution.switchingReason, null);
+  assert.equal(entry.attribution.switchingReason, "capability_gap");
   assert.deepEqual(entry.routeDecision.escalationPolicy?.reasons, []);
   assert.equal(entry.selectedClaude.effort, "high");
   assert.equal(entry.session.claudeSessionId, "claude-session-1");

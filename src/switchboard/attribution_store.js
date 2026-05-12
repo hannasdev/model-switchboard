@@ -182,7 +182,7 @@ export function getSessionAttributionStats({
   const hasOutcomeSignal = (record) =>
     Boolean(record?.outcome) && Object.prototype.hasOwnProperty.call(record.outcome, "errorSignal");
 
-  const successCount = records.filter((r) => hasOutcomeSignal(r) && r.outcome.errorSignal === null).length;
+  const successCount = records.filter((r) => hasOutcomeSignal(r) && r.outcome.errorSignal === null && r.outcome.executionStatus !== "planned").length;
   const failureCount = records.filter((r) => hasOutcomeSignal(r) && r.outcome.errorSignal !== null).length;
   const pendingCount = records.length - successCount - failureCount;
 
@@ -194,9 +194,11 @@ export function getSessionAttributionStats({
   records.forEach((r) => {
     const signal = !hasOutcomeSignal(r)
       ? "pending"
-      : r.outcome.errorSignal === null
-      ? "success"
-      : r.outcome.errorSignal;
+      : r.outcome.errorSignal !== null
+      ? r.outcome.errorSignal
+      : r.outcome.executionStatus === "planned"
+      ? "pending"
+      : "success";
     failuresBySignal[signal] = (failuresBySignal[signal] || 0) + 1;
   });
 

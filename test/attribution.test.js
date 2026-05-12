@@ -261,6 +261,50 @@ test("attribution store classifies missing outcomes as pending", () => {
   assert.equal(stats.failuresBySignal.success, 1);
 });
 
+test("attribution store classifies planned decisions as pending not success", () => {
+  const storePath = tempAttributionPath();
+
+  // Planned decision: executionStatus "planned", errorSignal null (per Milestone 4 contract)
+  saveAttribution({
+    storePath,
+    sessionId: "session-planned-1",
+    attribution: {
+      decisionId: "planned-1",
+      decisionConfidence: 0.85,
+      switchingReason: null,
+      escalationApplied: false,
+      policyVersion: "0.1.0-experimental",
+      outcome: { executionStatus: "planned", errorSignal: null }
+    }
+  });
+
+  // Executed decision: executionStatus "executed", errorSignal null (true success)
+  saveAttribution({
+    storePath,
+    sessionId: "session-planned-1",
+    attribution: {
+      decisionId: "executed-1",
+      decisionConfidence: 0.9,
+      switchingReason: null,
+      escalationApplied: false,
+      policyVersion: "0.1.0-experimental",
+      outcome: { executionStatus: "executed", errorSignal: null }
+    }
+  });
+
+  const stats = getSessionAttributionStats({
+    storePath,
+    sessionId: "session-planned-1"
+  });
+
+  assert.equal(stats.totalDecisions, 2);
+  assert.equal(stats.successCount, 1);
+  assert.equal(stats.pendingCount, 1);
+  assert.equal(stats.failureCount, 0);
+  assert.equal(stats.failuresBySignal.pending, 1);
+  assert.equal(stats.failuresBySignal.success, 1);
+});
+
 test("attribution store validation messages match guarded fields", () => {
   const storePath = tempAttributionPath();
 
