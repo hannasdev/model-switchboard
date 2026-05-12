@@ -47,6 +47,9 @@
     "type": "git",
     "url": "https://github.com/hannasdev/model-switchboard"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",

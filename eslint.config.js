@@ -14,8 +14,6 @@ export default [
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
       },
     },
     plugins: {
