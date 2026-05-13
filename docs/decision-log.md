@@ -337,7 +337,7 @@ Follow-up:
 
 Decision ID: DEC-2026-05-13-codex-cli-feasibility-spike
 Related deferred item: PRODUCT-PRD.md Section 17.1 deferred items; milestone 5 second-surface proof
-Status: committed; resume boundary verified; beyond-parity evidence pending
+Status: committed; app-server in-session evidence observed
 Date: 2026-05-13
 Owners: team
 
@@ -360,17 +360,18 @@ Verification signal:
 - Expected signal: a reproducible probe that can show whether local Codex CLI exposes route-selected model authority at launch, non-interactive execution, or resume boundaries, and whether it should be treated as authoritative or advisory.
 - Evidence observed: local Codex CLI help exposes `--model` for interactive launch, `codex exec --model`, and `codex exec resume --last --model`. The command-surface probe reports this as resume-boundary route authority, not in-session automatic switching.
 - Live evidence observed on 2026-05-13: `npm run switchboard:spike:codex-cli:live` completed a two-turn probe. Turn 1 selected `openai-coder` / `codex-best-coder` / `gpt-5.5`; turn 2 resumed with `openai-quick` / `codex-fast` / `gpt-5.4-mini`; both turns reported shared thread/session evidence `019e21ad-1f30-72d0-bec0-08d275284eaf`.
+- App-server evidence observed on 2026-05-13: generated Codex app-server protocol bindings expose `turn/start` with a `model` override documented as applying to "this turn and subsequent turns." A live stdio smoke test started one thread with `gpt-5.5`, completed a first turn, then completed a second `turn/start` on the same `threadId` / `sessionId` with `model: "gpt-5.4-mini"` and no `exec resume` boundary.
 
 Decision:
 - Chosen option: Option B.
-- Scope of commitment: treat Codex CLI as verified only for route authority at `exec`/`resume` boundaries. This is partial/parity evidence, not a verified beyond-parity product path.
-- What remains intentionally deferred: claims of in-session automatic switching inside the Codex TUI; broad UX/product reframing decisions until a supported in-session switch mechanism is found and verified.
+- Scope of commitment: treat Codex CLI as verified for route authority at `exec`/`resume` boundaries and promising for in-session route authority through the experimental app-server protocol.
+- What remains intentionally deferred: claims that the interactive Codex TUI itself can be hot-swapped; broad UX/product reframing decisions until the app-server protocol is judged supportable enough for a product surface.
 
 Consequences:
 - Near-term implementation impact: additive Codex CLI feasibility tooling; no change to Claude MVP promise.
 - Test and replay impact: probe test coverage verifies that resume-boundary support is not misreported as in-session authority, and live mode records selected targets, resolved models, final-message evidence, JSON event counts, and session/thread IDs.
-- Migration impact: low; probe is additive and does not alter core Claude workflow contracts. Codex should not displace the Claude MVP path based only on command-boundary evidence.
+- Migration impact: low; probe is additive and does not alter core Claude workflow contracts. Codex should not displace the Claude MVP path based only on command-boundary evidence, but the app-server protocol may justify a focused product-surface spike.
 
 Follow-up:
-- Next review milestone: investigate whether Codex CLI exposes a supported in-session model switch mechanism. If no supported mechanism exists, keep Codex CLI in the deferred candidate bucket despite the verified `exec`/`resume` boundary.
+- Next review milestone: decide whether the experimental Codex app-server protocol is supportable enough to be the Switchboard-controlled session surface. If yes, build a small repeatable app-server probe/harness; if no, keep Codex CLI in the deferred candidate bucket despite the positive protocol evidence.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, test/codex-cli-feasibility-probe.test.js, README.md

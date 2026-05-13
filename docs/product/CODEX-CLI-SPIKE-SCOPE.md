@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: resume boundary verified; beyond-parity evidence pending
+Status: app-server in-session evidence observed; supportability decision pending
 
 Decision record: `DEC-2026-05-13-codex-cli-feasibility-spike` in [../decision-log.md](../decision-log.md).
 
@@ -124,7 +124,7 @@ Observed 2026-05-13:
 
 ### Phase 3: In-Session Switch Probe
 
-Status: next; required for beyond-parity product direction.
+Status: app-server protocol smoke test passed; supportability and product-surface fit pending.
 
 Investigate whether Codex CLI exposes a supported hook, command, control protocol, config reload behavior, or interactive-session API that can change the active model after an interactive session has started.
 
@@ -135,6 +135,15 @@ Required evidence:
 3. A second user turn runs under the new model while preserving the same interactive session continuity.
 4. The user does not need to manually choose the model, exit the session, or start a separate `exec resume` command.
 5. The probe records durable evidence for the session identity and model change.
+
+Observed 2026-05-13:
+
+- Generated Codex app-server protocol bindings from `codex app-server generate-ts`.
+- `turn/start` exposes `model?: string | null` with generated documentation: "Override the model for this turn and subsequent turns."
+- A live app-server stdio smoke test started one thread with `gpt-5.5`, ran a first turn, then ran a second `turn/start` on the same `threadId` with `model: "gpt-5.4-mini"`.
+- Both turns completed on the same `threadId` / `sessionId`: `019e21ec-89f0-7a03-b5f6-f8590818eb1b`.
+- This did not require `codex exec resume`, manual model selection, or starting a separate command-boundary workflow.
+- Caveat: the evidence is from the experimental Codex app-server protocol, not from a documented interactive TUI hook. The next decision is whether Switchboard can treat the app-server protocol as a supportable product surface.
 
 ### Phase 4: Product Decision
 
