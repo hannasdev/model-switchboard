@@ -42,7 +42,8 @@
     "switchboard:explain": "node bin/switchboard.js explain --json",
     "switchboard:continuity": "node bin/switchboard.js probe continuity --no-tools --inter-turn-delay-ms 1000",
     "switchboard:continuity:interactive": "node bin/switchboard.js probe continuity-interactive --json",
-    "switchboard:spike:codex-cli": "node scripts/codex-cli-feasibility-probe.js"
+    "switchboard:spike:codex-cli": "node scripts/codex-cli-feasibility-probe.js",
+    "switchboard:spike:codex-cli:live": "node scripts/codex-cli-feasibility-probe.js --live"
   },
   "repository": {
     "type": "git",

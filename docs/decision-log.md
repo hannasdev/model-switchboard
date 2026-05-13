@@ -337,7 +337,7 @@ Follow-up:
 
 Decision ID: DEC-2026-05-13-codex-cli-feasibility-spike
 Related deferred item: PRODUCT-PRD.md Section 17.1 deferred items; milestone 5 second-surface proof
-Status: committed
+Status: committed; live resume boundary verified
 Date: 2026-05-13
 Owners: team
 
@@ -357,18 +357,19 @@ Tradeoffs:
 
 Verification signal:
 - Expected signal: a reproducible probe that can show whether local Codex CLI exposes route-selected model authority at launch, non-interactive execution, or resume boundaries, and whether it should be treated as authoritative or advisory.
-- Evidence observed: local Codex CLI help exposes `--model` for interactive launch, `codex exec --model`, and `codex exec resume --last --model`. A new probe (`scripts/codex-cli-feasibility-probe.js`) reports this as resume-boundary route authority, not in-session automatic switching.
+- Evidence observed: local Codex CLI help exposes `--model` for interactive launch, `codex exec --model`, and `codex exec resume --last --model`. The command-surface probe reports this as resume-boundary route authority, not in-session automatic switching.
+- Live evidence observed on 2026-05-13: `npm run switchboard:spike:codex-cli:live` completed a two-turn probe. Turn 1 selected `openai-coder` / `codex-best-coder` / `gpt-5.5`; turn 2 resumed with `openai-quick` / `codex-fast` / `gpt-5.4-mini`; both turns reported shared thread/session evidence `019e21ad-1f30-72d0-bec0-08d275284eaf`.
 
 Decision:
 - Chosen option: Option B.
-- Scope of commitment: treat Codex CLI as a candidate for route authority at `exec`/`resume` boundaries and continue the spike with a live two-turn resume probe before making product promises.
-- What remains intentionally deferred: claims of in-session automatic switching inside the Codex TUI; broad UX/product reframing decisions until live resume evidence is collected.
+- Scope of commitment: treat Codex CLI as a verified candidate for route authority at `exec`/`resume` boundaries and continue product evaluation against the written spike scope before changing the primary MVP path.
+- What remains intentionally deferred: claims of in-session automatic switching inside the Codex TUI; broad UX/product reframing decisions beyond the verified non-interactive resume workflow.
 
 Consequences:
 - Near-term implementation impact: additive Codex CLI feasibility tooling; no change to Claude MVP promise.
-- Test and replay impact: probe test coverage verifies that resume-boundary support is not misreported as in-session authority.
+- Test and replay impact: probe test coverage verifies that resume-boundary support is not misreported as in-session authority, and live mode records selected targets, resolved models, final-message evidence, JSON event counts, and session/thread IDs.
 - Migration impact: low; probe is additive and does not alter core Claude workflow contracts.
 
 Follow-up:
-- Next review milestone: use the written spike scope to run a live Codex CLI `exec` plus `exec resume --last --model ... --json` probe and inspect whether session continuity and route-selected model changes are visible in durable evidence.
+- Next review milestone: decide whether the verified Codex CLI `exec`/`resume` boundary is strong enough to justify a product workflow spike, or whether the lack of in-session automatic switching keeps this in the deferred candidate bucket.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, test/codex-cli-feasibility-probe.test.js, README.md

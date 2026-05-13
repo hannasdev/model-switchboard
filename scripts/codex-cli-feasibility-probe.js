@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { routePrompt } from "../src/router/router.js";
 import { OPENAI_TARGETS_PATH } from "../src/switchboard/paths.js";
@@ -18,6 +20,10 @@ function getArg(args, flag) {
   const idx = args.lastIndexOf(flag);
   if (idx === -1 || idx + 1 >= args.length) return null;
   return args[idx + 1];
+}
+
+function hasFlag(args, flag) {
+  return args.includes(flag);
 }
 
 function runHelp(codexBin, args) {
@@ -71,9 +77,204 @@ function routeTurnPlan({ input, session, targets }) {
   };
 }
 
+function runCodexCommand(codexBin, args, { cwd = process.cwd() } = {}) {
+  const result = spawnSync(codexBin, args, {
+    cwd,
+    encoding: "utf8",
+    env: { ...process.env, NO_COLOR: "1" }
+  });
+  return {
+    command: [codexBin, ...args].join(" "),
+    args,
+    status: result.status,
+    signal: result.signal,
+    stdout: result.stdout || "",
+    stderr: result.stderr || "",
+    ok: result.status === 0
+  };
+}
+
+function parseJsonLines(text) {
+  const events = [];
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      events.push(JSON.parse(trimmed));
+    } catch {
+      // Codex may print warnings before JSON events; keep raw output in evidence.
+    }
+  }
+  return events;
+}
+
+function isUuid(value) {
+  if (typeof value !== "string" || value.length !== 36) return false;
+  const parts = value.split("-");
+  if (parts.length !== 5) return false;
+  const lengths = [8, 4, 4, 4, 12];
+  return parts.every((part, index) => part.length === lengths[index] && [...part].every((char) => /[0-9a-f]/i.test(char)));
+}
+
+function collectSessionIds(value, ids = new Set()) {
+  if (!value || typeof value !== "object") return ids;
+  for (const [key, child] of Object.entries(value)) {
+    if (typeof child === "string" && /session/i.test(key) && isUuid(child)) {
+      ids.add(child);
+    } else if (child && typeof child === "object") {
+      collectSessionIds(child, ids);
+    }
+  }
+  return ids;
+}
+
+function extractSessionIds(text, events) {
+  const ids = collectSessionIds({ events });
+  for (const token of text.split(/[^0-9a-f-]+/i)) {
+    if (isUuid(token)) {
+      ids.add(token);
+    }
+  }
+  return [...ids];
+}
+
+function readIfExists(filePath) {
+  try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- probe reads its own temp output files.
+    return fs.readFileSync(filePath, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return "";
+    throw error;
+  }
+}
+
+function tailText(text, maxLength = 1200) {
+  if (!text) return "";
+  return text.length > maxLength ? text.slice(text.length - maxLength) : text;
+}
+
+function summarizeLiveTurn({ label, plan, commandResult, outputPath }) {
+  const events = parseJsonLines(commandResult.stdout);
+  const text = `${commandResult.stdout}\n${commandResult.stderr}`;
+  const sessionIds = extractSessionIds(text, events);
+  const finalMessage = readIfExists(outputPath);
+  return {
+    label,
+    selectedTargetId: plan.route.selectedTargetId,
+    selectedProfile: plan.codex.profile,
+    selectedModel: plan.codex.model,
+    command: commandResult.command,
+    status: commandResult.status,
+    signal: commandResult.signal,
+    ok: commandResult.ok,
+    stdoutTail: tailText(commandResult.stdout),
+    stderrTail: tailText(commandResult.stderr),
+    outputPath,
+    finalMessageBytes: Buffer.byteLength(finalMessage, "utf8"),
+    jsonEventCount: events.length,
+    sessionIds
+  };
+}
+
+function runLiveResumeProbe({ codexBin, first, second, cwd = process.cwd() }) {
+  if (!first.codex.model || !second.codex.model) {
+    return {
+      status: "blocked",
+      reason: "The router did not resolve Codex models for both live turns.",
+      turns: []
+    };
+  }
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-cli-feasibility-"));
+  const firstOutputPath = path.join(tempDir, "turn-1-final-message.txt");
+  const secondOutputPath = path.join(tempDir, "turn-2-final-message.txt");
+
+  const firstResult = runCodexCommand(
+    codexBin,
+    [
+      "exec",
+      "--model",
+      first.codex.model,
+      "--sandbox",
+      "read-only",
+      "--json",
+      "--output-last-message",
+      firstOutputPath,
+      "--cd",
+      cwd,
+      first.input
+    ],
+    { cwd }
+  );
+  const firstTurn = summarizeLiveTurn({
+    label: "first",
+    plan: first,
+    commandResult: firstResult,
+    outputPath: firstOutputPath
+  });
+
+  if (!firstResult.ok) {
+    return {
+      status: "blocked",
+      reason: "The first live Codex CLI turn failed.",
+      turns: [firstTurn]
+    };
+  }
+
+  const secondResult = runCodexCommand(
+    codexBin,
+    [
+      "exec",
+      "resume",
+      "--last",
+      "--model",
+      second.codex.model,
+      "-c",
+      'sandbox_mode="read-only"',
+      "--json",
+      "--output-last-message",
+      secondOutputPath,
+      second.input
+    ],
+    { cwd }
+  );
+  const secondTurn = summarizeLiveTurn({
+    label: "second",
+    plan: second,
+    commandResult: secondResult,
+    outputPath: secondOutputPath
+  });
+
+  if (!secondResult.ok) {
+    return {
+      status: "blocked",
+      reason: "The resumed live Codex CLI turn failed.",
+      turns: [firstTurn, secondTurn]
+    };
+  }
+
+  const sharedSessionIds = firstTurn.sessionIds.filter((id) => secondTurn.sessionIds.includes(id));
+  const modelChanged = first.codex.model !== second.codex.model;
+  const continuityEvidence = sharedSessionIds.length > 0 ? "shared_session_id" : "resume_last_success_without_session_id";
+
+  return {
+    status: modelChanged && sharedSessionIds.length > 0 ? "verified" : "partial",
+    reason:
+      sharedSessionIds.length > 0
+        ? "The live resumed turn completed with a different route-selected model and shared session evidence."
+        : "The live resumed turn completed with a different route-selected model, but session continuity was not visible as a shared session id.",
+    turns: [firstTurn, secondTurn],
+    modelChanged,
+    continuityEvidence,
+    sharedSessionIds
+  };
+}
+
 export function runCodexCliFeasibilityProbe({
   codexBin = "codex",
-  targets = readJson(OPENAI_TARGETS_PATH).targets
+  targets = readJson(OPENAI_TARGETS_PATH).targets,
+  live = false,
+  cwd = process.cwd()
 } = {}) {
   const rootHelp = runHelp(codexBin, ["--help"]);
   const execHelp = runHelp(codexBin, ["exec", "--help"]);
@@ -103,7 +304,7 @@ export function runCodexCliFeasibilityProbe({
   };
 
   const first = routeTurnPlan({
-    input: "Implement the retry logic with clear tests and error handling.",
+    input: "Do not edit files or run commands. Briefly outline how you would implement retry logic with clear tests and error handling.",
     session,
     targets
   });
@@ -130,22 +331,29 @@ export function runCodexCliFeasibilityProbe({
     capabilities.execResumeLastSession
   );
 
-  return {
-    status: !commandAvailable
+  const surfaceStatus = !commandAvailable
       ? "blocked"
       : resumeBoundaryRerouteSupported
       ? "partial"
-      : "advisory_only",
+      : "advisory_only";
+  const liveProbe = live && surfaceStatus !== "blocked" ? runLiveResumeProbe({ codexBin, first, second, cwd }) : null;
+  const status = liveProbe ? liveProbe.status : surfaceStatus;
+
+  return {
+    status,
     surface: "codex-cli",
+    mode: live ? "live_resume" : "command_surface",
     verdict: {
       authoritativeInsideRunningSession: false,
       resumeBoundaryRerouteSupported,
       nonInteractiveTurnRoutingSupported: Boolean(capabilities.execModelAtLaunch),
       advisorySupported: commandAvailable,
-      targetChanged
+      targetChanged,
+      liveResumeVerified: liveProbe?.status === "verified" || false
     },
     capabilities,
     turnPlans: [first, second],
+    liveProbe,
     evidence: {
       commands: [
         { command: rootHelp.command, status: rootHelp.status, ok: rootHelp.ok },
@@ -156,18 +364,24 @@ export function runCodexCliFeasibilityProbe({
         ? "Codex CLI appears to support route-selected model changes at exec/resume boundaries, not from inside an already-running interactive TUI."
         : "Codex CLI did not expose enough local command capability to prove route-selected model changes at a resume boundary."
     },
-    limitations: [
-      "This probe does not execute live model calls.",
-      "This probe does not prove model changes from inside an already-running Codex TUI session.",
-      "A follow-up live probe should run two non-interactive Codex turns with resume and different --model values, then inspect JSON/session evidence."
-    ]
+    limitations: live
+      ? [
+          "This probe does not prove model changes from inside an already-running Codex TUI session.",
+          "A verified result requires shared session evidence in Codex CLI JSON/stdout/stderr output."
+        ]
+      : [
+          "This probe does not execute live model calls.",
+          "This probe does not prove model changes from inside an already-running Codex TUI session.",
+          "A follow-up live probe should run two non-interactive Codex turns with resume and different --model values, then inspect JSON/session evidence."
+        ]
   };
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const codexBin = getArg(args, "--codex-bin") || "codex";
-  const result = runCodexCliFeasibilityProbe({ codexBin });
+  const cwd = getArg(args, "--cwd") || process.cwd();
+  const result = runCodexCliFeasibilityProbe({ codexBin, live: hasFlag(args, "--live"), cwd });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   process.exitCode = result.status === "blocked" ? 1 : 0;
 }

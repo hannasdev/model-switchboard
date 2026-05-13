@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: active spike
+Status: live resume boundary verified; product decision pending
 
 Decision record: `DEC-2026-05-13-codex-cli-feasibility-spike` in [../decision-log.md](../decision-log.md).
 
@@ -101,7 +101,7 @@ Expected output:
 
 ### Phase 2: Live Resume Probe
 
-Status: next.
+Status: verified for `exec`/`resume` boundary continuity.
 
 Run two real Codex CLI turns:
 
@@ -109,6 +109,14 @@ Run two real Codex CLI turns:
 2. Second turn: route a summary/acknowledgement prompt to a cheap/fast target and execute with `codex exec resume --last --model <model> --json`.
 3. Capture JSON/session evidence.
 4. Evaluate model change, session continuity, and user friction against the success criteria above.
+
+Observed 2026-05-13:
+
+- First routed turn selected `openai-coder` / `codex-best-coder` / `gpt-5.5`.
+- Second routed turn selected `openai-quick` / `codex-fast` / `gpt-5.4-mini`.
+- `codex exec resume --last --model gpt-5.4-mini --json` completed successfully.
+- Both turns reported shared thread/session evidence: `019e21ad-1f30-72d0-bec0-08d275284eaf`.
+- This verifies route-selected model changes at Codex CLI `exec`/`resume` boundaries, not model changes inside an already-running interactive Codex TUI.
 
 ### Phase 3: Product Decision
 
