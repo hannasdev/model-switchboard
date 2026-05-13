@@ -16,6 +16,7 @@ The PRD content has been split into focused documents so each read is shorter an
 - Router contracts: [contracts/router-contracts.md](contracts/router-contracts.md)
 - MVP product scope: [product/MVP-PRD.md](product/MVP-PRD.md)
 - Router phase execution plan: [product/ROUTER-PHASE-PLAN.md](product/ROUTER-PHASE-PLAN.md)
+- Codex CLI feasibility spike scope: [product/CODEX-CLI-SPIKE-SCOPE.md](product/CODEX-CLI-SPIKE-SCOPE.md)
 - Decision history: [decision-log.md](decision-log.md)
 - Replay and evaluation guide: [REPLAY-GUIDE.md](REPLAY-GUIDE.md)
 

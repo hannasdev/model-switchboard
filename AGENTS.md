@@ -30,7 +30,8 @@ Read in this order:
 Read in this order:
 1. [docs/product/ROUTER-PHASE-PLAN.md](docs/product/ROUTER-PHASE-PLAN.md)
 2. [docs/decision-log.md](docs/decision-log.md)
-3. [docs/REPLAY-GUIDE.md](docs/REPLAY-GUIDE.md)
+3. [docs/product/CODEX-CLI-SPIKE-SCOPE.md](docs/product/CODEX-CLI-SPIKE-SCOPE.md)
+4. [docs/REPLAY-GUIDE.md](docs/REPLAY-GUIDE.md)
 
 ### I need security and risk context
 

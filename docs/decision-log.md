@@ -332,3 +332,43 @@ Consequences:
 Follow-up:
 - Next review milestone: (1) implement and live-verify improved advisory injection; (2) complete a client surface survey covering at minimum Cursor, GitHub Copilot Chat, Gemini CLI, and one gateway-backed path; (3) revisit Option C and Option D based on survey findings before broad adoption promotion.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/MVP-PRD.md (Assumption B, Section 8 MVP defer list), docs/product/PRODUCT-PRD.md (Section 17.1 deferred items updated 2026-05-13), README.md (Interactive Mode Clarification section added 2026-05-13), src/switchboard/claude-hook-bridge.js (advisory injection comment)
+
+## Milestone 5 Spike: Codex CLI Feasibility
+
+Decision ID: DEC-2026-05-13-codex-cli-feasibility-spike
+Related deferred item: PRODUCT-PRD.md Section 17.1 deferred items; milestone 5 second-surface proof
+Status: committed
+Date: 2026-05-13
+Owners: team
+
+Context:
+- The current committed near-term path remains advisory injection inside running Claude sessions, but this alone does not answer whether Codex CLI can provide a better route-authority boundary.
+- The product question is not whether OpenAI SDK calls can change models. The question is whether the Codex CLI user surface exposes a supported boundary where Switchboard can choose the execution target with low UX friction while preserving session continuity.
+
+Options considered:
+- Option A: continue advisory hardening only and postpone all Codex feasibility testing.
+- Option B: run a Codex CLI command-surface spike first, focused on supported `codex exec` and `codex exec resume` route authority.
+- Option C: use OpenAI SDK calls as a proxy for Codex feasibility.
+
+Tradeoffs:
+- Option A: lowest immediate effort, highest unresolved product-risk uncertainty.
+- Option B: small incremental engineering overhead, answers the client-surface question directly, but initially proves command capability rather than live execution.
+- Option C: easy to implement and live-test, but risks falsely validating the wrong surface because SDK calls do not represent Codex CLI session/tool/runtime behavior.
+
+Verification signal:
+- Expected signal: a reproducible probe that can show whether local Codex CLI exposes route-selected model authority at launch, non-interactive execution, or resume boundaries, and whether it should be treated as authoritative or advisory.
+- Evidence observed: local Codex CLI help exposes `--model` for interactive launch, `codex exec --model`, and `codex exec resume --last --model`. A new probe (`scripts/codex-cli-feasibility-probe.js`) reports this as resume-boundary route authority, not in-session automatic switching.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: treat Codex CLI as a candidate for route authority at `exec`/`resume` boundaries and continue the spike with a live two-turn resume probe before making product promises.
+- What remains intentionally deferred: claims of in-session automatic switching inside the Codex TUI; broad UX/product reframing decisions until live resume evidence is collected.
+
+Consequences:
+- Near-term implementation impact: additive Codex CLI feasibility tooling; no change to Claude MVP promise.
+- Test and replay impact: probe test coverage verifies that resume-boundary support is not misreported as in-session authority.
+- Migration impact: low; probe is additive and does not alter core Claude workflow contracts.
+
+Follow-up:
+- Next review milestone: use the written spike scope to run a live Codex CLI `exec` plus `exec resume --last --model ... --json` probe and inspect whether session continuity and route-selected model changes are visible in durable evidence.
+- Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, test/codex-cli-feasibility-probe.test.js, README.md
