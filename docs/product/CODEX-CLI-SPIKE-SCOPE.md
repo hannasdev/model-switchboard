@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: app-server in-session evidence observed; supportability decision pending
+Status: app-server in-session probe implemented; supportability decision pending
 
 Decision record: `DEC-2026-05-13-codex-cli-feasibility-spike` in [../decision-log.md](../decision-log.md).
 
@@ -124,7 +124,7 @@ Observed 2026-05-13:
 
 ### Phase 3: In-Session Switch Probe
 
-Status: app-server protocol smoke test passed; supportability and product-surface fit pending.
+Status: repeatable app-server probe implemented; supportability and product-surface fit pending.
 
 Investigate whether Codex CLI exposes a supported hook, command, control protocol, config reload behavior, or interactive-session API that can change the active model after an interactive session has started.
 
@@ -144,6 +144,21 @@ Observed 2026-05-13:
 - Both turns completed on the same `threadId` / `sessionId`: `019e21ec-89f0-7a03-b5f6-f8590818eb1b`.
 - This did not require `codex exec resume`, manual model selection, or starting a separate command-boundary workflow.
 - Caveat: the evidence is from the experimental Codex app-server protocol, not from a documented interactive TUI hook. The next decision is whether Switchboard can treat the app-server protocol as a supportable product surface.
+
+Repeatable probe:
+
+- [../../scripts/codex-app-server-switch-probe.js](../../scripts/codex-app-server-switch-probe.js) starts `codex app-server --listen stdio://`, initializes the experimental protocol, starts one thread with the first routed model, and sends a second `turn/start` on the same thread with the second routed model.
+- The probe reports selected target IDs, resolved Codex models, thread/session IDs, completed turn IDs, agent-message evidence, notification counts, and any observed `model/rerouted` notifications.
+- The probe intentionally reports the second turn as an accepted model override on the same app-server thread. It does not overclaim provider-side backend telemetry unless Codex emits explicit model telemetry.
+
+Repeatable live result on 2026-05-13:
+
+- `npm run switchboard:spike:codex-app-server` returned `status: verified`.
+- First turn selected `openai-coder` / `codex-best-coder` / `gpt-5.5`.
+- Second turn selected `openai-quick` / `codex-fast` / `gpt-5.4-mini`.
+- Both turns completed on the same `threadId` / `sessionId`: `019e21f7-0b2e-7730-9cbd-af5e5536ddbf`.
+- `thread/read` returned `turnCount: 2`.
+- No `model/rerouted` telemetry was emitted, so the durable evidence remains accepted turn-level model override plus same-thread completion rather than provider-side backend model attestation.
 
 ### Phase 4: Product Decision
 
