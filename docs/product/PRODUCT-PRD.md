@@ -278,7 +278,7 @@ These items were explicitly deferred from the Claude Code MVP. They are the firs
 
 **`deep reasoning` as a standalone target**: Only worth adding if a vendor exposes a meaningful distinction from `balanced` or `best coder` routing. No current Claude evidence supports a useful distinction.
 
-**In-session automatic model switching**: Hooks cannot change the active model inside a running Claude session through any supported mechanism. Defer unless Claude exposes a supported hook output for this.
+**In-session automatic model switching**: Hooks cannot change the active model inside a running Claude session through any supported mechanism. Near-term direction (committed 2026-05-13, DEC-2026-05-13-per-turn-routing-ux-friction): pursue hook-based advisory injection that surfaces the routing recommendation inside the running session via UserPromptSubmit, so users can act on it without being forced to cycle sessions. True in-session switching remains deferred until Claude exposes a supported hook output. A client surface survey (Cursor, GitHub Copilot Chat, Gemini CLI, gateway-backed paths) is also planned to identify whether any alternative surface provides better per-turn routing authority.
 
 **Fully interactive Claude shell parity**: `switchboard --interactive` is implemented and live-verified for basic continuity. It is not yet considered fully supported. See Section 17.2 for the validation criteria before removing the experimental label.
 

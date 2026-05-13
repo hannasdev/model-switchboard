@@ -37,7 +37,7 @@ High-level flow:
 
 1. You send a prompt through Switchboard.
 2. Switchboard classifies the turn and selects a route label.
-3. Switchboard launches or resumes Claude with matching model and effort settings.
+3. Switchboard launches or resumes Claude with matching model and effort settings for that launch.
 4. Route context, session state, and hook evidence are recorded for explainability, replay, and governance.
 
 ## What It Is Not
@@ -63,12 +63,20 @@ See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting proces
 | Command | What It Does | Use It When |
 | --- | --- | --- |
 | `switchboard "your prompt"` | Routes a single prompt, chooses target/effort, then launches or resumes Claude for that turn. | You want normal prompt-driven usage with routing applied automatically. |
-| `switchboard --interactive` | Starts an interactive Claude session through Switchboard with route-aware session handling. | You want a live back-and-forth session instead of one-shot prompts. |
+| `switchboard --interactive` | Starts an interactive Claude session through Switchboard with route-aware session handling. The launched Claude session keeps the selected model/effort; it does not auto-switch models mid-session. | You want a live back-and-forth session instead of one-shot prompts. |
 | `switchboard explain` | Shows the latest routing decision, reasoning signals, and correlated evidence for a thread. | You want to audit why a route was chosen or debug routing behavior. |
 | `switchboard advise --surface openai-codex "your prompt"` | Returns an advisory routing recommendation for a selected surface without taking over execution. | You want a cross-surface recommendation or policy check before running a turn. |
 | `switchboard probe continuity` | Runs a continuity probe for prompt-driven turns and reports whether session continuity checks pass. | You want to verify non-interactive continuity behavior after changes. |
 | `switchboard probe continuity-interactive` | Runs the interactive continuity probe and verifies resume/session behavior across turns. | You want to validate interactive continuity and related checks. |
 | `npm test` | Runs the full automated test suite for adapters, router, workflow, and CLI behavior. | You changed routing/workflow/docs and want a full regression check. |
+
+### Interactive Mode Clarification
+
+`switchboard --interactive` selects model/effort at launch, then enters Claude interactive mode with that selection.
+
+Inside that active Claude session, Switchboard does not automatically switch to a different model on later user messages.
+
+If you want per-turn re-routing and potential target/model changes, run prompts through Switchboard as separate turns (for example: `switchboard "..."` each turn) rather than staying in one interactive session.
 
 ### Typical First Run
 

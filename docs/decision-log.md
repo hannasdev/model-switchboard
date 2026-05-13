@@ -288,3 +288,47 @@ Consequences:
 Follow-up:
 - Next review milestone: Milestone 5 second-surface proof conditional gate (review stability, integration readiness, contract reusability).
 - Linked artifacts (logs, fixtures, docs, PRs): src/router/outcome-constants.js, src/switchboard/attribution-store.js, src/switchboard/workflow.js, src/switchboard/cli.js, test/attribution.test.js, docs/contracts/router-contracts.md, docs/REPLAY-GUIDE.md, docs/product/ROUTER-PHASE-PLAN.md
+
+## Open Product Risk: Per-Turn Routing UX Friction
+
+Decision ID: DEC-2026-05-13-per-turn-routing-ux-friction
+Related deferred item: MVP-PRD.md Assumption B (Claude Continuity) falsification criteria; PRODUCT-PRD.md Section 17.1 deferred items
+Status: committed
+Date: 2026-05-13
+Owners: team
+
+Context:
+- Manual testing and review of interactive mode surfaced a gap between technical continuity and UX continuity. The continuity assumption (Assumption B in MVP-PRD.md) was verified against session-id persistence and chat history carry-over, but not against the workflow interaction pattern the user must follow to obtain per-turn routing.
+- In practice, per-turn routing (the only path that gets automatic model/effort re-selection each turn) requires the user to: exit Claude, return to the terminal, invoke `switchboard "..."`, wait for routing, and enter a new Claude session each turn. This is materially different from the normal Claude Code usage pattern, where the user stays inside one interactive session.
+- Interactive mode (`switchboard --interactive`) avoids this friction but fixes the model/effort at launch with no re-routing once inside Claude.
+- There is currently no path that provides both: per-turn automatic re-routing and a natural stay-in-session experience. This trading of one cognitive cost (model selection) for another (repeated session cycling) risks limiting practical adoption among the stated target user: high-context engineers already comfortable with Claude Code.
+
+Options considered:
+- Option A: accept the current per-turn pattern as a known limitation and focus adoption documentation on making the friction explicit rather than eliminating it.
+- Option B: invest in a hook-based advisory injection path that surfaces the next-turn route recommendation inside the running Claude session, so the user at least sees what routing would suggest without having to exit and re-enter.
+- Option C: defer until Claude exposes a supported in-session model-switching API, at which point routing authority can move inside the session rather than at the launch boundary.
+- Option D: redesign the primary usage pattern around `switchboard --interactive` with acceptance that model/effort is set once per session, and treat per-turn rerouting as an advanced or explicit-override use case rather than the default experience.
+
+Tradeoffs:
+- Option A: honest and low effort, but does not resolve the adoption risk and may position the tool as too operationally disruptive for daily use.
+- Option B: provides routing visibility without forcing session cycling; feasible with the existing hook bridge advisory injection; does not require a new Claude API; does not actually change the model mid-session, but closes some of the perception gap. Requires clear UX language so users understand it is advisory, not authoritative.
+- Option C: no product work needed now; entirely contingent on a vendor capability that does not currently exist. Appropriate as a deferred path but not a near-term strategy.
+- Option D: reduces the scope of the routing promise to session-start only; aligns better with the natural Claude Code usage pattern; may feel like a weaker product but is more honest about what the current architecture delivers.
+
+Verification signal:
+- Expected signal: evidence that real users (or the product owner in daily use) find the per-turn cycling acceptable or unacceptable in practice.
+- Evidence observed: manual testing and reasoning session on 2026-05-13 identified the friction clearly; no live adoption data yet as the product is pre-broad-release.
+
+Decision:
+- Chosen option: Option B — invest in hook-based advisory injection that surfaces the routing recommendation inside the running Claude session via UserPromptSubmit context injection. This is the best available path given current constraints: it requires no new Claude API, builds on existing hook infrastructure, and closes the perception gap without forcing session cycling.
+- Scope of commitment: pursue Option B as the near-term direction. Separately, survey alternative client surfaces (e.g. Cursor, GitHub Copilot Chat, Gemini CLI, OpenClaw) to identify whether any expose an integration point that allows genuine per-turn routing authority within a running session, which would supersede the advisory approach.
+- What remains intentionally deferred: Option C (true in-session model switching) remains deferred pending a supported Claude API. Option D (reframing the product promise) is kept as a fallback if client exploration yields no better interface. The client exploration work should inform a follow-up decision before broad adoption promotion.
+
+Consequences:
+- Near-term implementation impact: hook bridge advisory injection path needs to be hardened so that each UserPromptSubmit event surfaces a clear, low-noise routing recommendation the user can act on or ignore. This is distinct from current advisory context injection which is primarily for correlated logging.
+- Test and replay impact: new advisory injection behavior should be covered by hook bridge tests to ensure recommendation accuracy and noise level are acceptable.
+- Migration impact: low; existing hook correlation and logging behavior is preserved. Advisory injection is additive.
+
+Follow-up:
+- Next review milestone: (1) implement and live-verify improved advisory injection; (2) complete a client surface survey covering at minimum Cursor, GitHub Copilot Chat, Gemini CLI, and one gateway-backed path; (3) revisit Option C and Option D based on survey findings before broad adoption promotion.
+- Linked artifacts (logs, fixtures, docs, PRs): docs/product/MVP-PRD.md (Assumption B, Section 8 MVP defer list), docs/product/PRODUCT-PRD.md (Section 17.1 deferred items updated 2026-05-13), README.md (Interactive Mode Clarification section added 2026-05-13), src/switchboard/claude-hook-bridge.js (advisory injection comment)
