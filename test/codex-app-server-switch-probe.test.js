@@ -96,6 +96,18 @@ rl.on("line", (line) => {
     thread.turns.push(turn);
     respond(message.id, { turn });
     write({ method: "turn/started", params: { threadId: message.params.threadId, turn } });
+    if (turn.id === "turn-2") {
+      write({
+        method: "model/rerouted",
+        params: {
+          threadId: message.params.threadId,
+          turnId: turn.id,
+          fromModel: "gpt-5.5",
+          toModel: message.params.model,
+          reason: "highRiskCyberActivity"
+        }
+      });
+    }
     write({
       method: "item/completed",
       params: {
@@ -134,6 +146,7 @@ test("codex app-server switch probe verifies accepted model override on one thre
   assert.equal(result.verdict.sameThreadCompleted, true);
   assert.equal(result.verdict.targetChanged, true);
   assert.equal(result.verdict.modelChanged, true);
+  assert.equal(result.verdict.backendModelTelemetryObserved, true);
   assert.equal(result.verdict.interactiveTuiHotSwapProven, false);
   assert.equal(result.thread.threadId, "thread-123");
   assert.equal(result.thread.sessionId, "session-abc");
@@ -145,4 +158,12 @@ test("codex app-server switch probe verifies accepted model override on one thre
   assert.deepEqual(result.turns[1].agentMessages, ["turn-2 complete"]);
   assert.equal(result.threadRead.ok, true);
   assert.equal(result.threadRead.turnCount, 2);
+  assert.deepEqual(result.modelEvidence.turnPayloadModels, [
+    { turnId: "turn-1", source: "turn/start response", model: "gpt-5.5" },
+    { turnId: "turn-1", source: "turn/completed notification", model: "gpt-5.5" },
+    { turnId: "turn-2", source: "turn/start response", model: "gpt-5.4-mini" },
+    { turnId: "turn-2", source: "turn/completed notification", model: "gpt-5.4-mini" }
+  ]);
+  assert.equal(result.modelEvidence.rerouted.length, 1);
+  assert.equal(result.modelEvidence.rerouted[0].params.toModel, "gpt-5.4-mini");
 });

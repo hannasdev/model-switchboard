@@ -225,7 +225,13 @@ Evidence needed:
 Current evidence:
 
 - The app-server accepted `turn/start` with `model: "gpt-5.4-mini"` on the second turn and completed the turn on the same thread.
-- No `model/rerouted` notification was emitted in the repeatable live probe.
+- [../../scripts/codex-app-server-switch-probe.js](../../scripts/codex-app-server-switch-probe.js) now records model evidence separately from route requests: requested models, turn payload model fields, `thread/read` model fields, raw response item model fields, `model/rerouted`, and `model/verification`.
+- `npm run switchboard:spike:codex-app-server` returned `status: verified` on 2026-05-13 with two requested models on one thread: `gpt-5.5` then `gpt-5.4-mini`.
+- The same live run reported `backendModelTelemetryObserved: false`.
+- `turn/start` responses and `turn/completed` notifications contained no effective model field.
+- `thread/read` returned both turns but no per-turn or item-level model field for the executed model.
+- No `rawResponseItem/completed`, `model/rerouted`, or `model/verification` model telemetry was emitted in the live run.
+- Caveat: Gate 6 remains partial. We can prove requested model override plus same-thread completion, but not provider-side effective model attestation.
 
 Pass condition:
 

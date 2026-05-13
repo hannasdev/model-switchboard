@@ -217,11 +217,15 @@ class JsonLineClient {
 }
 
 function summarizeTurn({ label, plan, response, completedNotification, messages }) {
+  const responseModel = response?.model || response?.turn?.model || null;
+  const completedModel = completedNotification?.params?.model || completedNotification?.params?.turn?.model || null;
   return {
     label,
     selectedTargetId: plan.route.selectedTargetId,
     selectedProfile: plan.codex.profile,
     requestedModel: plan.codex.model,
+    responseModel,
+    completedModel,
     turnId: response?.turn?.id || completedNotification?.params?.turn?.id || null,
     completed: Boolean(completedNotification),
     agentMessages: messages
@@ -258,14 +262,71 @@ async function runTurn(client, { label, threadId, plan, cwd }) {
 async function maybeReadThread(client, threadId) {
   try {
     const result = await client.request("thread/read", { threadId, includeTurns: true });
+    const turns = Array.isArray(result?.thread?.turns)
+      ? result.thread.turns.map((turn) => ({
+          turnId: turn?.id || null,
+          model: turn?.model || null,
+          itemModels: Array.isArray(turn?.items)
+            ? turn.items
+                .map((item) => item?.model)
+                .filter((model) => typeof model === "string")
+            : []
+        }))
+      : [];
     return {
       ok: true,
       turnCount: Array.isArray(result?.thread?.turns) ? result.thread.turns.length : null,
-      itemCount: Array.isArray(result?.thread?.items) ? result.thread.items.length : null
+      itemCount: Array.isArray(result?.thread?.items) ? result.thread.items.length : null,
+      turns
     };
   } catch (error) {
     return { ok: false, error: error.message };
   }
+}
+
+function collectModelEvidence({ notifications, turns, threadRead }) {
+  const rerouted = notifications.filter((message) => message.method === "model/rerouted");
+  const verification = notifications.filter((message) => message.method === "model/verification");
+  const rawResponseModels = notifications
+    .filter((message) => message.method === "rawResponseItem/completed")
+    .map((message) => ({
+      turnId: message.params?.turnId || null,
+      model: message.params?.item?.model || null,
+      type: message.params?.item?.type || null
+    }))
+    .filter((entry) => entry.model);
+  const turnPayloadModels = turns
+    .flatMap((turn) => [
+      { turnId: turn.turnId, source: "turn/start response", model: turn.responseModel },
+      { turnId: turn.turnId, source: "turn/completed notification", model: turn.completedModel }
+    ])
+    .filter((entry) => entry.model);
+  const threadReadModels = threadRead?.turns
+    ? threadRead.turns.flatMap((turn) => [
+        ...(turn.model ? [{ turnId: turn.turnId, source: "thread/read turn", model: turn.model }] : []),
+        ...turn.itemModels.map((model) => ({ turnId: turn.turnId, source: "thread/read item", model }))
+      ])
+    : [];
+
+  return {
+    requestedModels: turns.map((turn) => ({
+      turnId: turn.turnId,
+      selectedTargetId: turn.selectedTargetId,
+      selectedProfile: turn.selectedProfile,
+      requestedModel: turn.requestedModel
+    })),
+    turnPayloadModels,
+    threadReadModels,
+    rawResponseModels,
+    rerouted,
+    verification,
+    backendModelTelemetryObserved:
+      turnPayloadModels.length > 0 ||
+      threadReadModels.length > 0 ||
+      rawResponseModels.length > 0 ||
+      rerouted.length > 0 ||
+      verification.length > 0
+  };
 }
 
 export async function runCodexAppServerSwitchProbe({
@@ -328,7 +389,11 @@ export async function runCodexAppServerSwitchProbe({
 
     const sameThreadCompleted = firstTurn.completed && secondTurn.completed;
     const requestedModelOverrideAccepted = secondTurn.requestedModel === second.codex.model && sameThreadCompleted;
-    const modelRerouted = client.notifications.filter((message) => message.method === "model/rerouted");
+    const modelEvidence = collectModelEvidence({
+      notifications: client.notifications,
+      turns: [firstTurn, secondTurn],
+      threadRead
+    });
     const status = requestedModelOverrideAccepted ? "verified" : "partial";
 
     return {
@@ -340,7 +405,7 @@ export async function runCodexAppServerSwitchProbe({
         sameThreadCompleted,
         targetChanged,
         modelChanged,
-        backendModelTelemetryObserved: modelRerouted.length > 0,
+        backendModelTelemetryObserved: modelEvidence.backendModelTelemetryObserved,
         interactiveTuiHotSwapProven: false
       },
       thread: {
@@ -351,7 +416,7 @@ export async function runCodexAppServerSwitchProbe({
       },
       turns: [firstTurn, secondTurn],
       threadRead,
-      modelRerouted,
+      modelEvidence,
       notificationCounts: client.notifications.reduce((counts, message) => {
         counts[message.method] = (counts[message.method] || 0) + 1;
         return counts;
@@ -363,7 +428,7 @@ export async function runCodexAppServerSwitchProbe({
       },
       limitations: [
         "The generated app-server protocol is experimental.",
-        "The probe verifies accepted turn-level model override requests and same-thread completion, but it does not currently observe provider-side backend model telemetry unless Codex emits model/rerouted.",
+        "The probe verifies accepted turn-level model override requests and same-thread completion, but it does not currently observe provider-side backend model telemetry unless Codex emits model/rerouted, model/verification, raw response model metadata, or turn/thread model payload fields.",
         "This does not prove that the Codex interactive TUI itself can be hot-swapped."
       ],
       stderrTail: tailText(client.stderr),
