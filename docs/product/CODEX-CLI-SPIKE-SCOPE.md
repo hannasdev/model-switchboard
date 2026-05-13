@@ -112,20 +112,29 @@ Fail condition:
 
 ### Gate 2: Protocol Stability
 
-Status: `[ ]`
+Status: `[x]`
 
 Question: Are the required methods and fields stable enough to build against without excessive breakage risk?
 
 Evidence needed:
 
 - Required methods: `initialize`, `thread/start`, `turn/start`, `thread/read`.
-- Required fields: `thread.id`, `thread.sessionId`, `ThreadStartParams.model`, `TurnStartParams.model`, `TurnStartParams.input`, `ThreadReadParams.includeTurns`.
+- Required fields: `InitializeCapabilities.experimentalApi`, `ThreadStartParams.model`, `TurnStartParams.threadId`, `TurnStartParams.input`, `TurnStartParams.model`, `ThreadReadParams.threadId`, `ThreadReadParams.includeTurns`.
 - Version/capability marker for the experimental API, or a documented compatibility/deprecation story.
 - Snapshot or fixture that records the minimum protocol shape Switchboard depends on.
 
+Current evidence:
+
+- [../../scripts/codex-app-server-protocol-check.js](../../scripts/codex-app-server-protocol-check.js) generates app-server TypeScript bindings with `codex app-server generate-ts --out <tmpdir>` and validates the minimum protocol shape Switchboard depends on.
+- The check verifies required client methods in `ClientRequest.ts`: `initialize`, `thread/start`, `turn/start`, and `thread/read`.
+- The check verifies required generated fields: `InitializeCapabilities.experimentalApi`, `ThreadStartParams.model`, `TurnStartParams.threadId`, `TurnStartParams.input`, `TurnStartParams.model`, `ThreadReadParams.threadId`, and `ThreadReadParams.includeTurns`.
+- [../../test/codex-app-server-protocol-check.test.js](../../test/codex-app-server-protocol-check.test.js) records a fixture for the minimum protocol shape and verifies the checker fails clearly if `TurnStartParams.model` disappears.
+- `npm run switchboard:spike:codex-app-server:protocol` returned `status: verified` on 2026-05-13 against freshly generated bindings from local `codex-cli 0.130.0`.
+- Caveat: this checks schema shape for the installed Codex CLI version. It does not promise backwards compatibility across future Codex releases; it gives Switchboard a fast failure signal when the app-server protocol changes.
+
 Pass condition:
 
-- The probe can validate the required protocol shape and fail clearly when it changes.
+- Met for spike purposes. The protocol check validates the required shape and fails clearly when required methods or fields change.
 
 Fail condition:
 

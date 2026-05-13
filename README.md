@@ -70,6 +70,7 @@ See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting proces
 | `switchboard probe continuity-interactive` | Runs the interactive continuity probe and verifies resume/session behavior across turns. | You want to validate interactive continuity and related checks. |
 | `npm run switchboard:spike:codex-cli` | Inspects the local Codex CLI command surface and maps two routed turns to Codex `exec`/`resume --model` plans without making live model calls. | You want a product-aligned feasibility signal for Codex CLI route authority before building a deeper integration. |
 | `npm run switchboard:spike:codex-cli:live` | Runs the bounded two-turn Codex CLI resume probe with route-selected models and captures JSON/session evidence. | You are ready to collect live evidence for the Codex CLI feasibility spike. |
+| `npm run switchboard:spike:codex-app-server:protocol` | Generates Codex app-server TypeScript bindings and verifies the minimum protocol shape Switchboard depends on. | You are checking whether Codex app-server protocol changes would break the feasibility spike. |
 | `npm run switchboard:spike:codex-app-server` | Runs the bounded app-server in-session switch probe with one thread and two route-selected `turn/start` model overrides. | You are evaluating whether Codex app-server can be a Switchboard-controlled session surface beyond `exec`/`resume` parity. |
 | `npm test` | Runs the full automated test suite for adapters, router, workflow, and CLI behavior. | You changed routing/workflow/docs and want a full regression check. |
 
