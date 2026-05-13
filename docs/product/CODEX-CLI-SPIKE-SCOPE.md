@@ -64,6 +64,207 @@ The spike is partial, but still useful, if Codex CLI supports route-selected mod
 
 That outcome means Codex CLI may support a non-interactive or wrapper-style Switchboard workflow, but it does not go beyond Claude parity for the primary product differentiator: automatic model switching inside a running interactive session.
 
+## App-Server Supportability Review
+
+The app-server result is technically promising, but it should not graduate into product direction until these supportability gates are checked off. Treat this as a product/platform risk review, not an implementation backlog.
+
+Status legend:
+
+- `[ ]` Not checked yet.
+- `[~]` Partially checked; evidence exists but a material caveat remains.
+- `[x]` Checked with durable evidence in this spike.
+
+### Gate 1: Public Surface
+
+Status: `[~]`
+
+Question: Is `codex app-server` an intended external integration surface rather than an internal-only or experimental protocol?
+
+Evidence needed:
+
+- `codex app-server --help` exposes the command and relevant subcommands.
+- Generated protocol schemas are available through supported CLI commands.
+- Documentation, release notes, schema comments, or maintainer statements describe intended use and stability.
+
+Current evidence:
+
+- `codex app-server generate-ts` and `generate-json-schema` are available locally.
+- Generated protocol bindings include `thread/start`, `turn/start`, and `thread/read`.
+- Caveat: the protocol currently appears experimental, and no durable external support policy has been recorded in this spike.
+
+Pass condition:
+
+- We can point to a supported CLI command, generated/versioned protocol artifact, or official statement that makes app-server reasonable to depend on for an integration spike.
+
+Fail condition:
+
+- The only evidence is private implementation behavior or generated files with no indication that external clients may rely on them.
+
+### Gate 2: Protocol Stability
+
+Status: `[ ]`
+
+Question: Are the required methods and fields stable enough to build against without excessive breakage risk?
+
+Evidence needed:
+
+- Required methods: `initialize`, `thread/start`, `turn/start`, `thread/read`.
+- Required fields: `thread.id`, `thread.sessionId`, `ThreadStartParams.model`, `TurnStartParams.model`, `TurnStartParams.input`, `ThreadReadParams.includeTurns`.
+- Version/capability marker for the experimental API, or a documented compatibility/deprecation story.
+- Snapshot or fixture that records the minimum protocol shape Switchboard depends on.
+
+Pass condition:
+
+- The probe can validate the required protocol shape and fail clearly when it changes.
+
+Fail condition:
+
+- Required fields are absent, unstable across versions, or only inferable from raw rollout internals.
+
+### Gate 3: User Install And Auth Path
+
+Status: `[ ]`
+
+Question: Can a normal Switchboard user run the app-server path without fragile local setup?
+
+Evidence needed:
+
+- Codex CLI version requirement.
+- Authentication requirement and failure mode.
+- Whether app-server is available in the same Codex CLI users install for normal interactive use.
+- Clear diagnostic when Codex is missing, unauthenticated, or too old.
+
+Pass condition:
+
+- A user can install/login/run a preflight command and get actionable output before Switchboard attempts a routed session.
+
+Fail condition:
+
+- The path depends on developer-only builds, hidden flags, or undocumented local state.
+
+### Gate 4: Process Lifecycle Safety
+
+Status: `[ ]`
+
+Question: Can Switchboard safely own a long-running app-server process?
+
+Evidence needed:
+
+- Start/stop behavior.
+- Clean shutdown after idle or user exit.
+- Behavior after app-server crash.
+- Behavior after interrupted turn.
+- Handling for malformed JSON, protocol errors, stderr warnings, and child process spawn failure.
+
+Pass condition:
+
+- A lifecycle probe demonstrates start, two turns, interruption or shutdown, and clear error reporting.
+
+Fail condition:
+
+- A failed or interrupted app-server leaves Switchboard unable to recover without manual cleanup.
+
+### Gate 5: Continuity And Session Semantics
+
+Status: `[x]`
+
+Question: Does the app-server path preserve one continuous session while Switchboard changes the route-selected model?
+
+Evidence needed:
+
+- Two turns complete on the same `threadId` / `sessionId`.
+- `thread/read` can inspect the resulting thread and report both turns.
+- No `codex exec resume` boundary is required.
+
+Current evidence:
+
+- `npm run switchboard:spike:codex-app-server` returned `status: verified` on 2026-05-13.
+- Turn 1 selected `openai-coder` / `codex-best-coder` / `gpt-5.5`.
+- Turn 2 selected `openai-quick` / `codex-fast` / `gpt-5.4-mini`.
+- Both turns completed on `019e21f7-0b2e-7730-9cbd-af5e5536ddbf`.
+- `thread/read` returned `turnCount: 2`.
+
+Pass condition:
+
+- Already met for the current local Codex CLI version.
+
+Fail condition:
+
+- Future live probes cannot preserve same-thread continuity when `turn/start.model` changes.
+
+### Gate 6: Model Evidence
+
+Status: `[~]`
+
+Question: Can we prove the second turn actually used the route-selected model, not merely that Codex accepted a model override request?
+
+Evidence needed:
+
+- Per-turn model/provider metadata from `turn/start`, `turn/completed`, `thread/read`, `model/rerouted`, logs, or another supportable app-server notification.
+- Clear distinction between requested model, accepted model, rerouted model, and unavailable telemetry.
+
+Current evidence:
+
+- The app-server accepted `turn/start` with `model: "gpt-5.4-mini"` on the second turn and completed the turn on the same thread.
+- No `model/rerouted` notification was emitted in the repeatable live probe.
+
+Pass condition:
+
+- We can capture per-turn selected or effective model metadata, or explicitly decide that accepted override plus same-thread completion is enough for the product risk tolerance.
+
+Fail condition:
+
+- We cannot capture backend model telemetry and the product requires provider-side attestation before making claims.
+
+### Gate 7: Product Fit
+
+Status: `[~]`
+
+Question: Does the app-server path reduce cognitive overhead enough to justify a Codex product surface beyond Claude parity?
+
+Evidence needed:
+
+- User can stay in one Switchboard-controlled session loop.
+- Switchboard routes before each prompt without manual model selection.
+- The workflow avoids repeated exit/resume commands.
+- UX implications are documented, including that this is not the stock Codex interactive TUI unless we build a wrapper surface.
+
+Current evidence:
+
+- The app-server probe avoids `exec resume` and manual model selection.
+- Caveat: turning this into a usable product likely means Switchboard owns the session UI or loop.
+
+Pass condition:
+
+- Product accepts a Switchboard-controlled Codex session surface as the differentiated workflow.
+
+Fail condition:
+
+- Product requires hot-swapping inside the stock Codex TUI specifically, and app-server cannot provide that.
+
+### Supportability Decision Rule
+
+Codex app-server can graduate from promising spike to serious product-surface candidate only if:
+
+1. Gates 1, 2, 3, 4, 5, and 7 pass.
+2. Gate 6 either passes or is explicitly accepted as a known risk.
+3. No gate requires private Codex internals or raw rollout-file parsing as the primary mechanism.
+
+If Gate 7 fails because the required user experience must be the stock Codex TUI, classify Codex as `partial` despite the app-server evidence.
+
+### Next Check Order
+
+Work through the gates in this order:
+
+1. Gate 1: Public Surface.
+2. Gate 2: Protocol Stability.
+3. Gate 6: Model Evidence.
+4. Gate 3: User Install And Auth Path.
+5. Gate 4: Process Lifecycle Safety.
+6. Gate 7: Product Fit.
+
+Gate 5 is already checked for the current local Codex CLI version.
+
 ## Failure Criteria
 
 The spike should be considered failed or blocked if any of the following are true:

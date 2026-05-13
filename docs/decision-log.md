@@ -375,5 +375,5 @@ Consequences:
 - Migration impact: low; probe is additive and does not alter core Claude workflow contracts. Codex should not displace the Claude MVP path based only on command-boundary evidence, but the app-server protocol may justify a focused product-surface spike.
 
 Follow-up:
-- Next review milestone: decide whether the experimental Codex app-server protocol is supportable enough to be the Switchboard-controlled session surface. If no, keep Codex CLI in the deferred candidate bucket despite the positive protocol evidence.
+- Next review milestone: work through the app-server supportability gates in docs/product/CODEX-CLI-SPIKE-SCOPE.md. Start with Gate 1, public surface, then Gate 2, protocol stability, before building any product workflow.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, scripts/codex-app-server-switch-probe.js, test/codex-cli-feasibility-probe.test.js, test/codex-app-server-switch-probe.test.js, README.md
