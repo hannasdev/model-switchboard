@@ -299,7 +299,7 @@ Owners: team
 
 Context:
 - Manual testing and review of interactive mode surfaced a gap between technical continuity and UX continuity. The continuity assumption (Assumption B in MVP-PRD.md) was verified against session-id persistence and chat history carry-over, but not against the workflow interaction pattern the user must follow to obtain per-turn routing.
-- In practice, per-turn routing (the only path that gets automatic model/effort re-selection each turn) requires the user to: exit Claude, return to the terminal, invoke `switchboard "..."`, wait for routing, and enter a new Claude session each turn. This is materially different from the normal Claude Code usage pattern, where the user stays inside one interactive session.
+- In practice, per-turn routing (the only path that gets automatic model/effort re-selection each turn) requires the user to: exit Claude, return to the terminal, invoke `switchboard "..."`, wait for routing, and re-enter Claude for each routed turn (typically by resuming the same Claude session id). This is materially different from the normal Claude Code usage pattern, where the user stays inside one interactive session.
 - Interactive mode (`switchboard --interactive`) avoids this friction but fixes the model/effort at launch with no re-routing once inside Claude.
 - There is currently no path that provides both: per-turn automatic re-routing and a natural stay-in-session experience. This trading of one cognitive cost (model selection) for another (repeated session cycling) risks limiting practical adoption among the stated target user: high-context engineers already comfortable with Claude Code.
 
@@ -320,12 +320,12 @@ Verification signal:
 - Evidence observed: manual testing and reasoning session on 2026-05-13 identified the friction clearly; no live adoption data yet as the product is pre-broad-release.
 
 Decision:
-- Chosen option: Option B — invest in hook-based advisory injection that surfaces the routing recommendation inside the running Claude session via UserPromptSubmit context injection. This is the best available path given current constraints: it requires no new Claude API, builds on existing hook infrastructure, and closes the perception gap without forcing session cycling.
+- Chosen option: Option B — invest in hook-based advisory injection that surfaces the routing recommendation inside the running Claude session via `UserPromptSubmit` context injection. This is the best available path given current constraints: it requires no new Claude API, builds on existing hook infrastructure, and closes the perception gap without forcing session cycling.
 - Scope of commitment: pursue Option B as the near-term direction. Separately, survey alternative client surfaces (e.g. Cursor, GitHub Copilot Chat, Gemini CLI, OpenClaw) to identify whether any expose an integration point that allows genuine per-turn routing authority within a running session, which would supersede the advisory approach.
 - What remains intentionally deferred: Option C (true in-session model switching) remains deferred pending a supported Claude API. Option D (reframing the product promise) is kept as a fallback if client exploration yields no better interface. The client exploration work should inform a follow-up decision before broad adoption promotion.
 
 Consequences:
-- Near-term implementation impact: hook bridge advisory injection path needs to be hardened so that each UserPromptSubmit event surfaces a clear, low-noise routing recommendation the user can act on or ignore. This is distinct from current advisory context injection which is primarily for correlated logging.
+- Near-term implementation impact: hook bridge advisory injection path needs to be hardened so that each `UserPromptSubmit` event surfaces a clear, low-noise routing recommendation the user can act on or ignore. This is distinct from current advisory context injection which is primarily for correlated logging.
 - Test and replay impact: new advisory injection behavior should be covered by hook bridge tests to ensure recommendation accuracy and noise level are acceptable.
 - Migration impact: low; existing hook correlation and logging behavior is preserved. Advisory injection is additive.
 
