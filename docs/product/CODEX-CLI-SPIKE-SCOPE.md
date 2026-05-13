@@ -76,7 +76,7 @@ Status legend:
 
 ### Gate 1: Public Surface
 
-Status: `[~]`
+Status: `[x]`
 
 Question: Is `codex app-server` an intended external integration surface rather than an internal-only or experimental protocol?
 
@@ -88,13 +88,23 @@ Evidence needed:
 
 Current evidence:
 
-- `codex app-server generate-ts` and `generate-json-schema` are available locally.
-- Generated protocol bindings include `thread/start`, `turn/start`, and `thread/read`.
-- Caveat: the protocol currently appears experimental, and no durable external support policy has been recorded in this spike.
+- Local Codex CLI version checked on 2026-05-13: `codex-cli 0.130.0`.
+- `codex app-server --help` exposes `app-server` as an available command with `stdio://`, websocket, unix socket, and `off` listen modes. The command is labeled `[experimental]`.
+- `codex app-server generate-ts --help` and `codex app-server generate-json-schema --help` expose schema generation commands. Both are labeled `[experimental]`, and both support an `--experimental` flag to include experimental methods and fields.
+- OpenAI's public `openai/codex` repository documents `codex app-server` as the interface Codex uses to power rich interfaces such as the Codex VS Code extension.
+- The same README documents JSON-RPC-like app-server protocol semantics, lifecycle, initialization, schema generation, and client identification.
+- The README states that generated TypeScript and JSON Schema artifacts are specific to the Codex version used to generate them and match that version.
+- The README also distinguishes stable surface from experimental surface. It says stable-only output is the default, while experimental methods and fields require opt-in at schema-generation time or runtime initialization.
+- Generated stable TypeScript bindings include the Switchboard-relevant methods and fields:
+  - `ClientRequest` includes `thread/start`, `turn/start`, and `thread/read`.
+  - `ThreadStartParams` includes `model?: string | null`.
+  - `TurnStartParams` includes `model?: string | null` with the comment "Override the model for this turn and subsequent turns."
+  - `ThreadReadParams` includes `includeTurns: boolean`.
+- Caveat: the command and schema tooling remain labeled experimental, and the README says experimental methods and fields have no backwards-compatible guarantees. This gate therefore passes only for a bounded integration spike, not as a production stability claim.
 
 Pass condition:
 
-- We can point to a supported CLI command, generated/versioned protocol artifact, or official statement that makes app-server reasonable to depend on for an integration spike.
+- Met for spike purposes. We can point to a public OpenAI repository README, a local CLI command surface, and generated protocol artifacts that make app-server reasonable to depend on for the next feasibility step.
 
 Fail condition:
 
