@@ -337,13 +337,14 @@ Follow-up:
 
 Decision ID: DEC-2026-05-13-codex-cli-feasibility-spike
 Related deferred item: PRODUCT-PRD.md Section 17.1 deferred items; milestone 5 second-surface proof
-Status: committed; live resume boundary verified
+Status: committed; resume boundary verified; beyond-parity evidence pending
 Date: 2026-05-13
 Owners: team
 
 Context:
 - The current committed near-term path remains advisory injection inside running Claude sessions, but this alone does not answer whether Codex CLI can provide a better route-authority boundary.
 - The product question is not whether OpenAI SDK calls can change models. The question is whether the Codex CLI user surface exposes a supported boundary where Switchboard can choose the execution target with low UX friction while preserving session continuity.
+- The primary differentiator beyond Claude parity is in-session model switching. A command-boundary `exec`/`resume` workflow is useful evidence, but it is not enough to justify a product-direction change by itself.
 
 Options considered:
 - Option A: continue advisory hardening only and postpone all Codex feasibility testing.
@@ -362,14 +363,14 @@ Verification signal:
 
 Decision:
 - Chosen option: Option B.
-- Scope of commitment: treat Codex CLI as a verified candidate for route authority at `exec`/`resume` boundaries and continue product evaluation against the written spike scope before changing the primary MVP path.
-- What remains intentionally deferred: claims of in-session automatic switching inside the Codex TUI; broad UX/product reframing decisions beyond the verified non-interactive resume workflow.
+- Scope of commitment: treat Codex CLI as verified only for route authority at `exec`/`resume` boundaries. This is partial/parity evidence, not a verified beyond-parity product path.
+- What remains intentionally deferred: claims of in-session automatic switching inside the Codex TUI; broad UX/product reframing decisions until a supported in-session switch mechanism is found and verified.
 
 Consequences:
 - Near-term implementation impact: additive Codex CLI feasibility tooling; no change to Claude MVP promise.
 - Test and replay impact: probe test coverage verifies that resume-boundary support is not misreported as in-session authority, and live mode records selected targets, resolved models, final-message evidence, JSON event counts, and session/thread IDs.
-- Migration impact: low; probe is additive and does not alter core Claude workflow contracts.
+- Migration impact: low; probe is additive and does not alter core Claude workflow contracts. Codex should not displace the Claude MVP path based only on command-boundary evidence.
 
 Follow-up:
-- Next review milestone: decide whether the verified Codex CLI `exec`/`resume` boundary is strong enough to justify a product workflow spike, or whether the lack of in-session automatic switching keeps this in the deferred candidate bucket.
+- Next review milestone: investigate whether Codex CLI exposes a supported in-session model switch mechanism. If no supported mechanism exists, keep Codex CLI in the deferred candidate bucket despite the verified `exec`/`resume` boundary.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, test/codex-cli-feasibility-probe.test.js, README.md

@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: live resume boundary verified; product decision pending
+Status: resume boundary verified; beyond-parity evidence pending
 
 Decision record: `DEC-2026-05-13-codex-cli-feasibility-spike` in [../decision-log.md](../decision-log.md).
 
@@ -20,13 +20,14 @@ This spike is not a product build. It is a bounded feasibility check.
 
 ## Product Question
 
-Can Codex CLI provide a supported route-authority boundary where Switchboard can choose a model or execution target per turn while preserving enough session continuity to feel natural for software-delivery work?
+Can Codex CLI provide a supported in-session route-authority boundary where Switchboard can choose a model or execution target during an ongoing user session, preserving continuity without forcing a command-boundary workflow?
 
 ## What We Need To Verify
 
 1. **Route authority**
    - Can Switchboard pass a route-selected model/profile into Codex CLI using supported CLI options?
    - Does this work for both a new turn and a resumed session?
+   - Does Codex CLI expose any supported mechanism to change the model inside an already-running interactive session?
 
 2. **Continuity**
    - Can a second routed Codex CLI turn resume the prior session after the first turn?
@@ -40,6 +41,7 @@ Can Codex CLI provide a supported route-authority boundary where Switchboard can
 4. **User friction**
    - Does the resulting workflow materially reduce model-selection overhead compared with manual Codex model choice?
    - Does it avoid the Claude-style pattern of repeatedly exiting and re-entering an interactive session for each routed turn?
+   - Does it go beyond Claude parity by allowing the user to remain inside the same interactive session while Switchboard changes the route?
 
 5. **Boundary fit**
    - Does the integration consume router contracts and target metadata rather than Codex-specific shortcuts?
@@ -49,8 +51,8 @@ Can Codex CLI provide a supported route-authority boundary where Switchboard can
 
 The spike is successful only if all required criteria are met:
 
-1. A two-turn live probe can run through Codex CLI with two different Switchboard-selected models.
-2. The second turn resumes the first turn's Codex session through a supported CLI mechanism.
+1. A supported Codex CLI mechanism allows Switchboard to change the selected model/profile inside an already-running interactive session.
+2. A two-turn live probe can exercise that mechanism with two different Switchboard-selected models without requiring the user to exit or resume a separate command.
 3. The probe records both selected target IDs and resolved Codex models.
 4. The probe records enough session evidence to show that continuity was preserved.
 5. The workflow requires no manual model selection by the user after the prompt is provided.
@@ -60,7 +62,7 @@ The spike is successful only if all required criteria are met:
 
 The spike is partial, but still useful, if Codex CLI supports route-selected models only at `exec` or `resume` boundaries.
 
-That outcome would mean Codex CLI may support a non-interactive or wrapper-style Switchboard workflow, but it does not prove automatic switching inside a running interactive Codex TUI.
+That outcome means Codex CLI may support a non-interactive or wrapper-style Switchboard workflow, but it does not go beyond Claude parity for the primary product differentiator: automatic model switching inside a running interactive session.
 
 ## Failure Criteria
 
@@ -71,6 +73,7 @@ The spike should be considered failed or blocked if any of the following are tru
 3. Route-selected model changes are accepted syntactically but cannot be verified from durable evidence.
 4. The only viable path requires private, unsupported, or brittle Codex internals.
 5. The resulting workflow has the same or worse cognitive overhead as manual model selection.
+6. Codex CLI cannot support in-session model changes beyond the same command-boundary pattern already available through Claude-style launch/resume flows.
 
 ## Explicit Non-Goals
 
@@ -101,7 +104,7 @@ Expected output:
 
 ### Phase 2: Live Resume Probe
 
-Status: verified for `exec`/`resume` boundary continuity.
+Status: verified as partial/parity evidence for `exec`/`resume` boundary continuity.
 
 Run two real Codex CLI turns:
 
@@ -117,13 +120,28 @@ Observed 2026-05-13:
 - `codex exec resume --last --model gpt-5.4-mini --json` completed successfully.
 - Both turns reported shared thread/session evidence: `019e21ad-1f30-72d0-bec0-08d275284eaf`.
 - This verifies route-selected model changes at Codex CLI `exec`/`resume` boundaries, not model changes inside an already-running interactive Codex TUI.
+- Because in-session switching is the intended differentiator beyond Claude, this evidence is partial/parity evidence rather than a success condition for changing product direction.
 
-### Phase 3: Product Decision
+### Phase 3: In-Session Switch Probe
+
+Status: next; required for beyond-parity product direction.
+
+Investigate whether Codex CLI exposes a supported hook, command, control protocol, config reload behavior, or interactive-session API that can change the active model after an interactive session has started.
+
+Required evidence:
+
+1. The mechanism is documented, exposed in help output, or otherwise supportable without private internals.
+2. A running interactive session accepts a route-selected model/profile change after the first user turn.
+3. A second user turn runs under the new model while preserving the same interactive session continuity.
+4. The user does not need to manually choose the model, exit the session, or start a separate `exec resume` command.
+5. The probe records durable evidence for the session identity and model change.
+
+### Phase 4: Product Decision
 
 Classify the result as one of:
 
-- `verified`: Codex CLI supports route-selected resumed turns with usable continuity and inspectable evidence.
-- `partial`: Codex CLI supports route-selected command boundaries but not a low-friction interactive workflow.
+- `verified`: Codex CLI supports supported in-session route-selected model changes with usable continuity and inspectable evidence.
+- `partial`: Codex CLI supports route-selected command boundaries but does not go beyond Claude parity for interactive use.
 - `blocked`: Codex CLI cannot support route authority with continuity through supported mechanisms.
 
 ## Stop Conditions
