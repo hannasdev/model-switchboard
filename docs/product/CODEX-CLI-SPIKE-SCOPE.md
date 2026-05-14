@@ -142,7 +142,7 @@ Fail condition:
 
 ### Gate 3: User Install And Auth Path
 
-Status: `[ ]`
+Status: `[x]`
 
 Question: Can a normal Switchboard user run the app-server path without fragile local setup?
 
@@ -153,9 +153,17 @@ Evidence needed:
 - Whether app-server is available in the same Codex CLI users install for normal interactive use.
 - Clear diagnostic when Codex is missing, unauthenticated, or too old.
 
+Evidence:
+
+- [../../scripts/codex-app-server-preflight.js](../../scripts/codex-app-server-preflight.js) verifies the local Codex CLI version, checks `codex app-server --help`, checks `codex login status`, starts `codex app-server --listen stdio://`, initializes the experimental app-server protocol, and reads redacted auth/account evidence through `getAuthStatus` and `account/read`.
+- [../../test/codex-app-server-preflight.test.js](../../test/codex-app-server-preflight.test.js) covers the normal install path and the actionable failure modes for too-old Codex CLI, missing app-server support, and missing auth.
+- `npm run switchboard:spike:codex-app-server:preflight` returned `status: verified` on 2026-05-13 against local `codex-cli 0.130.0`.
+- Live preflight evidence: `codex --version` reported `0.130.0`; `codex app-server --help` exposed the experimental app-server command; `codex login status` reported a ChatGPT login; app-server auth returned `authMethod: "chatgpt"` and a redacted ChatGPT account.
+- Caveat: this validates the local installed Codex CLI path. The app-server command remains experimental, and the minimum version should stay pinned to the earliest version Switchboard has actually verified.
+
 Pass condition:
 
-- A user can install/login/run a preflight command and get actionable output before Switchboard attempts a routed session.
+- Met for spike purposes. A user can install/login/run a preflight command and get actionable output before Switchboard attempts a routed session.
 
 Fail condition:
 
