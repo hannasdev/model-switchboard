@@ -49,13 +49,13 @@ Can Codex CLI provide a supported in-session route-authority boundary where Swit
 
 ## Success Criteria
 
-The spike is successful only if all required criteria are met:
+The spike is successful if all required criteria are met for a supported Codex control surface:
 
-1. A supported Codex CLI mechanism allows Switchboard to change the selected model/profile inside an already-running interactive session.
-2. A two-turn live probe can exercise that mechanism with two different Switchboard-selected models without requiring the user to exit or resume a separate command.
-3. The probe records both selected target IDs and resolved Codex models.
-4. The probe records enough session evidence to show that continuity was preserved.
-5. The workflow requires no manual model selection by the user after the prompt is provided.
+1. Switchboard can request two different route-selected Codex models across a two-turn flow.
+2. The two-turn live probe preserves session continuity without requiring manual model selection by the user after the prompt is provided.
+3. The probe records selected target IDs, resolved Codex models, and enough session evidence to make the continuity claim inspectable.
+4. The result clearly states the control-surface boundary: stock Codex CLI `exec`/`resume`, stock interactive TUI, or Switchboard-owned Codex app-server session.
+5. Any unsupported stronger claim, such as hot-swapping inside the stock Codex interactive TUI, is explicitly called out as not proven.
 6. The implementation remains a spike/probe and does not replace the Claude MVP path.
 
 ## Partial Success

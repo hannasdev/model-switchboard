@@ -35,7 +35,7 @@ function createTargets() {
   ];
 }
 
-function createFakeCodexBin() {
+function createFakeCodexBin({ hangLiveExec = false } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-cli-probe-test-"));
   const binPath = path.join(dir, "codex");
   fs.writeFileSync(
@@ -56,6 +56,10 @@ if (args.join(" ") === "exec resume --help") {
   process.exit(0);
 }
 if (args[0] === "exec" && args[1] === "--model") {
+  if (${JSON.stringify(hangLiveExec)}) {
+    setInterval(() => {}, 1000);
+    return;
+  }
   const outputPath = args[args.indexOf("--output-last-message") + 1];
   fs.writeFileSync(outputPath, "implemented retry logic");
   console.log(JSON.stringify({ type: "session", session_id: "11111111-1111-4111-8111-111111111111" }));
@@ -110,4 +114,19 @@ test("codex CLI live feasibility probe verifies resumed turns only with shared s
   assert.equal(result.liveProbe.turns[1].selectedTargetId, "openai-quick");
   assert.equal(result.liveProbe.turns[0].finalMessageBytes > 0, true);
   assert.equal(result.liveProbe.turns[1].finalMessageBytes > 0, true);
+});
+
+test("codex CLI live feasibility probe times out stalled Codex commands", () => {
+  const result = runCodexCliFeasibilityProbe({
+    codexBin: createFakeCodexBin({ hangLiveExec: true }),
+    targets: createTargets(),
+    live: true,
+    timeoutMs: 1000
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.liveProbe.status, "blocked");
+  assert.equal(result.liveProbe.turns[0].ok, false);
+  assert.equal(result.liveProbe.turns[0].error.includes("ETIMEDOUT"), true);
+  assert.equal(result.liveProbe.turns[0].signal, "SIGTERM");
 });

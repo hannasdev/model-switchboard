@@ -10,6 +10,7 @@ import { getProfileModelMap, getTargetProfileMap } from "../src/adapters/model-m
 
 const TARGET_TO_PROFILE = getTargetProfileMap("openai-codex");
 const PROFILE_TO_MODEL = getProfileModelMap("openai-codex");
+const DEFAULT_TIMEOUT_MS = 120000;
 
 function readJson(filePath) {
   // eslint-disable-next-line security/detect-non-literal-fs-filename -- probe reads the known targets path or explicit test fixture path.
@@ -26,16 +27,19 @@ function hasFlag(args, flag) {
   return args.includes(flag);
 }
 
-function runHelp(codexBin, args) {
+function runHelp(codexBin, args, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const result = spawnSync(codexBin, args, {
     encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1" }
+    env: { ...process.env, NO_COLOR: "1" },
+    timeout: timeoutMs
   });
   return {
     command: [codexBin, ...args].join(" "),
     status: result.status,
+    signal: result.signal,
     stdout: result.stdout || "",
     stderr: result.stderr || "",
+    error: result.error ? result.error.message : null,
     ok: result.status === 0
   };
 }
@@ -77,11 +81,12 @@ function routeTurnPlan({ input, session, targets }) {
   };
 }
 
-function runCodexCommand(codexBin, args, { cwd = process.cwd() } = {}) {
+function runCodexCommand(codexBin, args, { cwd = process.cwd(), timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const result = spawnSync(codexBin, args, {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1" }
+    env: { ...process.env, NO_COLOR: "1" },
+    timeout: timeoutMs
   });
   return {
     command: [codexBin, ...args].join(" "),
@@ -90,6 +95,7 @@ function runCodexCommand(codexBin, args, { cwd = process.cwd() } = {}) {
     signal: result.signal,
     stdout: result.stdout || "",
     stderr: result.stderr || "",
+    error: result.error ? result.error.message : null,
     ok: result.status === 0
   };
 }
@@ -166,6 +172,7 @@ function summarizeLiveTurn({ label, plan, commandResult, outputPath }) {
     command: commandResult.command,
     status: commandResult.status,
     signal: commandResult.signal,
+    error: commandResult.error,
     ok: commandResult.ok,
     stdoutTail: tailText(commandResult.stdout),
     stderrTail: tailText(commandResult.stderr),
@@ -176,7 +183,7 @@ function summarizeLiveTurn({ label, plan, commandResult, outputPath }) {
   };
 }
 
-function runLiveResumeProbe({ codexBin, first, second, cwd = process.cwd() }) {
+function runLiveResumeProbe({ codexBin, first, second, cwd = process.cwd(), timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (!first.codex.model || !second.codex.model) {
     return {
       status: "blocked",
@@ -204,7 +211,7 @@ function runLiveResumeProbe({ codexBin, first, second, cwd = process.cwd() }) {
       cwd,
       first.input
     ],
-    { cwd }
+    { cwd, timeoutMs }
   );
   const firstTurn = summarizeLiveTurn({
     label: "first",
@@ -236,7 +243,7 @@ function runLiveResumeProbe({ codexBin, first, second, cwd = process.cwd() }) {
       secondOutputPath,
       second.input
     ],
-    { cwd }
+    { cwd, timeoutMs }
   );
   const secondTurn = summarizeLiveTurn({
     label: "second",
@@ -274,11 +281,12 @@ export function runCodexCliFeasibilityProbe({
   codexBin = "codex",
   targets = readJson(OPENAI_TARGETS_PATH).targets,
   live = false,
-  cwd = process.cwd()
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS
 } = {}) {
-  const rootHelp = runHelp(codexBin, ["--help"]);
-  const execHelp = runHelp(codexBin, ["exec", "--help"]);
-  const resumeHelp = runHelp(codexBin, ["exec", "resume", "--help"]);
+  const rootHelp = runHelp(codexBin, ["--help"], { timeoutMs });
+  const execHelp = runHelp(codexBin, ["exec", "--help"], { timeoutMs });
+  const resumeHelp = runHelp(codexBin, ["exec", "resume", "--help"], { timeoutMs });
 
   const rootText = `${rootHelp.stdout}\n${rootHelp.stderr}`;
   const execText = `${execHelp.stdout}\n${execHelp.stderr}`;
@@ -336,7 +344,7 @@ export function runCodexCliFeasibilityProbe({
       : resumeBoundaryRerouteSupported
       ? "partial"
       : "advisory_only";
-  const liveProbe = live && surfaceStatus !== "blocked" ? runLiveResumeProbe({ codexBin, first, second, cwd }) : null;
+  const liveProbe = live && surfaceStatus !== "blocked" ? runLiveResumeProbe({ codexBin, first, second, cwd, timeoutMs }) : null;
   const status = liveProbe ? liveProbe.status : surfaceStatus;
 
   return {
@@ -381,7 +389,8 @@ async function main() {
   const args = process.argv.slice(2);
   const codexBin = getArg(args, "--codex-bin") || "codex";
   const cwd = getArg(args, "--cwd") || process.cwd();
-  const result = runCodexCliFeasibilityProbe({ codexBin, live: hasFlag(args, "--live"), cwd });
+  const timeoutMs = Number(getArg(args, "--timeout-ms") || DEFAULT_TIMEOUT_MS);
+  const result = runCodexCliFeasibilityProbe({ codexBin, live: hasFlag(args, "--live"), cwd, timeoutMs });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   process.exitCode = result.status === "blocked" ? 1 : 0;
 }
