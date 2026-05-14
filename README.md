@@ -8,16 +8,6 @@ It keeps coding sessions moving by choosing model and effort settings before eac
 
 The project is still exploring the product shape for automatic model hot-swapping. It is useful today as a Claude Code routing wrapper and as a Codex feasibility spike, but it is not yet a polished replacement for an existing AI coding workflow.
 
-## Get, Provide Feedback, and Contribute
-
-- Obtain the software:
-   - GitHub repository: https://github.com/hannasdev/model-switchboard
-   - npm package: https://www.npmjs.com/package/model-switchboard
-- Provide feedback (bug reports and enhancements):
-   - Issues: https://github.com/hannasdev/model-switchboard/issues
-- Contribute to the project:
-   - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-
 ## Why It Exists
 
 Choosing the right model repeatedly is a real cognitive tax. A single coding session can shift between quick clarifications, planning, implementation, and debugging, each with different cost and quality needs.
@@ -141,18 +131,6 @@ Does not yet support:
 - Not a claim that stock Claude or stock Codex TUI sessions can be hot-swapped today.
 - Not a production-grade cross-vendor orchestration product in this MVP phase.
 
-## Security & Code Quality
-
-This project prioritizes security for AI-related software:
-
-- **Vulnerability Scanning**: Automated dependency scanning via `npm audit` in CI on pull requests and pushes to `main`, plus [Snyk](https://snyk.io) scans on pushes to `main` and a daily schedule when `SNYK_TOKEN` is configured
-- **Static Analysis**: ESLint with security plugin to detect common vulnerabilities
-- **Responsible Disclosure**: Follow the [Security Policy](SECURITY.md) to report vulnerabilities privately
-- **Test Coverage**: Comprehensive test suite validates security-relevant code paths
-- **Developer Knowledge**: Core team has expertise in secure software design and threat modeling
-
-See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting process and security practices.
-
 ## Primary Commands
 
 The commands below mix productized MVP commands and spike commands. Commands containing `spike` are feasibility evidence for the Codex direction, not polished product UX.
@@ -191,3 +169,25 @@ If you want per-turn re-routing and potential target/model changes, run prompts 
    `npm test`
 
 For detailed command documentation, environment variables, and output formats, see [CLI Reference](docs/CLI-REFERENCE.md).
+
+## Get, Provide Feedback, and Contribute
+
+- Obtain the software:
+   - GitHub repository: https://github.com/hannasdev/model-switchboard
+   - npm package: https://www.npmjs.com/package/model-switchboard
+- Provide feedback (bug reports and enhancements):
+   - Issues: https://github.com/hannasdev/model-switchboard/issues
+- Contribute to the project:
+   - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Security & Code Quality
+
+This project prioritizes security for AI-related software:
+
+- **Vulnerability Scanning**: Automated dependency scanning via `npm audit` in CI on pull requests and pushes to `main`, plus [Snyk](https://snyk.io) scans on pushes to `main` and a daily schedule when `SNYK_TOKEN` is configured
+- **Static Analysis**: ESLint with security plugin to detect common vulnerabilities
+- **Responsible Disclosure**: Follow the [Security Policy](SECURITY.md) to report vulnerabilities privately
+- **Test Coverage**: Comprehensive test suite validates security-relevant code paths
+- **Developer Knowledge**: Core team has expertise in secure software design and threat modeling
+
+See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting process and security practices.
