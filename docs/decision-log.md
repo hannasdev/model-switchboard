@@ -368,11 +368,13 @@ Verification signal:
 - Gate 3 user-install and auth-path review completed on 2026-05-13 with `scripts/codex-app-server-preflight.js`. The preflight checks the Codex CLI version, app-server command availability, `codex login status`, and redacted app-server auth/account evidence before Switchboard attempts a routed session. Result: pass for the local `codex-cli 0.130.0` install. Caveat: app-server remains experimental, so the preflight is a compatibility guard rather than a stability guarantee.
 - Gate 4 process-lifecycle review completed on 2026-05-14 with `scripts/codex-app-server-lifecycle-probe.js`. The live probe initialized app-server, confirmed a protocol error did not kill the process, completed one turn, interrupted a second turn after receiving `turn/started`, captured stderr warnings, and shut down cleanly with exit code `0`. Deterministic fake-process tests cover malformed stdout, app-server crash, and child process spawn failure. Result: pass for the local `codex-cli 0.130.0` install.
 - Gate 6 model-evidence review completed on 2026-05-13 with an expanded `scripts/codex-app-server-switch-probe.js`. The live probe now separates requested model evidence from observed effective/backend model telemetry. Result: partial. A live run requested `gpt-5.5` then `gpt-5.4-mini` on the same app-server thread, but observed no effective model field in turn payloads, `thread/read`, raw response items, `model/rerouted`, or `model/verification`. Product must either accept requested-override plus same-thread completion as sufficient, or keep backend model attestation as an unresolved requirement.
+- Gate 7 product-fit review completed on 2026-05-14 after README reframing. Result: pass for the experimental spike. Product accepts a Switchboard-owned Codex app-server session surface as the differentiated workflow, while explicitly not claiming stock Codex TUI hot-swapping or polished replacement UX.
+- Gate 6 risk disposition completed on 2026-05-14. For publication, product accepts requested model override plus same-thread completion as enough evidence for an experimental hot-swapping feasibility claim, while preserving backend model attestation as a known unresolved risk.
 
 Decision:
 - Chosen option: Option B.
-- Scope of commitment: treat Codex CLI as verified for route authority at `exec`/`resume` boundaries and promising for in-session route authority through the experimental app-server protocol.
-- What remains intentionally deferred: claims that the interactive Codex TUI itself can be hot-swapped; broad UX/product reframing decisions until the app-server protocol is judged supportable enough for a product surface.
+- Scope of commitment: treat Codex CLI as verified for route authority at `exec`/`resume` boundaries and publish Codex app-server as an experimental in-session route-authority surface.
+- What remains intentionally deferred: claims that the interactive Codex TUI itself can be hot-swapped, a polished Switchboard-owned Codex UX, production stability guarantees for the experimental app-server protocol, and backend model attestation.
 
 Consequences:
 - Near-term implementation impact: additive Codex CLI feasibility tooling; no change to Claude MVP promise.
@@ -380,5 +382,5 @@ Consequences:
 - Migration impact: low; probe is additive and does not alter core Claude workflow contracts. Codex should not displace the Claude MVP path based only on command-boundary evidence, but the app-server protocol may justify a focused product-surface spike.
 
 Follow-up:
-- Next review milestone: continue the app-server supportability gates in docs/product/CODEX-CLI-SPIKE-SCOPE.md. Gate 7, product fit, is next.
+- Next review milestone: open a draft PR for the Codex CLI/app-server feasibility spike and review publish readiness.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, scripts/codex-app-server-switch-probe.js, scripts/codex-app-server-protocol-check.js, scripts/codex-app-server-preflight.js, scripts/codex-app-server-lifecycle-probe.js, test/codex-cli-feasibility-probe.test.js, test/codex-app-server-switch-probe.test.js, test/codex-app-server-protocol-check.test.js, test/codex-app-server-preflight.test.js, test/codex-app-server-lifecycle-probe.test.js, README.md

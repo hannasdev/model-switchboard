@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: app-server in-session probe implemented; supportability decision pending
+Status: app-server in-session probe implemented; supportability gates complete for experimental publication
 
 Decision record: `DEC-2026-05-13-codex-cli-feasibility-spike` in [../decision-log.md](../decision-log.md).
 
@@ -259,7 +259,7 @@ Fail condition:
 
 ### Gate 7: Product Fit
 
-Status: `[~]`
+Status: `[x]`
 
 Question: Does the app-server path reduce cognitive overhead enough to justify a Codex product surface beyond Claude parity?
 
@@ -273,11 +273,14 @@ Evidence needed:
 Current evidence:
 
 - The app-server probe avoids `exec resume` and manual model selection.
-- Caveat: turning this into a usable product likely means Switchboard owns the session UI or loop.
+- The README now presents three distinct usage paths for early adopters: Claude Code wrapper, advisory cross-surface routing, and Codex app-server spike.
+- Product framing now explicitly treats Codex app-server as an experimental Switchboard-owned session surface, not as hot-swapping inside the stock Codex TUI.
+- The publish position accepts that a polished Codex user experience is future work; current evidence is enough to publish the spike as an exploration of the hot-swapping concept.
+- Caveat: turning this into a polished usable product likely means Switchboard owns the session UI or loop.
 
 Pass condition:
 
-- Product accepts a Switchboard-controlled Codex session surface as the differentiated workflow.
+- Met for spike purposes. Product accepts a Switchboard-controlled Codex app-server session surface as the differentiated experimental workflow.
 
 Fail condition:
 
@@ -290,6 +293,12 @@ Codex app-server can graduate from promising spike to serious product-surface ca
 1. Gates 1, 2, 3, 4, 5, and 7 pass.
 2. Gate 6 either passes or is explicitly accepted as a known risk.
 3. No gate requires private Codex internals or raw rollout-file parsing as the primary mechanism.
+
+Current decision:
+
+- Gates 1, 2, 3, 4, 5, and 7 pass for the experimental spike.
+- Gate 6 is explicitly accepted as a known risk for publication: the current evidence proves requested model override plus same-thread completion, but not provider-side backend model attestation.
+- The Codex app-server path is publishable as an experimental hot-swapping feasibility surface, not as a production replacement for Claude Code or the stock Codex TUI.
 
 If Gate 7 fails because the required user experience must be the stock Codex TUI, classify Codex as `partial` despite the app-server evidence.
 
@@ -366,7 +375,7 @@ Observed 2026-05-13:
 
 ### Phase 3: In-Session Switch Probe
 
-Status: repeatable app-server probe implemented; supportability and product-surface fit pending.
+Status: repeatable app-server probe implemented; supportability and product-surface fit accepted for experimental publication.
 
 Investigate whether Codex CLI exposes a supported hook, command, control protocol, config reload behavior, or interactive-session API that can change the active model after an interactive session has started.
 
