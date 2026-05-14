@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { runCodexAppServerLifecycleProbe } from "../scripts/codex-app-server-lifecycle-probe.js";
 
-function createFakeCodexBin({ crashOnTurn = false, ignoreUnsupportedMethod = false } = {}) {
+function createFakeCodexBin({ crashOnTurn = false, ignoreUnsupportedMethod = false, signalOnTurn = null } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-app-server-lifecycle-test-"));
   const binPath = path.join(dir, "codex");
   fs.writeFileSync(
@@ -51,6 +51,11 @@ rl.on("line", (line) => {
     return;
   }
   if (message.method === "turn/start") {
+    if (${JSON.stringify(signalOnTurn)}) {
+      process.stderr.write("simulated app-server signal exit\\n");
+      process.kill(process.pid, ${JSON.stringify(signalOnTurn)});
+      return;
+    }
     if (${JSON.stringify(crashOnTurn)}) {
       process.stderr.write("simulated app-server crash\\n");
       process.exit(7);
@@ -101,7 +106,7 @@ test("lifecycle probe verifies process ownership and recovery signals", async ()
 test("lifecycle probe does not accept protocol-error timeouts as method-not-found", async () => {
   const result = await runCodexAppServerLifecycleProbe({
     codexBin: createFakeCodexBin({ ignoreUnsupportedMethod: true }),
-    timeoutMs: 1000
+    timeoutMs: 3000
   });
 
   assert.equal(result.status, "blocked");
@@ -123,6 +128,21 @@ test("lifecycle probe reports app-server crash without hanging", async () => {
   assert.match(result.stderrTail, /simulated app-server crash/);
   assert.equal(result.checks.shutdown.ok, false);
   assert.equal(result.checks.shutdown.exit.code, 7);
+});
+
+test("lifecycle probe reports signal-only app-server exits as failed shutdowns", async () => {
+  const result = await runCodexAppServerLifecycleProbe({
+    codexBin: createFakeCodexBin({ signalOnTurn: "SIGKILL" }),
+    timeoutMs: 5000
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.checks.runtimeError.ok, false);
+  assert.match(result.checks.runtimeError.message, /signal SIGKILL/);
+  assert.match(result.stderrTail, /simulated app-server signal exit/);
+  assert.equal(result.checks.shutdown.ok, false);
+  assert.equal(result.checks.shutdown.exit.code, null);
+  assert.equal(result.checks.shutdown.exit.signal, "SIGKILL");
 });
 
 test("lifecycle probe reports child process spawn failure", async () => {

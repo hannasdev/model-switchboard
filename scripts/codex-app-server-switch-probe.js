@@ -418,11 +418,14 @@ export async function runCodexAppServerSwitchProbe({
       threadRead
     });
     const secondTurnObservedModels = observedModelsForTurn(modelEvidence, secondTurn.turnId);
+    const observedSecondTurnModelAccepted =
+      secondTurnObservedModels.length > 0 && secondTurnObservedModels.every((model) => model === second.codex.model);
+    const observedSecondTurnModelConflict =
+      secondTurnObservedModels.length > 0 && secondTurnObservedModels.some((model) => model !== second.codex.model);
     const requestedModelOverrideAccepted =
       sameThreadCompleted &&
       secondTurn.requestedModel === second.codex.model &&
-      secondTurnObservedModels.length > 0 &&
-      secondTurnObservedModels.every((model) => model === second.codex.model);
+      !observedSecondTurnModelConflict;
     const status = requestedModelOverrideAccepted ? "verified" : "partial";
 
     return {
@@ -436,6 +439,8 @@ export async function runCodexAppServerSwitchProbe({
         modelChanged,
         backendModelTelemetryObserved: modelEvidence.backendModelTelemetryObserved,
         secondTurnObservedModels,
+        observedSecondTurnModelAccepted,
+        observedSecondTurnModelConflict,
         interactiveTuiHotSwapProven: false
       },
       thread: {

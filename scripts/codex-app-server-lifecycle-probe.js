@@ -167,7 +167,7 @@ class JsonLineClient {
     }
     const exit = await withTimeout(this.exitDeferred.promise, 5000, "codex app-server shutdown");
     return {
-      ok: exit.signal === "SIGTERM" || exit.code === 0 || exit.code === null,
+      ok: exit.signal === "SIGTERM" || exit.code === 0 || Boolean(exit.error),
       exit
     };
   }

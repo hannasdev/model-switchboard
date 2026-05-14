@@ -35,7 +35,12 @@ function createTargets() {
   ];
 }
 
-function createFakeCodexBin({ omitThreadStartModel = false, secondTurnObservedModel = null } = {}) {
+function createFakeCodexBin({
+  emitModelTelemetry = true,
+  omitThreadStartModel = false,
+  omitTurnModels = false,
+  secondTurnObservedModel = null
+} = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-app-server-probe-test-"));
   const binPath = path.join(dir, "codex");
   fs.writeFileSync(
@@ -59,7 +64,9 @@ function respond(id, result) {
 }
 
 function makeTurn(model) {
-  return { id: "turn-" + nextTurn++, status: "completed", model };
+  const turn = { id: "turn-" + nextTurn++, status: "completed" };
+  if (!${JSON.stringify(omitTurnModels)}) turn.model = model;
+  return turn;
 }
 
 if (process.argv.slice(2).join(" ") !== "app-server --listen stdio://") {
@@ -99,7 +106,7 @@ rl.on("line", (line) => {
     thread.turns.push(turn);
     respond(message.id, { turn });
     write({ method: "turn/started", params: { threadId: message.params.threadId, turn } });
-    if (turn.id === "turn-2") {
+    if (turn.id === "turn-2" && ${JSON.stringify(emitModelTelemetry)}) {
       write({
         method: "model/rerouted",
         params: {
@@ -151,6 +158,8 @@ test("codex app-server switch probe verifies accepted model override on one thre
   assert.equal(result.verdict.modelChanged, true);
   assert.equal(result.verdict.backendModelTelemetryObserved, true);
   assert.deepEqual(result.verdict.secondTurnObservedModels, ["gpt-5.4-mini"]);
+  assert.equal(result.verdict.observedSecondTurnModelAccepted, true);
+  assert.equal(result.verdict.observedSecondTurnModelConflict, false);
   assert.equal(result.verdict.interactiveTuiHotSwapProven, false);
   assert.equal(result.thread.threadId, "thread-123");
   assert.equal(result.thread.sessionId, "session-abc");
@@ -186,6 +195,21 @@ test("codex app-server switch probe does not synthesize omitted thread-start mod
   assert.equal(result.thread.threadStartModel, null);
 });
 
+test("codex app-server switch probe verifies requested override when backend model telemetry is absent", async () => {
+  const result = await runCodexAppServerSwitchProbe({
+    codexBin: createFakeCodexBin({ emitModelTelemetry: false, omitTurnModels: true }),
+    targets: createTargets(),
+    timeoutMs: 5000
+  });
+
+  assert.equal(result.status, "verified");
+  assert.equal(result.verdict.appServerModelOverrideAccepted, true);
+  assert.equal(result.verdict.backendModelTelemetryObserved, false);
+  assert.deepEqual(result.verdict.secondTurnObservedModels, []);
+  assert.equal(result.verdict.observedSecondTurnModelAccepted, false);
+  assert.equal(result.verdict.observedSecondTurnModelConflict, false);
+});
+
 test("codex app-server switch probe rejects conflicting observed second-turn model", async () => {
   const result = await runCodexAppServerSwitchProbe({
     codexBin: createFakeCodexBin({ secondTurnObservedModel: "gpt-5.5" }),
@@ -196,6 +220,8 @@ test("codex app-server switch probe rejects conflicting observed second-turn mod
   assert.equal(result.status, "partial");
   assert.equal(result.verdict.appServerModelOverrideAccepted, false);
   assert.deepEqual(result.verdict.secondTurnObservedModels, ["gpt-5.5", "gpt-5.4-mini"]);
+  assert.equal(result.verdict.observedSecondTurnModelAccepted, false);
+  assert.equal(result.verdict.observedSecondTurnModelConflict, true);
   assert.equal(result.turns[1].requestedModel, "gpt-5.4-mini");
   assert.equal(result.turns[1].responseModel, "gpt-5.5");
   assert.equal(result.turns[1].completedModel, "gpt-5.5");
