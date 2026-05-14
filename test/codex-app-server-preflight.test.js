@@ -27,7 +27,7 @@ if (args.join(" ") === "app-server --help") {
 }
 if (args.join(" ") === "login status") {
   if (auth === "authenticated") {
-    console.log("Logged in using ChatGPT");
+    console.log("Logged in as person@example.com using ChatGPT");
     process.exit(0);
   }
   console.error("Not logged in");
@@ -91,6 +91,7 @@ test("preflight verifies a normal Codex install with app-server auth", async () 
   assert.equal(result.checks.version.actual, "0.130.0");
   assert.equal(result.checks.appServerCommand.ok, true);
   assert.equal(result.checks.loginStatusCommand.ok, true);
+  assert.equal(result.checks.loginStatusCommand.summary, "[redacted-email]");
   assert.equal(result.checks.appServerAuth.ok, true);
   assert.deepEqual(result.diagnostics, []);
   assert.equal(result.checks.appServerAuth.accountStatus.account.email, "[redacted]");
