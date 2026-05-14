@@ -329,6 +329,30 @@ function collectModelEvidence({ notifications, turns, threadRead }) {
   };
 }
 
+function observedModelsForTurn(modelEvidence, turnId) {
+  if (!turnId) return [];
+  const entries = [
+    ...modelEvidence.turnPayloadModels,
+    ...modelEvidence.threadReadModels,
+    ...modelEvidence.rawResponseModels,
+    ...modelEvidence.rerouted.map((message) => ({
+      turnId: message.params?.turnId || null,
+      model: message.params?.toModel || null
+    })),
+    ...modelEvidence.verification.map((message) => ({
+      turnId: message.params?.turnId || null,
+      model: message.params?.model || message.params?.toModel || null
+    }))
+  ];
+  return [
+    ...new Set(
+      entries
+        .filter((entry) => entry.turnId === turnId && typeof entry.model === "string")
+        .map((entry) => entry.model)
+    )
+  ];
+}
+
 export async function runCodexAppServerSwitchProbe({
   codexBin = "codex",
   targets = readJson(OPENAI_TARGETS_PATH).targets,
@@ -388,12 +412,17 @@ export async function runCodexAppServerSwitchProbe({
     const threadRead = await maybeReadThread(client, threadId);
 
     const sameThreadCompleted = firstTurn.completed && secondTurn.completed;
-    const requestedModelOverrideAccepted = secondTurn.requestedModel === second.codex.model && sameThreadCompleted;
     const modelEvidence = collectModelEvidence({
       notifications: client.notifications,
       turns: [firstTurn, secondTurn],
       threadRead
     });
+    const secondTurnObservedModels = observedModelsForTurn(modelEvidence, secondTurn.turnId);
+    const requestedModelOverrideAccepted =
+      sameThreadCompleted &&
+      secondTurn.requestedModel === second.codex.model &&
+      secondTurnObservedModels.length > 0 &&
+      secondTurnObservedModels.every((model) => model === second.codex.model);
     const status = requestedModelOverrideAccepted ? "verified" : "partial";
 
     return {
@@ -406,6 +435,7 @@ export async function runCodexAppServerSwitchProbe({
         targetChanged,
         modelChanged,
         backendModelTelemetryObserved: modelEvidence.backendModelTelemetryObserved,
+        secondTurnObservedModels,
         interactiveTuiHotSwapProven: false
       },
       thread: {
