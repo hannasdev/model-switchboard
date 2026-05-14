@@ -4,7 +4,7 @@
 
 Model Switchboard is an experimental routing layer for AI-assisted software delivery.
 
-It keeps coding sessions moving by choosing model and effort settings before each turn, so you do not have to make that call manually every time.
+Its goal is to keep coding sessions moving by choosing model and effort settings before each turn, so you do not have to make that call manually every time.
 
 The project is still exploring the product shape for automatic model hot-swapping. It is useful today as a Claude Code routing wrapper and as a Codex feasibility spike, but it is not yet a polished replacement for an existing AI coding workflow.
 
@@ -12,7 +12,7 @@ The project is still exploring the product shape for automatic model hot-swappin
 
 Choosing the right model repeatedly is a real cognitive tax. A single coding session can shift between quick clarifications, planning, implementation, and debugging, each with different cost and quality needs.
 
-Model Switchboard reduces that overhead with consistent routing decisions and a short explanation of why a route was selected.
+Model Switchboard explores reducing that overhead with consistent routing decisions and a short explanation of why a route was selected.
 
 ## Core Value
 
