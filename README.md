@@ -2,9 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/model-switchboard.svg)](https://www.npmjs.com/package/model-switchboard) [![npm downloads](https://img.shields.io/npm/dm/model-switchboard.svg)](https://www.npmjs.com/package/model-switchboard) [![CI](https://github.com/hannasdev/model-switchboard/actions/workflows/ci.yml/badge.svg)](https://github.com/hannasdev/model-switchboard/actions/workflows/ci.yml) [![Release](https://github.com/hannasdev/model-switchboard/actions/workflows/release.yml/badge.svg)](https://github.com/hannasdev/model-switchboard/actions/workflows/release.yml) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/hannasdev/model-switchboard/badge)](https://securityscorecards.dev/viewer/?uri=github.com/hannasdev/model-switchboard) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12820/badge)](https://www.bestpractices.dev/projects/12820) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Model Switchboard is a routing layer for AI-assisted software delivery.
+Model Switchboard is an experimental routing layer for AI-assisted software delivery.
 
 It keeps coding sessions moving by choosing model and effort settings before each turn, so you do not have to make that call manually every time.
+
+The project is still exploring the product shape for automatic model hot-swapping. It is useful today as a Claude Code routing wrapper and as a Codex feasibility spike, but it is not yet a polished replacement for an existing AI coding workflow.
 
 ## Get, Provide Feedback, and Contribute
 
@@ -31,7 +33,7 @@ Model Switchboard reduces that overhead with consistent routing decisions and a 
 
 ## Current Product Slice
 
-The current MVP is a Claude Code workflow integration powered by a separable router core.
+The current MVP is a Claude Code workflow integration powered by a separable router core. The Codex work is an active spike to test whether Switchboard can go beyond advisory routing and actually control per-turn model changes inside one continuous session.
 
 High-level flow:
 
@@ -40,11 +42,104 @@ High-level flow:
 3. Switchboard launches or resumes Claude with matching model and effort settings for that launch.
 4. Route context, session state, and hook evidence are recorded for explainability, replay, and governance.
 
+## Usage Paths
+
+Switchboard currently has three distinct paths. They are intentionally not equivalent.
+
+### Claude Code Wrapper
+
+This is the most complete path today.
+
+Use:
+
+```bash
+switchboard "your prompt"
+switchboard --interactive
+switchboard explain
+```
+
+What it allows:
+
+- Routes each prompt before launching or resuming Claude.
+- Applies model and effort choices at Claude launch/resume boundaries.
+- Records local routing evidence for explainability and replay.
+
+Advantages:
+
+- Most productized workflow in this repository.
+- Uses the existing Claude Code user experience.
+- Good fit for prompt-by-prompt routing with auditability.
+
+Does not yet support:
+
+- Automatic model changes inside an already-running Claude interactive session.
+- Eliminating the cognitive overhead of model choice during a long-lived stock Claude TUI session.
+
+### Advisory Cross-Surface Routing
+
+This path gives a recommendation without taking over execution.
+
+Use:
+
+```bash
+switchboard advise --surface openai-codex "your prompt"
+```
+
+What it allows:
+
+- Asks Switchboard what it would choose for a target surface.
+- Lets you keep using another client manually.
+
+Advantages:
+
+- Low-risk way to test routing policy across vendors or clients.
+- Does not require Switchboard to own the session process.
+
+Does not yet support:
+
+- Automatic execution.
+- Automatic in-session model switching.
+- Reducing all model-selection overhead, because the user still has to apply the recommendation.
+
+### Codex App-Server Spike
+
+This is the experimental hot-swapping path.
+
+Use:
+
+```bash
+npm run switchboard:spike:codex-app-server:preflight
+npm run switchboard:spike:codex-app-server:protocol
+npm run switchboard:spike:codex-app-server:lifecycle
+npm run switchboard:spike:codex-app-server
+```
+
+What it allows:
+
+- Starts `codex app-server --listen stdio://`.
+- Creates one Codex app-server thread.
+- Sends multiple `turn/start` requests on that same thread.
+- Requests different models on different turns without a `codex exec resume` boundary.
+
+Advantages:
+
+- This is the only current path that suggests Switchboard could go beyond Claude parity.
+- It demonstrates a possible Switchboard-owned session surface with per-turn model override.
+- It preserves one app-server thread/session while route-selected model requests change.
+
+Does not yet support:
+
+- A polished end-user UI.
+- Hot-swapping inside the stock Codex TUI.
+- Production stability guarantees, because the app-server surface is still experimental.
+- Provider-side backend model attestation; current evidence proves requested model overrides and same-thread completion, not a durable backend model field.
+
 ## What It Is Not
 
-- Not a replacement for your coding client.
+- Not a finished replacement for your coding client.
 - Not a general-purpose agent runtime.
-- Not a cross-vendor orchestration product in this MVP phase.
+- Not a claim that stock Claude or stock Codex TUI sessions can be hot-swapped today.
+- Not a production-grade cross-vendor orchestration product in this MVP phase.
 
 ## Security & Code Quality
 
@@ -59,6 +154,8 @@ This project prioritizes security for AI-related software:
 See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting process and security practices.
 
 ## Primary Commands
+
+The commands below mix productized MVP commands and spike commands. Commands containing `spike` are feasibility evidence for the Codex direction, not polished product UX.
 
 | Command | What It Does | Use It When |
 | --- | --- | --- |
