@@ -171,7 +171,7 @@ Fail condition:
 
 ### Gate 4: Process Lifecycle Safety
 
-Status: `[ ]`
+Status: `[x]`
 
 Question: Can Switchboard safely own a long-running app-server process?
 
@@ -183,9 +183,17 @@ Evidence needed:
 - Behavior after interrupted turn.
 - Handling for malformed JSON, protocol errors, stderr warnings, and child process spawn failure.
 
+Evidence:
+
+- [../../scripts/codex-app-server-lifecycle-probe.js](../../scripts/codex-app-server-lifecycle-probe.js) starts `codex app-server --listen stdio://`, initializes the app-server protocol, verifies an unsupported request returns a bounded protocol error, starts a thread, completes one turn, starts and interrupts a second turn after `turn/started`, captures stderr warning output, ignores malformed JSON lines, and waits for shutdown.
+- [../../test/codex-app-server-lifecycle-probe.test.js](../../test/codex-app-server-lifecycle-probe.test.js) covers the lifecycle harness with a fake app-server, including malformed stdout, stderr warnings, protocol errors, interrupted turns, app-server crash, and child process spawn failure.
+- `npm run switchboard:spike:codex-app-server:lifecycle` returned `status: verified` on 2026-05-14 against local `codex-cli 0.130.0`.
+- Live lifecycle evidence: initialize passed; unsupported request returned a protocol error without killing the server; one turn completed; a second turn was interrupted successfully after waiting for `turn/started`; shutdown returned exit code `0`.
+- Caveat: real malformed-output and crash behavior are not induced against the live Codex app-server; those failure modes are covered by deterministic fake-process tests because the real server should not normally emit malformed JSON or crash on demand.
+
 Pass condition:
 
-- A lifecycle probe demonstrates start, two turns, interruption or shutdown, and clear error reporting.
+- Met for spike purposes. A lifecycle probe demonstrates start, two turns, interruption, shutdown, and clear error reporting for protocol, stderr, malformed-output, crash, and spawn-failure paths.
 
 Fail condition:
 

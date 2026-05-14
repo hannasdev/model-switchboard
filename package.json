@@ -46,6 +46,7 @@
     "switchboard:spike:codex-cli:live": "node scripts/codex-cli-feasibility-probe.js --live",
     "switchboard:spike:codex-app-server:preflight": "node scripts/codex-app-server-preflight.js",
     "switchboard:spike:codex-app-server:protocol": "node scripts/codex-app-server-protocol-check.js",
+    "switchboard:spike:codex-app-server:lifecycle": "node scripts/codex-app-server-lifecycle-probe.js",
     "switchboard:spike:codex-app-server": "node scripts/codex-app-server-switch-probe.js"
   },
   "repository": {

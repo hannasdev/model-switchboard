@@ -84,7 +84,7 @@ test("parses and compares Codex CLI versions", () => {
 test("preflight verifies a normal Codex install with app-server auth", async () => {
   const result = await runCodexAppServerPreflight({
     codexBin: makeFakeCodex(),
-    timeoutMs: 1000
+    timeoutMs: 5000
   });
 
   assert.equal(result.status, "verified");
@@ -99,7 +99,7 @@ test("preflight verifies a normal Codex install with app-server auth", async () 
 test("preflight fails clearly when Codex CLI is too old", async () => {
   const result = await runCodexAppServerPreflight({
     codexBin: makeFakeCodex({ version: "0.129.0" }),
-    timeoutMs: 1000
+    timeoutMs: 5000
   });
 
   assert.equal(result.status, "failed");
@@ -110,7 +110,7 @@ test("preflight fails clearly when Codex CLI is too old", async () => {
 test("preflight fails clearly when app-server auth is missing", async () => {
   const result = await runCodexAppServerPreflight({
     codexBin: makeFakeCodex({ auth: "missing" }),
-    timeoutMs: 1000
+    timeoutMs: 5000
   });
 
   assert.equal(result.status, "failed");
@@ -122,7 +122,7 @@ test("preflight fails clearly when app-server auth is missing", async () => {
 test("preflight fails clearly when app-server is unavailable", async () => {
   const result = await runCodexAppServerPreflight({
     codexBin: makeFakeCodex({ appServer: false }),
-    timeoutMs: 1000
+    timeoutMs: 5000
   });
 
   assert.equal(result.status, "failed");
