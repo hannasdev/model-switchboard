@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { runCodexAppServerPreflight, parseCodexVersion, compareVersions } from "../scripts/codex-app-server-preflight.js";
 
-function makeFakeCodex({ version = "0.130.0", auth = "authenticated", appServer = true } = {}) {
+function makeFakeCodex({ version = "0.130.0", auth = "authenticated", appServer = true, loginStatusStderr = "" } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-app-server-preflight-test-"));
   const bin = path.join(dir, "codex");
   const source = `#!/usr/bin/env node
@@ -26,6 +26,7 @@ if (args.join(" ") === "app-server --help") {
   process.exit(0);
 }
 if (args.join(" ") === "login status") {
+  if (${JSON.stringify(loginStatusStderr)}) process.stderr.write(${JSON.stringify(loginStatusStderr)});
   if (auth === "authenticated") {
     console.log("Logged in as person@example.com using ChatGPT");
     process.exit(0);
@@ -95,6 +96,16 @@ test("preflight verifies a normal Codex install with app-server auth", async () 
   assert.equal(result.checks.appServerAuth.ok, true);
   assert.deepEqual(result.diagnostics, []);
   assert.equal(result.checks.appServerAuth.accountStatus.account.email, "[redacted]");
+});
+
+test("preflight redacts login-status stderr before returning diagnostics", async () => {
+  const result = await runCodexAppServerPreflight({
+    codexBin: makeFakeCodex({ loginStatusStderr: "warning for person@example.com account id user-123456789012345\n" }),
+    timeoutMs: 5000
+  });
+
+  assert.equal(result.status, "verified");
+  assert.equal(result.checks.loginStatusCommand.stderrTail, "[redacted-email]");
 });
 
 test("preflight fails clearly when Codex CLI is too old", async () => {

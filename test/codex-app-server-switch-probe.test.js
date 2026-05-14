@@ -35,7 +35,7 @@ function createTargets() {
   ];
 }
 
-function createFakeCodexBin() {
+function createFakeCodexBin({ omitThreadStartModel = false } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-app-server-probe-test-"));
   const binPath = path.join(dir, "codex");
   fs.writeFileSync(
@@ -78,7 +78,7 @@ rl.on("line", (line) => {
   if (message.method === "thread/start") {
     respond(message.id, {
       thread,
-      model: message.params.model,
+      ...(${JSON.stringify(omitThreadStartModel)} ? {} : { model: message.params.model }),
       modelProvider: "openai",
       serviceTier: null,
       cwd: message.params.cwd,
@@ -150,6 +150,8 @@ test("codex app-server switch probe verifies accepted model override on one thre
   assert.equal(result.verdict.interactiveTuiHotSwapProven, false);
   assert.equal(result.thread.threadId, "thread-123");
   assert.equal(result.thread.sessionId, "session-abc");
+  assert.equal(result.thread.requestedThreadStartModel, "gpt-5.5");
+  assert.equal(result.thread.threadStartModel, "gpt-5.5");
   assert.equal(result.turns[0].selectedTargetId, "openai-coder");
   assert.equal(result.turns[0].requestedModel, "gpt-5.5");
   assert.equal(result.turns[1].selectedTargetId, "openai-quick");
@@ -166,4 +168,16 @@ test("codex app-server switch probe verifies accepted model override on one thre
   ]);
   assert.equal(result.modelEvidence.rerouted.length, 1);
   assert.equal(result.modelEvidence.rerouted[0].params.toModel, "gpt-5.4-mini");
+});
+
+test("codex app-server switch probe does not synthesize omitted thread-start model", async () => {
+  const result = await runCodexAppServerSwitchProbe({
+    codexBin: createFakeCodexBin({ omitThreadStartModel: true }),
+    targets: createTargets(),
+    timeoutMs: 5000
+  });
+
+  assert.equal(result.status, "verified");
+  assert.equal(result.thread.requestedThreadStartModel, "gpt-5.5");
+  assert.equal(result.thread.threadStartModel, null);
 });

@@ -293,7 +293,7 @@ export async function runCodexAppServerPreflight({
     ok: loginStatus.ok,
     command: `${codexBin} login status`,
     summary: loginStatus.ok ? tailText(redact(`${loginStatus.stdout}${loginStatus.stderr}`.trim()), 200) : null,
-    stderrTail: tailText(loginStatus.stderr)
+    stderrTail: tailText(redact(loginStatus.stderr))
   };
 
   if (checks.version.ok && checks.appServerCommand.ok) {

@@ -411,7 +411,8 @@ export async function runCodexAppServerSwitchProbe({
       thread: {
         threadId,
         sessionId,
-        threadStartModel: threadStart.model || first.codex.model,
+        requestedThreadStartModel: first.codex.model,
+        threadStartModel: threadStart.model || null,
         threadStartModelProvider: threadStart.modelProvider || null
       },
       turns: [firstTurn, secondTurn],
