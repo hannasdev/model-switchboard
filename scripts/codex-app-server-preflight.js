@@ -224,7 +224,7 @@ async function checkAppServerAuth({ codexBin, timeoutMs }) {
       ok: Boolean(authStatus?.authMethod || accountStatus?.account),
       authStatus: redact(authStatus),
       accountStatus: redact(accountStatus),
-      stderrTail: tailText(client.stderr)
+      stderrTail: tailText(redact(client.stderr))
     };
   } finally {
     client.close();
@@ -312,7 +312,7 @@ export async function runCodexAppServerPreflight({
     } catch (error) {
       checks.appServerAuth = {
         ok: false,
-        error: error.message
+        error: redact(error.message)
       };
       diagnostics.push(
         diagnostic(

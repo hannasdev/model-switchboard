@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { runCodexAppServerSwitchProbe } from "../scripts/codex-app-server-switch-probe.js";
+
+const SWITCH_PROBE_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../scripts/codex-app-server-switch-probe.js");
 
 function createTargets() {
   return [
@@ -225,4 +229,19 @@ test("codex app-server switch probe rejects conflicting observed second-turn mod
   assert.equal(result.turns[1].requestedModel, "gpt-5.4-mini");
   assert.equal(result.turns[1].responseModel, "gpt-5.5");
   assert.equal(result.turns[1].completedModel, "gpt-5.5");
+});
+
+test("codex app-server switch probe CLI exits non-zero for partial results", () => {
+  const result = spawnSync(
+    process.execPath,
+    [SWITCH_PROBE_SCRIPT, "--codex-bin", createFakeCodexBin({ secondTurnObservedModel: "gpt-5.5" }), "--timeout-ms", "5000"],
+    {
+      encoding: "utf8"
+    }
+  );
+
+  assert.equal(result.status, 1);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, "partial");
+  assert.equal(output.verdict.appServerModelOverrideAccepted, false);
 });

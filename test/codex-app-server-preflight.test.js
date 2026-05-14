@@ -5,7 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { runCodexAppServerPreflight, parseCodexVersion, compareVersions } from "../scripts/codex-app-server-preflight.js";
 
-function makeFakeCodex({ version = "0.130.0", auth = "authenticated", appServer = true, loginStatusStderr = "" } = {}) {
+function makeFakeCodex({
+  version = "0.130.0",
+  auth = "authenticated",
+  appServer = true,
+  appServerAuthStderr = "",
+  exitOnAuth = false,
+  loginStatusStderr = ""
+} = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-app-server-preflight-test-"));
   const bin = path.join(dir, "codex");
   const source = `#!/usr/bin/env node
@@ -36,6 +43,7 @@ if (args.join(" ") === "login status") {
 }
 if (args.join(" ") === "app-server --listen stdio://") {
   if (!appServer) process.exit(2);
+  if (${JSON.stringify(appServerAuthStderr)}) process.stderr.write(${JSON.stringify(appServerAuthStderr)});
   let buffer = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (chunk) => {
@@ -55,6 +63,7 @@ if (args.join(" ") === "app-server --listen stdio://") {
     if (!message.id) return;
     if (message.method === "initialize") write(message.id, {});
     if (message.method === "getAuthStatus") {
+      if (${JSON.stringify(exitOnAuth)}) process.exit(7);
       write(message.id, auth === "authenticated"
         ? { authMethod: "chatgpt", authToken: null, requiresOpenaiAuth: false }
         : { authMethod: null, authToken: null, requiresOpenaiAuth: true });
@@ -96,6 +105,32 @@ test("preflight verifies a normal Codex install with app-server auth", async () 
   assert.equal(result.checks.appServerAuth.ok, true);
   assert.deepEqual(result.diagnostics, []);
   assert.equal(result.checks.appServerAuth.accountStatus.account.email, "[redacted]");
+});
+
+test("preflight redacts app-server auth stderr before returning diagnostics", async () => {
+  const result = await runCodexAppServerPreflight({
+    codexBin: makeFakeCodex({ appServerAuthStderr: "auth warning for person@example.com account id user-123456789012345\n" }),
+    timeoutMs: 5000
+  });
+
+  assert.equal(result.status, "verified");
+  assert.equal(result.checks.appServerAuth.stderrTail, "[redacted-email]");
+});
+
+test("preflight redacts app-server auth errors before returning diagnostics", async () => {
+  const result = await runCodexAppServerPreflight({
+    codexBin: makeFakeCodex({
+      appServerAuthStderr: "fatal auth warning for person@example.com account id user-123456789012345\n",
+      exitOnAuth: true
+    }),
+    timeoutMs: 5000
+  });
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.checks.appServerAuth.ok, false);
+  assert.equal(result.checks.appServerAuth.error.includes("person@example.com"), false);
+  assert.equal(result.checks.appServerAuth.error.includes("user-123456789012345"), false);
+  assert.equal(result.checks.appServerAuth.error, "[redacted-email]");
 });
 
 test("preflight redacts login-status stderr before returning diagnostics", async () => {

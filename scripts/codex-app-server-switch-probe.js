@@ -491,7 +491,7 @@ async function main() {
   const timeoutMs = Number(getArg(args, "--timeout-ms") || DEFAULT_TIMEOUT_MS);
   const result = await runCodexAppServerSwitchProbe({ codexBin, cwd, timeoutMs });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exitCode = result.status === "blocked" ? 1 : 0;
+  process.exitCode = result.status === "verified" ? 0 : 1;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
