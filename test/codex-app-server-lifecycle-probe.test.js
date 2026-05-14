@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { runCodexAppServerLifecycleProbe } from "../scripts/codex-app-server-lifecycle-probe.js";
 
-function createFakeCodexBin({ crashOnTurn = false } = {}) {
+function createFakeCodexBin({ crashOnTurn = false, ignoreUnsupportedMethod = false } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-app-server-lifecycle-test-"));
   const binPath = path.join(dir, "codex");
   fs.writeFileSync(
@@ -41,6 +41,7 @@ rl.on("line", (line) => {
   }
   if (message.method === "initialized") return;
   if (message.method === "switchboard/unsupported-lifecycle-probe") {
+    if (${JSON.stringify(ignoreUnsupportedMethod)}) return;
     write({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "method not found" } });
     return;
   }
@@ -88,6 +89,7 @@ test("lifecycle probe verifies process ownership and recovery signals", async ()
   assert.equal(result.status, "verified");
   assert.equal(result.checks.initialize.ok, true);
   assert.equal(result.checks.protocolError.ok, true);
+  assert.equal(result.checks.protocolError.code, -32601);
   assert.equal(result.checks.threadStart.threadId, "thread-life");
   assert.equal(result.checks.firstTurn.status, "completed");
   assert.equal(result.checks.secondTurn.status, "interrupted");
@@ -96,10 +98,23 @@ test("lifecycle probe verifies process ownership and recovery signals", async ()
   assert.equal(result.checks.shutdown.ok, true);
 });
 
+test("lifecycle probe does not accept protocol-error timeouts as method-not-found", async () => {
+  const result = await runCodexAppServerLifecycleProbe({
+    codexBin: createFakeCodexBin({ ignoreUnsupportedMethod: true }),
+    timeoutMs: 1000
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.checks.protocolError.ok, false);
+  assert.equal(result.checks.protocolError.code, null);
+  assert.match(result.checks.protocolError.message, /did not return JSON-RPC method-not-found error/);
+  assert.match(result.checks.protocolError.message, /timed out/);
+});
+
 test("lifecycle probe reports app-server crash without hanging", async () => {
   const result = await runCodexAppServerLifecycleProbe({
     codexBin: createFakeCodexBin({ crashOnTurn: true }),
-    timeoutMs: 1000
+    timeoutMs: 5000
   });
 
   assert.equal(result.status, "blocked");

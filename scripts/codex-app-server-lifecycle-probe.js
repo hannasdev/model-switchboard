@@ -30,6 +30,14 @@ function createDeferred() {
   return { promise, resolve, reject };
 }
 
+function createJsonRpcError(error) {
+  const rpcError = new Error(error?.message || JSON.stringify(error));
+  rpcError.code = error?.code;
+  rpcError.data = error?.data;
+  rpcError.jsonRpcError = error;
+  return rpcError;
+}
+
 function withTimeout(promise, ms, label) {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -109,7 +117,7 @@ class JsonLineClient {
       if (!pending) return;
       this.pending.delete(message.id);
       if (message.error) {
-        pending.reject(new Error(JSON.stringify(message.error)));
+        pending.reject(createJsonRpcError(message.error));
       } else {
         pending.resolve(message.result);
       }
@@ -170,7 +178,14 @@ async function expectProtocolError(client) {
     await client.request("switchboard/unsupported-lifecycle-probe", {});
     return { ok: false, message: "unsupported method unexpectedly succeeded" };
   } catch (error) {
-    return { ok: true, message: error.message };
+    if (error.code === -32601) {
+      return { ok: true, code: error.code, message: error.message };
+    }
+    return {
+      ok: false,
+      code: error.code ?? null,
+      message: `unsupported method did not return JSON-RPC method-not-found error: ${error.message}`
+    };
   }
 }
 
