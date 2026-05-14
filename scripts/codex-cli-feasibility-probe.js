@@ -387,12 +387,13 @@ export function runCodexCliFeasibilityProbe({
 
 async function main() {
   const args = process.argv.slice(2);
+  const live = hasFlag(args, "--live");
   const codexBin = getArg(args, "--codex-bin") || "codex";
   const cwd = getArg(args, "--cwd") || process.cwd();
   const timeoutMs = Number(getArg(args, "--timeout-ms") || DEFAULT_TIMEOUT_MS);
-  const result = runCodexCliFeasibilityProbe({ codexBin, live: hasFlag(args, "--live"), cwd, timeoutMs });
+  const result = runCodexCliFeasibilityProbe({ codexBin, live, cwd, timeoutMs });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exitCode = result.status === "blocked" ? 1 : 0;
+  process.exitCode = live ? (result.status === "verified" ? 0 : 1) : result.status === "blocked" ? 1 : 0;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

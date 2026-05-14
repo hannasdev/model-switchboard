@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { runCodexCliFeasibilityProbe } from "../scripts/codex-cli-feasibility-probe.js";
+
+const CLI_PROBE_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../scripts/codex-cli-feasibility-probe.js");
 
 function createTargets() {
   return [
@@ -35,7 +39,7 @@ function createTargets() {
   ];
 }
 
-function createFakeCodexBin({ hangLiveExec = false } = {}) {
+function createFakeCodexBin({ hangLiveExec = false, omitResumeSession = false } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-cli-probe-test-"));
   const binPath = path.join(dir, "codex");
   fs.writeFileSync(
@@ -69,7 +73,9 @@ if (args[0] === "exec" && args[1] === "--model") {
 if (args[0] === "exec" && args[1] === "resume" && args.includes("--last")) {
   const outputPath = args[args.indexOf("--output-last-message") + 1];
   fs.writeFileSync(outputPath, "summarized outcome");
-  console.log(JSON.stringify({ type: "session", session_id: "11111111-1111-4111-8111-111111111111" }));
+  if (!${JSON.stringify(omitResumeSession)}) {
+    console.log(JSON.stringify({ type: "session", session_id: "11111111-1111-4111-8111-111111111111" }));
+  }
   console.log(JSON.stringify({ type: "turn_complete", model: args[args.indexOf("--model") + 1] }));
   process.exit(0);
 }
@@ -129,4 +135,20 @@ test("codex CLI live feasibility probe times out stalled Codex commands", () => 
   assert.equal(result.liveProbe.turns[0].ok, false);
   assert.equal(result.liveProbe.turns[0].error.includes("ETIMEDOUT"), true);
   assert.equal(result.liveProbe.turns[0].signal, "SIGTERM");
+});
+
+test("codex CLI live feasibility probe CLI exits non-zero for partial session evidence", () => {
+  const result = spawnSync(
+    process.execPath,
+    [CLI_PROBE_SCRIPT, "--live", "--codex-bin", createFakeCodexBin({ omitResumeSession: true }), "--timeout-ms", "5000"],
+    {
+      encoding: "utf8"
+    }
+  );
+
+  assert.equal(result.status, 1);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, "partial");
+  assert.equal(output.liveProbe.continuityEvidence, "resume_last_success_without_session_id");
+  assert.deepEqual(output.liveProbe.sharedSessionIds, []);
 });
