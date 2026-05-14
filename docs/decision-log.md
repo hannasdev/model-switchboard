@@ -332,3 +332,55 @@ Consequences:
 Follow-up:
 - Next review milestone: (1) implement and live-verify improved advisory injection; (2) complete a client surface survey covering at minimum Cursor, GitHub Copilot Chat, Gemini CLI, and one gateway-backed path; (3) revisit Option C and Option D based on survey findings before broad adoption promotion.
 - Linked artifacts (logs, fixtures, docs, PRs): docs/product/MVP-PRD.md (Assumption B, Section 8 MVP defer list), docs/product/PRODUCT-PRD.md (Section 17.1 deferred items updated 2026-05-13), README.md (Interactive Mode Clarification section added 2026-05-13), src/switchboard/claude-hook-bridge.js (advisory injection comment)
+
+## Milestone 5 Spike: Codex CLI Feasibility
+
+Decision ID: DEC-2026-05-13-codex-cli-feasibility-spike
+Related deferred item: PRODUCT-PRD.md Section 17.1 deferred items; milestone 5 second-surface proof
+Status: committed; app-server in-session probe implemented
+Date: 2026-05-13
+Owners: team
+
+Context:
+- The current committed near-term path remains advisory injection inside running Claude sessions, but this alone does not answer whether Codex CLI can provide a better route-authority boundary.
+- The product question is not whether OpenAI SDK calls can change models. The question is whether the Codex CLI user surface exposes a supported boundary where Switchboard can choose the execution target with low UX friction while preserving session continuity.
+- The primary differentiator beyond Claude parity is in-session model switching. A command-boundary `exec`/`resume` workflow is useful evidence, but it is not enough to justify a product-direction change by itself.
+
+Options considered:
+- Option A: continue advisory hardening only and postpone all Codex feasibility testing.
+- Option B: run a Codex CLI command-surface spike first, focused on supported `codex exec` and `codex exec resume` route authority.
+- Option C: use OpenAI SDK calls as a proxy for Codex feasibility.
+
+Tradeoffs:
+- Option A: lowest immediate effort, highest unresolved product-risk uncertainty.
+- Option B: small incremental engineering overhead, answers the client-surface question directly, but initially proves command capability rather than live execution.
+- Option C: easy to implement and live-test, but risks falsely validating the wrong surface because SDK calls do not represent Codex CLI session/tool/runtime behavior.
+
+Verification signal:
+- Expected signal: a reproducible probe that can show whether local Codex CLI exposes route-selected model authority at launch, non-interactive execution, or resume boundaries, and whether it should be treated as authoritative or advisory.
+- Evidence observed: local Codex CLI help exposes `--model` for interactive launch, `codex exec --model`, and `codex exec resume --last --model`. The command-surface probe reports this as resume-boundary route authority, not in-session automatic switching.
+- Live evidence observed on 2026-05-13: `npm run switchboard:spike:codex-cli:live` completed a two-turn probe. Turn 1 selected `openai-coder` / `codex-best-coder` / `gpt-5.5`; turn 2 resumed with `openai-quick` / `codex-fast` / `gpt-5.4-mini`; both turns reported shared thread/session evidence `019e21ad-1f30-72d0-bec0-08d275284eaf`.
+- App-server evidence observed on 2026-05-13: generated Codex app-server protocol bindings expose `turn/start` with a `model` override documented as applying to "this turn and subsequent turns." A live stdio smoke test started one thread with `gpt-5.5`, completed a first turn, then completed a second `turn/start` on the same `threadId` / `sessionId` with `model: "gpt-5.4-mini"` and no `exec resume` boundary.
+- Repeatable app-server probe: `npm run switchboard:spike:codex-app-server` now exercises the same one-thread, two-turn app-server path and records route-selected targets, requested models, thread/session IDs, turn completion, agent-message evidence, and any `model/rerouted` telemetry.
+- Repeatable live app-server evidence observed on 2026-05-13: `npm run switchboard:spike:codex-app-server` returned `status: verified`. Turn 1 selected `openai-coder` / `codex-best-coder` / `gpt-5.5`; turn 2 selected `openai-quick` / `codex-fast` / `gpt-5.4-mini`; both turns completed on the same `threadId` / `sessionId` `019e21f7-0b2e-7730-9cbd-af5e5536ddbf`; `thread/read` returned `turnCount: 2`. No `model/rerouted` telemetry was emitted.
+- Gate 1 public-surface review completed on 2026-05-13 against local `codex-cli 0.130.0`, local app-server help output, generated stable TypeScript bindings, and OpenAI's public `openai/codex` app-server README. Result: pass for a bounded integration spike. Caveat: `codex app-server` and schema generation are still labeled experimental, so this is not a production stability claim.
+- Gate 2 protocol-stability review completed on 2026-05-13 with `scripts/codex-app-server-protocol-check.js`. The check generates Codex app-server TypeScript bindings and verifies the minimum method and field surface Switchboard depends on: `initialize`, `thread/start`, `turn/start`, `thread/read`, `InitializeCapabilities.experimentalApi`, `ThreadStartParams.model`, `TurnStartParams.threadId`, `TurnStartParams.input`, `TurnStartParams.model`, `ThreadReadParams.threadId`, and `ThreadReadParams.includeTurns`. Result: pass for the installed Codex CLI version; future Codex releases still require this check as a compatibility guard.
+- Gate 3 user-install and auth-path review completed on 2026-05-13 with `scripts/codex-app-server-preflight.js`. The preflight checks the Codex CLI version, app-server command availability, `codex login status`, and redacted app-server auth/account evidence before Switchboard attempts a routed session. Result: pass for the local `codex-cli 0.130.0` install. Caveat: app-server remains experimental, so the preflight is a compatibility guard rather than a stability guarantee.
+- Gate 4 process-lifecycle review completed on 2026-05-14 with `scripts/codex-app-server-lifecycle-probe.js`. The live probe initialized app-server, confirmed a protocol error did not kill the process, completed one turn, interrupted a second turn after receiving `turn/started`, captured stderr warnings, and shut down cleanly with exit code `0`. Deterministic fake-process tests cover malformed stdout, app-server crash, and child process spawn failure. Result: pass for the local `codex-cli 0.130.0` install.
+- Gate 6 model-evidence review completed on 2026-05-13 with an expanded `scripts/codex-app-server-switch-probe.js`. The live probe now separates requested model evidence from observed effective/backend model telemetry. Result: partial. A live run requested `gpt-5.5` then `gpt-5.4-mini` on the same app-server thread, but observed no effective model field in turn payloads, `thread/read`, raw response items, `model/rerouted`, or `model/verification`. Product must either accept requested-override plus same-thread completion as sufficient, or keep backend model attestation as an unresolved requirement.
+- Gate 7 product-fit review completed on 2026-05-14 after README reframing. Result: pass for the experimental spike. Product accepts a Switchboard-owned Codex app-server session surface as the differentiated workflow, while explicitly not claiming stock Codex TUI hot-swapping or polished replacement UX.
+- Gate 6 risk disposition completed on 2026-05-14. For publication, product accepts requested model override plus same-thread completion as enough evidence for an experimental hot-swapping feasibility claim, while preserving backend model attestation as a known unresolved risk.
+
+Decision:
+- Chosen option: Option B.
+- Scope of commitment: treat Codex CLI as verified for route authority at `exec`/`resume` boundaries and publish Codex app-server as an experimental in-session route-authority surface.
+- What remains intentionally deferred: claims that the interactive Codex TUI itself can be hot-swapped, a polished Switchboard-owned Codex UX, production stability guarantees for the experimental app-server protocol, and backend model attestation.
+
+Consequences:
+- Near-term implementation impact: additive Codex CLI feasibility tooling; no change to Claude MVP promise.
+- Test and replay impact: probe test coverage verifies that resume-boundary support is not misreported as in-session authority, and app-server probe coverage verifies the one-thread, two-turn model-override harness without requiring live Codex calls in CI.
+- Migration impact: low; probe is additive and does not alter core Claude workflow contracts. Codex should not displace the Claude MVP path based only on command-boundary evidence, but the app-server protocol may justify a focused product-surface spike.
+
+Follow-up:
+- Next review milestone: open a draft PR for the Codex CLI/app-server feasibility spike and review publish readiness.
+- Linked artifacts (logs, fixtures, docs, PRs): docs/product/CODEX-CLI-SPIKE-SCOPE.md, scripts/codex-cli-feasibility-probe.js, scripts/codex-app-server-switch-probe.js, scripts/codex-app-server-protocol-check.js, scripts/codex-app-server-preflight.js, scripts/codex-app-server-lifecycle-probe.js, test/codex-cli-feasibility-probe.test.js, test/codex-app-server-switch-probe.test.js, test/codex-app-server-protocol-check.test.js, test/codex-app-server-preflight.test.js, test/codex-app-server-lifecycle-probe.test.js, README.md
