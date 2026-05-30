@@ -1,193 +1,70 @@
 # Model Switchboard
 
-[![npm version](https://img.shields.io/npm/v/model-switchboard.svg)](https://www.npmjs.com/package/model-switchboard) [![npm downloads](https://img.shields.io/npm/dm/model-switchboard.svg)](https://www.npmjs.com/package/model-switchboard) [![CI](https://github.com/hannasdev/model-switchboard/actions/workflows/ci.yml/badge.svg)](https://github.com/hannasdev/model-switchboard/actions/workflows/ci.yml) [![Release](https://github.com/hannasdev/model-switchboard/actions/workflows/release.yml/badge.svg)](https://github.com/hannasdev/model-switchboard/actions/workflows/release.yml) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/hannasdev/model-switchboard/badge)](https://securityscorecards.dev/viewer/?uri=github.com/hannasdev/model-switchboard) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12820/badge)](https://www.bestpractices.dev/projects/12820) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/model-switchboard.svg)](https://www.npmjs.com/package/model-switchboard) [![npm downloads](https://img.shields.io/npm/dm/model-switchboard.svg)](https://www.npmjs.com/package/model-switchboard) [![CI](https://github.com/hannasdev/model-switchboard/actions/workflows/ci.yml/badge.svg)](https://github.com/hannasdev/model-switchboard/actions/workflows/ci.yml) [![Release](https://github.com/hannasdev/model-switchboard/actions/workflows/release.yml/badge.svg)](https://github.com/hannasdev/model-switchboard/actions/workflows/release.yml) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/hannasdev/model-switchboard/badge)](https://securityscorecards.dev/viewer/?uri=github.com/hannasdev/model-switchboard) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Model Switchboard is an experimental routing layer for AI-assisted software delivery.
+## Deprecated
 
-Its goal is to keep coding sessions moving by choosing model and effort settings before each turn, so you do not have to make that call manually every time.
+Model Switchboard is no longer under active product development.
 
-The project is still exploring the product shape for automatic model hot-swapping. It is useful today as a Claude Code routing wrapper and as a Codex feasibility spike, but it is not yet a polished replacement for an existing AI coding workflow.
+The project explored whether a session-aware router could reduce model-selection overhead in AI-assisted software delivery by choosing the right model, effort level, or execution target before a turn. The implementation produced useful routing, explainability, replay, and feasibility-spike work, but the core product premise no longer looks strong enough to justify continuing the project as originally framed.
 
-## Why It Exists
+The short version: meaningful model switching requires control over the client or turn boundary. Modern AI coding clients increasingly hide the details that a router would need to make and verify strong routing decisions, including effective context construction, cache behavior, memory, tool state, provider-side model execution, and session compaction. A sidecar can still recommend a route, but it cannot reliably prove that the underlying client used the intended model or context in the way the router expects.
 
-Choosing the right model repeatedly is a real cognitive tax. A single coding session can shift between quick clarifications, planning, implementation, and debugging, each with different cost and quality needs.
+That leaves two viable shapes:
 
-Model Switchboard explores reducing that overhead with consistent routing decisions and a short explanation of why a route was selected.
+- An advisory tool that explains what target it would choose, while the user or external client still performs the work.
+- A Switchboard-owned client, CLI, app-server loop, IDE extension, or orchestrator that controls the turn boundary directly.
 
-## Core Value
+The first shape is useful but too weak to remove enough user burden. The second shape is effectively a client or runtime replacement, which is not an obvious benefit for this project compared with using the native clients directly.
 
-- Fewer manual model-selection decisions during active development.
-- Better default cost and quality tradeoffs by task type.
-- Session-aware continuity across routed turns.
-- Clear, auditable decisions through concise route explanations and local evidence logs.
+For that reason, this repository should be treated as an archived experiment rather than an active product direction.
 
-## Current Product Slice
+## What Was Learned
 
-The current MVP is a Claude Code workflow integration powered by a separable router core. The Codex work is an active spike to test whether Switchboard can go beyond advisory routing and actually control per-turn model changes inside one continuous session.
+- Routing execution targets is a better abstraction than routing abstract model names.
+- Launch/resume-boundary routing can work for wrapper-style integrations, but it does not provide true in-session switching inside an opaque client.
+- Advisory routing can provide explanations and handoff suggestions, but it does not remove the need for the user or client to apply the recommendation.
+- A Switchboard-owned session loop can request different models across turns, but without provider-side effective-model attestation it still cannot fully prove what happened behind the serving boundary.
+- The stronger the routing guarantee, the more the project must own the client, runtime, or orchestration layer.
 
-High-level flow:
+## What Remains Useful
 
-1. You send a prompt through Switchboard.
-2. Switchboard classifies the turn and selects a route label.
-3. Switchboard launches or resumes Claude with matching model and effort settings for that launch.
-4. Route context, session state, and hook evidence are recorded for explainability, replay, and governance.
+Parts of the repository may still be useful as reference material:
 
-## Usage Paths
+- Router contracts and execution-target modeling.
+- Session-aware classification and deterministic policy ideas.
+- Explainability and outcome-attribution logs.
+- Replay/evaluation scaffolding for routing decisions.
+- Feasibility notes for Claude wrapper, Codex CLI, and Codex app-server surfaces.
 
-Switchboard currently has three distinct paths. They are intentionally not equivalent.
+The main documentation entrypoint remains [docs/PRD.md](docs/PRD.md). The most relevant product and technical context lives in:
 
-### Claude Code Wrapper
+- [docs/product/PRODUCT-PRD.md](docs/product/PRODUCT-PRD.md)
+- [docs/ARCHITECTURE-SPEC.md](docs/ARCHITECTURE-SPEC.md)
+- [docs/contracts/router-contracts.md](docs/contracts/router-contracts.md)
+- [docs/product/ROUTER-PHASE-PLAN.md](docs/product/ROUTER-PHASE-PLAN.md)
+- [docs/REPLAY-GUIDE.md](docs/REPLAY-GUIDE.md)
 
-This is the most complete path today.
+## Historical Scope
 
-Use:
+Model Switchboard previously included three product paths:
 
-```bash
-switchboard "your prompt"
-switchboard --interactive
-switchboard explain
-```
+- A Claude Code wrapper that selected model and effort settings at launch or resume boundaries.
+- Advisory cross-surface routing for clients where Switchboard did not control execution.
+- A Codex app-server feasibility spike that tested whether a Switchboard-owned session loop could request route-selected models on one continuous thread.
 
-What it allows:
+These paths remain in the repository for historical and technical reference, but they should not be read as an active recommendation to adopt Model Switchboard as a production workflow.
 
-- Routes each prompt before launching or resuming Claude.
-- Applies model and effort choices at Claude launch/resume boundaries.
-- Records local routing evidence for explainability and replay.
+## Development
 
-Advantages:
-
-- Most productized workflow in this repository.
-- Uses the existing Claude Code user experience.
-- Good fit for prompt-by-prompt routing with auditability.
-
-Does not yet support:
-
-- Automatic model changes inside an already-running Claude interactive session.
-- Eliminating the cognitive overhead of model choice during a long-lived stock Claude TUI session.
-
-### Advisory Cross-Surface Routing
-
-This path gives a recommendation without taking over execution.
-
-Use:
+The existing test suite can still be run with:
 
 ```bash
-switchboard advise --surface openai-codex "your prompt"
+npm test
 ```
 
-What it allows:
+The package, CLI, and spike commands are retained as-is unless the repository is later cleaned up further. Future work, if any, should start by deciding whether the goal is archival cleanup, extraction of reusable router ideas, or a new client-owned product with an explicitly different premise.
 
-- Asks Switchboard what it would choose for a target surface.
-- Lets you keep using another client manually.
+## Security
 
-Advantages:
-
-- Low-risk way to test routing policy across vendors or clients.
-- Does not require Switchboard to own the session process.
-
-Does not yet support:
-
-- Automatic execution.
-- Automatic in-session model switching.
-- Reducing all model-selection overhead, because the user still has to apply the recommendation.
-
-### Codex App-Server Spike
-
-This is the experimental hot-swapping path.
-
-Use:
-
-```bash
-npm run switchboard:spike:codex-app-server:preflight
-npm run switchboard:spike:codex-app-server:protocol
-npm run switchboard:spike:codex-app-server:lifecycle
-npm run switchboard:spike:codex-app-server
-```
-
-What it allows:
-
-- Starts `codex app-server --listen stdio://`.
-- Creates one Codex app-server thread.
-- Sends multiple `turn/start` requests on that same thread.
-- Requests different models on different turns without a `codex exec resume` boundary.
-
-Advantages:
-
-- This is the only current path that suggests Switchboard could go beyond Claude parity.
-- It demonstrates a possible Switchboard-owned session surface with per-turn model override.
-- It preserves one app-server thread/session while route-selected model requests change.
-
-Does not yet support:
-
-- A polished end-user UI.
-- Hot-swapping inside the stock Codex TUI.
-- Production stability guarantees, because the app-server surface is still experimental.
-- Provider-side backend model attestation; current evidence proves requested model overrides and same-thread completion, not a durable backend model field.
-
-## What It Is Not
-
-- Not a finished replacement for your coding client.
-- Not a general-purpose agent runtime.
-- Not a claim that stock Claude or stock Codex TUI sessions can be hot-swapped today.
-- Not a production-grade cross-vendor orchestration product in this MVP phase.
-
-## Primary Commands
-
-The commands below mix productized MVP commands and spike commands. Commands containing `spike` are feasibility evidence for the Codex direction, not polished product UX.
-
-| Command | What It Does | Use It When |
-| --- | --- | --- |
-| `switchboard "your prompt"` | Routes a single prompt, chooses target/effort, then launches or resumes Claude for that turn. | You want normal prompt-driven usage with routing applied automatically. |
-| `switchboard --interactive` | Starts an interactive Claude session through Switchboard with route-aware session handling. The launched Claude session keeps the selected model/effort; it does not auto-switch models mid-session. | You want a live back-and-forth session instead of one-shot prompts. |
-| `switchboard explain` | Shows the latest routing decision, reasoning signals, and correlated evidence for a thread. | You want to audit why a route was chosen or debug routing behavior. |
-| `switchboard advise --surface openai-codex "your prompt"` | Returns an advisory routing recommendation for a selected surface without taking over execution. | You want a cross-surface recommendation or policy check before running a turn. |
-| `switchboard probe continuity` | Runs a continuity probe for prompt-driven turns and reports whether session continuity checks pass. | You want to verify non-interactive continuity behavior after changes. |
-| `switchboard probe continuity-interactive` | Runs the interactive continuity probe and verifies resume/session behavior across turns. | You want to validate interactive continuity and related checks. |
-| `npm run switchboard:spike:codex-cli` | Inspects the local Codex CLI command surface and maps two routed turns to Codex `exec`/`resume --model` plans without making live model calls. | You want a product-aligned feasibility signal for Codex CLI route authority before building a deeper integration. |
-| `npm run switchboard:spike:codex-cli:live` | Runs the bounded two-turn Codex CLI resume probe with route-selected models and captures JSON/session evidence. | You are ready to collect live evidence for the Codex CLI feasibility spike. |
-| `npm run switchboard:spike:codex-app-server:preflight` | Verifies the local Codex CLI version, app-server command availability, login status, and redacted app-server auth evidence before a routed session starts. | You want to check whether a normal user install can support the Codex app-server spike path. |
-| `npm run switchboard:spike:codex-app-server:protocol` | Generates Codex app-server TypeScript bindings and verifies the minimum protocol shape Switchboard depends on. | You are checking whether Codex app-server protocol changes would break the feasibility spike. |
-| `npm run switchboard:spike:codex-app-server:lifecycle` | Starts Codex app-server, verifies protocol-error handling, completes one turn, interrupts a second turn, captures stderr/malformed-output evidence, and shuts the process down. | You are checking whether Switchboard can safely own the app-server process lifecycle. |
-| `npm run switchboard:spike:codex-app-server` | Runs the bounded app-server in-session switch probe with one thread and two route-selected `turn/start` model overrides. | You are evaluating whether Codex app-server can be a Switchboard-controlled session surface beyond `exec`/`resume` parity. |
-| `npm test` | Runs the full automated test suite for adapters, router, workflow, and CLI behavior. | You changed routing/workflow/docs and want a full regression check. |
-
-### Interactive Mode Clarification
-
-`switchboard --interactive` selects model/effort at launch, then enters Claude interactive mode with that selection.
-
-Inside that active Claude session, Switchboard does not automatically switch to a different model on later user messages.
-
-If you want per-turn re-routing and potential target/model changes, run prompts through Switchboard as separate turns (for example: `switchboard "..."` each turn) rather than staying in one interactive session.
-
-### Typical First Run
-
-1. Send one routed prompt:
-   `switchboard "Implement the retry logic for stale session recovery."`
-2. Inspect why the route was chosen:
-   `switchboard explain`
-3. Validate behavior before opening a PR:
-   `npm test`
-
-For detailed command documentation, environment variables, and output formats, see [CLI Reference](docs/CLI-REFERENCE.md).
-
-## Get, Provide Feedback, and Contribute
-
-- Obtain the software:
-   - GitHub repository: https://github.com/hannasdev/model-switchboard
-   - npm package: https://www.npmjs.com/package/model-switchboard
-- Provide feedback (bug reports and enhancements):
-   - Issues: https://github.com/hannasdev/model-switchboard/issues
-- Contribute to the project:
-   - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## Security & Code Quality
-
-This project prioritizes security for AI-related software:
-
-- **Vulnerability Scanning**: Automated dependency scanning via `npm audit` in CI on pull requests and pushes to `main`, plus [Snyk](https://snyk.io) scans on pushes to `main` and a daily schedule when `SNYK_TOKEN` is configured
-- **Static Analysis**: ESLint with security plugin to detect common vulnerabilities
-- **Responsible Disclosure**: Follow the [Security Policy](SECURITY.md) to report vulnerabilities privately
-- **Test Coverage**: Comprehensive test suite validates security-relevant code paths
-- **Developer Knowledge**: Core team has expertise in secure software design and threat modeling
-
-See [SECURITY.md](SECURITY.md) for details on the vulnerability reporting process and security practices.
+If you discover a security issue in this repository or the published package, follow the [Security Policy](SECURITY.md) for private reporting.
