@@ -3,9 +3,6 @@ name: Snyk Security Scan
 on:
   push:
     branches: [main]
-  schedule:
-    # Daily vulnerability scan at 2 AM UTC
-    - cron: '0 2 * * *'
 
 permissions:
   contents: read
